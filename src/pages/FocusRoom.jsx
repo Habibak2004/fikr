@@ -4,9 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Play, Pause, Square, Timer, Target } from "lucide-react";
+import { Play, Pause, Square, Timer } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import FocusCoachPanel from "@/components/focus-room/FocusCoachPanel";
 
 export default function FocusRoom() {
   const [selectedCourse, setSelectedCourse] = useState("");
@@ -173,6 +174,10 @@ export default function FocusRoom() {
           </p>
         )}
       </Card>
+
+      <div className="flex flex-col items-center">
+        <FocusCoachPanel selectedCourse={selectedCourse} courses={courses} />
+      </div>
     </div>
   );
 }
