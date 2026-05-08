@@ -105,7 +105,7 @@ export default function AssignmentsTab({ courseId, assignments, courseName, cour
               {Object.entries(typeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Input type="number" value={newItem.weight} onChange={(e) => setNewItem((p) => ({ ...p, weight: e.target.value }))} placeholder="%" className="h-8 rounded-lg w-14 text-sm" />
+          <Input type="number" value={newItem.weight} onChange={(e) => setNewItem((p) => ({ ...p, weight: e.target.value }))} placeholder="%" className="h-8 rounded-lg w-14 text-sm mx-1" />
           <Input type="number" value={newItem.grade} onChange={(e) => setNewItem((p) => ({ ...p, grade: e.target.value }))} placeholder="—" className="h-8 rounded-lg w-16 text-sm" />
           <Select value={newItem.status} onValueChange={(v) => setNewItem((p) => ({ ...p, status: v }))}>
             <SelectTrigger className="h-8 rounded-lg text-xs"><SelectValue /></SelectTrigger>
