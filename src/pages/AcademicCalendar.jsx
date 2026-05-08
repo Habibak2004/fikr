@@ -16,11 +16,11 @@ const SEMESTER_PROGRESS = Math.min(100, Math.round((ELAPSED_DAYS / TOTAL_DAYS) *
 const WEEKS_REMAINING = Math.max(0, differenceInWeeks(SEMESTER_END, now));
 
 const milestones = [
-  { date: "2026-01-19", label: "Semester Start",        sub: "Completed",   type: "done",    month: "JANUARY" },
-  { date: "2026-02-06", label: "Add/Drop Ends",          sub: "Completed",   type: "done",    month: "FEBRUARY" },
-  { date: "2026-03-09", label: "Midterm Week",           sub: "Active Now",  type: "active",  month: "MARCH" },
-  { date: "2026-03-27", label: "Reading Days",           sub: "Mar 27–31",   type: "upcoming",month: "MARCH" },
-  { date: "2026-05-08", label: "Final Exams",            sub: "May 8–15",    type: "upcoming",month: "MAY" },
+  { date: "2026-01-19", label: "Semester Start",        sub: "Completed",   type: "done" },
+  { date: "2026-02-06", label: "Add/Drop Ends",          sub: "Completed",   type: "done" },
+  { date: "2026-03-09", label: "Midterm Week",           sub: "Active Now",  type: "active" },
+  { date: "2026-03-27", label: "Reading Days",           sub: "Mar 27–31",   type: "upcoming" },
+  { date: "2026-05-08", label: "Final Exams",            sub: "May 8–15",    type: "upcoming" },
 ];
 
 const criticalDeadlines = [
