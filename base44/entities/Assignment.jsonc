@@ -5,6 +5,10 @@
     "name": {
       "type": "string"
     },
+    "description": {
+      "type": "string",
+      "description": "Details about the assignment \u2014 topics, requirements, session goals, etc."
+    },
     "course_id": {
       "type": "string",
       "description": "Reference to Course"

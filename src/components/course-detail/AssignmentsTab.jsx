@@ -48,6 +48,7 @@ function formatDateForInput(dateStr) {
 function EditRow({ a, onSave, onCancel }) {
   const [form, setForm] = useState({
     name: a.name || "",
+    description: a.description || "",
     type: a.type || "homework",
     weight: a.weight ?? "",
     grade: a.grade ?? "",
@@ -58,6 +59,7 @@ function EditRow({ a, onSave, onCancel }) {
   const handleSave = () => {
     onSave({
       name: form.name,
+      description: form.description || undefined,
       type: form.type,
       weight: form.weight !== "" ? +form.weight : undefined,
       grade:  form.grade  !== "" ? +form.grade  : undefined,
@@ -70,6 +72,7 @@ function EditRow({ a, onSave, onCancel }) {
     <div className="grid grid-cols-[2.5fr_90px_80px_110px_140px_36px] items-center px-6 py-3 border-b bg-primary/5 gap-2">
       <div className="flex flex-col gap-1">
         <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Name" className="h-8 rounded-lg text-sm" />
+        <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Description / topics / goals…" className="h-8 rounded-lg text-xs" />
         <Input type="datetime-local" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} className="h-8 rounded-lg text-xs" />
       </div>
       <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v }))}>
@@ -93,7 +96,7 @@ function EditRow({ a, onSave, onCancel }) {
 export default function AssignmentsTab({ courseId, assignments, courseName, courseColor }) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [newItem, setNewItem] = useState({ name: "", type: "homework", weight: "", grade: "", status: "pending", due_date: "" });
+  const [newItem, setNewItem] = useState({ name: "", description: "", type: "homework", weight: "", grade: "", status: "pending", due_date: "" });
   const queryClient = useQueryClient();
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["assignments", courseId] });
@@ -117,6 +120,7 @@ export default function AssignmentsTab({ courseId, assignments, courseName, cour
     if (!newItem.name) return;
     createMutation.mutate({
       ...newItem,
+      description: newItem.description || undefined,
       weight: newItem.weight !== "" ? +newItem.weight : undefined,
       grade:  newItem.grade  !== "" ? +newItem.grade  : undefined,
       course_id: courseId,
@@ -150,6 +154,7 @@ export default function AssignmentsTab({ courseId, assignments, courseName, cour
         <div className="grid grid-cols-[2.5fr_90px_80px_110px_140px_36px] items-center px-6 py-3 border-b bg-primary/5 gap-2">
           <div className="flex flex-col gap-1">
             <Input value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} placeholder="Name" className="h-8 rounded-lg text-sm" />
+            <Input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Description / topics / goals…" className="h-8 rounded-lg text-xs" />
             <Input type="datetime-local" value={newItem.due_date} onChange={e => setNewItem(p => ({ ...p, due_date: e.target.value }))} className="h-8 rounded-lg text-xs" />
           </div>
           <Select value={newItem.type} onValueChange={v => setNewItem(p => ({ ...p, type: v }))}>
@@ -194,6 +199,9 @@ export default function AssignmentsTab({ courseId, assignments, courseName, cour
               {/* Name + Due */}
               <div>
                 <p className="text-base font-bold leading-snug">{a.name}</p>
+                {a.description && (
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{a.description}</p>
+                )}
                 {a.due_date && (
                   <p className="text-xs text-muted-foreground mt-0.5">Due: {format(new Date(a.due_date), "MMM dd, yyyy")}</p>
                 )}
