@@ -1,126 +1,203 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CalendarDays, Flag, Clock, Sparkles, AlertTriangle } from "lucide-react";
-import { format, differenceInDays, isAfter, isBefore } from "date-fns";
-import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Sparkles, AlertTriangle, CalendarClock, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { format, differenceInDays, isAfter, isBefore, differenceInWeeks } from "date-fns";
+import { Link } from "react-router-dom";
 
 const SEMESTER_START = new Date("2026-01-19");
-const SEMESTER_END = new Date("2026-05-15");
-const TOTAL_DAYS = differenceInDays(SEMESTER_END, SEMESTER_START);
-const ELAPSED_DAYS = Math.max(0, differenceInDays(new Date(), SEMESTER_START));
+const SEMESTER_END   = new Date("2026-05-15");
+const TOTAL_DAYS     = differenceInDays(SEMESTER_END, SEMESTER_START);
+const now            = new Date();
+const ELAPSED_DAYS   = Math.max(0, differenceInDays(now, SEMESTER_START));
 const SEMESTER_PROGRESS = Math.min(100, Math.round((ELAPSED_DAYS / TOTAL_DAYS) * 100));
+const WEEKS_REMAINING = Math.max(0, differenceInWeeks(SEMESTER_END, now));
 
 const milestones = [
-  { date: "2026-01-19", label: "Semester Start", type: "start" },
-  { date: "2026-02-06", label: "Last Day to Add/Drop", type: "critical" },
-  { date: "2026-03-09", label: "Spring Break Begins", type: "break" },
-  { date: "2026-03-16", label: "Spring Break Ends", type: "break" },
-  { date: "2026-03-27", label: "Last Day to Withdraw", type: "critical" },
-  { date: "2026-04-20", label: "Registration Opens", type: "info" },
-  { date: "2026-05-04", label: "Last Day of Classes", type: "critical" },
-  { date: "2026-05-08", label: "Finals Begin", type: "exam" },
-  { date: "2026-05-15", label: "Finals End / Semester End", type: "end" },
+  { date: "2026-01-19", label: "Semester Start",        sub: "Completed",   type: "done",    month: "JANUARY" },
+  { date: "2026-02-06", label: "Add/Drop Ends",          sub: "Completed",   type: "done",    month: "FEBRUARY" },
+  { date: "2026-03-09", label: "Midterm Week",           sub: "Active Now",  type: "active",  month: "MARCH" },
+  { date: "2026-03-27", label: "Reading Days",           sub: "Mar 27–31",   type: "upcoming",month: "MARCH" },
+  { date: "2026-05-08", label: "Final Exams",            sub: "May 8–15",    type: "upcoming",month: "MAY" },
 ];
 
+const criticalDeadlines = [
+  { label: "Last Day to Drop (without W)", detail: "Tonight at 11:59 PM", urgency: "URGENT",   icon: AlertTriangle, iconColor: "text-red-500",  iconBg: "bg-red-50",   badgeColor: "bg-red-100 text-red-600" },
+  { label: "Last Day to Add",              detail: "Monday, May 11 • 3 days left", urgency: "UPCOMING", icon: CalendarClock, iconColor: "text-primary",  iconBg: "bg-primary/10", badgeColor: "bg-primary/10 text-primary" },
+  { label: "Withdrawal Deadline",          detail: "Friday, May 15 • 7 days left", urgency: "PLANNING", icon: CalendarClock, iconColor: "text-muted-foreground", iconBg: "bg-muted", badgeColor: "bg-muted text-muted-foreground" },
+];
+
+// Next upcoming milestone
+const nextMilestone = milestones.find(m => isAfter(new Date(m.date), now)) || milestones[milestones.length - 1];
+const daysUntilNext = differenceInDays(new Date(nextMilestone.date), now);
+
 export default function AcademicCalendar() {
+  const [timelineOffset, setTimelineOffset] = useState(0);
+
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
     queryFn: () => base44.entities.Assignment.list("-due_date", 200),
   });
 
-  const upcomingExams = assignments
-    .filter(a => (a.type === "exam" || a.type === "quiz") && a.due_date && isAfter(new Date(a.due_date), new Date()))
-    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
-    .slice(0, 5);
-
-  const typeColors = {
-    start: "bg-green-100 text-green-700",
-    end: "bg-primary/10 text-primary",
-    critical: "bg-red-100 text-red-700",
-    break: "bg-amber-100 text-amber-700",
-    exam: "bg-secondary/10 text-secondary",
-    info: "bg-muted text-muted-foreground",
-  };
+  const visibleMilestones = milestones.slice(timelineOffset, timelineOffset + 4);
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Academic Calendar</h1>
-        <p className="text-muted-foreground mt-1">Spring 2026 semester overview</p>
+    <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+
+      {/* Page Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-extrabold">Academic Calendar & Deadlines</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Spring Semester 2026 • {WEEKS_REMAINING} Weeks Remaining
+          </p>
+        </div>
+        <Button variant="outline" className="rounded-xl gap-2 text-primary border-primary/30">
+          <RefreshCw className="h-4 w-4" /> Sync Calendar
+        </Button>
       </div>
 
-      {/* Semester Progress */}
-      <Card className="p-6 rounded-2xl">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Semester Progress</h3>
-          <span className="text-sm font-medium text-primary">{SEMESTER_PROGRESS}%</span>
-        </div>
-        <Progress value={SEMESTER_PROGRESS} className="h-3 rounded-full mb-2" />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{format(SEMESTER_START, "MMM d")}</span>
-          <span>{differenceInDays(SEMESTER_END, new Date())} days remaining</span>
-          <span>{format(SEMESTER_END, "MMM d")}</span>
-        </div>
-      </Card>
+      {/* Top Two-Column Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Timeline */}
-        <div className="lg:col-span-2 space-y-3">
-          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Semester Timeline</h3>
-          {milestones.map((m, i) => {
-            const isPast = isBefore(new Date(m.date), new Date()) && !isAfter(new Date(m.date), new Date());
-            return (
-              <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-                <div className={`flex items-center gap-4 p-4 rounded-2xl ${isPast ? "bg-muted/50" : "bg-card border border-border/60"}`}>
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs font-bold">{format(new Date(m.date), "MMM")}</span>
-                    <span className="text-lg font-bold">{format(new Date(m.date), "d")}</span>
-                  </div>
-                  <div className="h-10 w-[2px] bg-border rounded-full" />
-                  <div className="flex-1">
-                    <p className={`text-sm font-medium ${isPast ? "text-muted-foreground" : ""}`}>{m.label}</p>
-                  </div>
-                  <Badge className={`text-[10px] ${typeColors[m.type]}`}>{m.type}</Badge>
+        {/* Next Milestone Card */}
+        <div className="bg-white border rounded-2xl p-6 relative overflow-hidden">
+          <span className="inline-block text-[10px] font-bold tracking-widest uppercase bg-primary/10 text-primary px-2.5 py-1 rounded-full mb-4">
+            Next Milestone
+          </span>
+          <h2 className="text-4xl font-extrabold leading-tight mb-1">
+            {daysUntilNext} Days Until
+          </h2>
+          <h2 className="text-4xl font-extrabold text-primary leading-tight mb-6">
+            {nextMilestone.label}
+          </h2>
+
+          {/* Decorative ring */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 h-36 w-36 rounded-full border-[12px] border-primary/10 opacity-60" />
+
+          <div className="mt-2">
+            <div className="flex items-center justify-between text-sm mb-1.5">
+              <span className="font-medium text-muted-foreground">Semester Progress</span>
+              <span className="font-bold text-primary">{SEMESTER_PROGRESS}%</span>
+            </div>
+            <Progress value={SEMESTER_PROGRESS} className="h-2.5 rounded-full" />
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              Spring Break ends Mar 16 • Final exams conclude May 15
+            </p>
+          </div>
+        </div>
+
+        {/* Critical Deadlines */}
+        <div className="bg-white border rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold">Critical Deadlines</h3>
+            <span className="text-muted-foreground text-lg">···</span>
+          </div>
+          <div className="space-y-3">
+            {criticalDeadlines.map((d, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-border/60">
+                <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${d.iconBg}`}>
+                  <d.icon className={`h-4 w-4 ${d.iconColor}`} />
                 </div>
-              </motion.div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold leading-tight">{d.label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{d.detail}</p>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap ${d.badgeColor}`}>
+                  {d.urgency}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Semester Timeline */}
+      <div className="bg-white border rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold">Semester Timeline</h3>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setTimelineOffset(Math.max(0, timelineOffset - 1))}
+              className="h-8 w-8 rounded-full border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
+              disabled={timelineOffset === 0}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setTimelineOffset(Math.min(milestones.length - 4, timelineOffset + 1))}
+              className="h-8 w-8 rounded-full border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
+              disabled={timelineOffset >= milestones.length - 4}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 gap-4 relative">
+          {/* Connecting line */}
+          <div className="absolute top-[52px] left-[12.5%] right-[12.5%] h-0.5 bg-border" />
+
+          {visibleMilestones.map((m, i) => {
+            const isActive = m.type === "active";
+            const isDone   = m.type === "done";
+            return (
+              <div key={i} className="flex flex-col items-center text-center">
+                <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                  {format(new Date(m.date), "MMMM").toUpperCase()}
+                </p>
+                <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3
+                  ${isDone   ? "bg-primary border-primary" : ""}
+                  ${isActive ? "bg-white border-primary border-[3px]" : ""}
+                  ${!isDone && !isActive ? "bg-white border-border" : ""}
+                `}>
+                  {isDone && <div className="h-2 w-2 rounded-full bg-white" />}
+                </div>
+                <p className={`text-sm font-bold leading-tight ${isActive ? "text-primary" : ""}`}>{m.label}</p>
+                <p className={`text-xs mt-0.5 ${isDone ? "text-primary font-medium" : "text-muted-foreground"}`}>{m.sub}</p>
+              </div>
             );
           })}
         </div>
+      </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          <Card className="p-5 rounded-2xl">
-            <div className="flex items-center gap-2 mb-3">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Countdown</h4>
-            </div>
-            <p className="text-4xl font-bold text-primary">{differenceInDays(SEMESTER_END, new Date())}d</p>
-            <p className="text-sm text-muted-foreground mt-1">until semester ends</p>
-          </Card>
+      {/* Bottom Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        {/* Planning Card */}
+        <div className="bg-white border rounded-2xl p-5 flex gap-4 items-start">
+          <img
+            src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=100&h=100&fit=crop"
+            alt="Planning"
+            className="h-16 w-16 rounded-xl object-cover flex-shrink-0"
+          />
+          <div>
+            <p className="font-bold text-base">Planning for Next Semester?</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
+              Course registration for Summer 2026 begins soon. Review your degree audit today.
+            </p>
+            <Link to="/courses" className="text-sm text-primary font-semibold hover:underline">
+              Open Degree Audit →
+            </Link>
+          </div>
+        </div>
 
-          <Card className="p-5 rounded-2xl">
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Upcoming Exams</h4>
-            {upcomingExams.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No exams scheduled</p>
-            ) : (
-              <div className="space-y-2">
-                {upcomingExams.map(e => (
-                  <div key={e.id} className="flex items-center justify-between p-2 rounded-xl bg-muted/50">
-                    <span className="text-sm truncate">{e.name}</span>
-                    <span className="text-xs text-muted-foreground">{format(new Date(e.due_date), "MMM d")}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          <Button variant="outline" className="w-full rounded-xl">
-            <Sparkles className="h-4 w-4 mr-2" /> AI Schedule Sync
-          </Button>
+        {/* AI Schedule Sync */}
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex gap-4 items-center">
+          <div className="h-14 w-14 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow">
+            <Sparkles className="h-6 w-6 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-primary text-base">AI Study Schedule Sync</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-3">
+              Our AI can automatically generate a study breakdown based on these calendar milestones.
+            </p>
+            <Link to="/coach">
+              <Button size="sm" className="rounded-xl bg-primary hover:bg-primary/90">Generate Schedule</Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
