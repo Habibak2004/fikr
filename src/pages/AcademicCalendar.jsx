@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Sparkles, AlertTriangle, CalendarClock, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { RefreshCw, Sparkles, AlertTriangle, CalendarClock, Info } from "lucide-react";
 import { format, differenceInDays, isAfter, isBefore, differenceInWeeks } from "date-fns";
 import { Link } from "react-router-dom";
 
@@ -16,11 +15,13 @@ const SEMESTER_PROGRESS = Math.min(100, Math.round((ELAPSED_DAYS / TOTAL_DAYS) *
 const WEEKS_REMAINING = Math.max(0, differenceInWeeks(SEMESTER_END, now));
 
 const milestones = [
-  { date: "2026-01-19", label: "Semester Start",        sub: "Completed",   type: "done" },
-  { date: "2026-02-06", label: "Add/Drop Ends",          sub: "Completed",   type: "done" },
-  { date: "2026-03-09", label: "Midterm Week",           sub: "Active Now",  type: "active" },
-  { date: "2026-03-27", label: "Reading Days",           sub: "Mar 27–31",   type: "upcoming" },
-  { date: "2026-05-08", label: "Final Exams",            sub: "May 8–15",    type: "upcoming" },
+  { date: "2026-01-19", label: "Semester Start",   sub: "Completed",  type: "done" },
+  { date: "2026-02-06", label: "Add/Drop Ends",    sub: "Completed",  type: "done" },
+  { date: "2026-03-09", label: "Midterm Week",     sub: "Active Now", type: "active" },
+  { date: "2026-03-16", label: "Spring Break",     sub: "Mar 16–20",  type: "upcoming" },
+  { date: "2026-04-06", label: "Registration",     sub: "Opens",      type: "upcoming" },
+  { date: "2026-05-04", label: "Last Day Classes", sub: "May 4",      type: "upcoming" },
+  { date: "2026-05-08", label: "Final Exams",      sub: "May 8–15",   type: "upcoming" },
 ];
 
 const criticalDeadlines = [
@@ -34,14 +35,10 @@ const nextMilestone = milestones.find(m => isAfter(new Date(m.date), now)) || mi
 const daysUntilNext = differenceInDays(new Date(nextMilestone.date), now);
 
 export default function AcademicCalendar() {
-  const [timelineOffset, setTimelineOffset] = useState(0);
-
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
     queryFn: () => base44.entities.Assignment.list("-due_date", 200),
   });
-
-  const visibleMilestones = milestones.slice(timelineOffset, timelineOffset + 4);
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
@@ -119,33 +116,18 @@ export default function AcademicCalendar() {
       <div className="bg-white border rounded-2xl p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold">Semester Timeline</h3>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setTimelineOffset(Math.max(0, timelineOffset - 1))}
-              className="h-8 w-8 rounded-full border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
-              disabled={timelineOffset === 0}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setTimelineOffset(Math.min(milestones.length - 4, timelineOffset + 1))}
-              className="h-8 w-8 rounded-full border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
-              disabled={timelineOffset >= milestones.length - 4}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+            </div>
 
-        <div className="grid grid-cols-4 gap-4 relative">
+        <div className="overflow-x-auto -mx-6 px-6">
+        <div className="flex gap-0 relative min-w-max">
           {/* Connecting line */}
-          <div className="absolute top-[52px] left-[12.5%] right-[12.5%] h-0.5 bg-border" />
+          <div className="absolute top-[52px] left-[40px] right-[40px] h-0.5 bg-border" />
 
-          {visibleMilestones.map((m, i) => {
+          {milestones.map((m, i) => {
             const isActive = m.type === "active";
             const isDone   = m.type === "done";
             return (
-              <div key={i} className="flex flex-col items-center text-center">
+              <div key={i} className="flex flex-col items-center text-center w-36 flex-shrink-0">
                 <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                   {format(new Date(m.date), "MMMM").toUpperCase()}
                 </p>
@@ -161,6 +143,7 @@ export default function AcademicCalendar() {
               </div>
             );
           })}
+        </div>
         </div>
       </div>
 
