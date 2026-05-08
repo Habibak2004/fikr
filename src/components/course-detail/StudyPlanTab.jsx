@@ -39,11 +39,20 @@ export default function StudyPlanTab({ course }) {
 
   const generatePlan = async (fileUrl) => {
     setGenerating(true);
+    const resolvedFileUrl = fileUrl || course.syllabus_url;
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are Fikr Intelligence, an AI study planner. Analyze this syllabus and generate a weekly study plan.
-        ${syllabusText ? `Syllabus text: ${syllabusText}` : `Syllabus file: ${fileUrl || course.syllabus_url}`}
-        Course: ${course.name} (${course.code})
-        Generate a 12-week study plan with 3-4 sessions per week.`,
+      prompt: `You are Fikr Intelligence, an AI study planner. Carefully analyze the provided syllabus ${resolvedFileUrl ? "(attached as a file)" : "text"} for the course "${course.name}" (${course.code}).
+
+${syllabusText ? `Syllabus text:\n${syllabusText}` : ""}
+
+From the syllabus, extract:
+1. All assignments, exams, quizzes, projects, and deadlines with their due dates and grade weights.
+2. Key topics and chapters covered each week.
+
+Then generate a realistic 12-week study plan with 3-4 sessions per week, aligned to the course schedule and deadlines found in the syllabus.
+
+Important: base the session titles and topics directly on what is in the syllabus.`,
+      ...(resolvedFileUrl ? { file_urls: [resolvedFileUrl] } : {}),
       response_json_schema: {
         type: "object",
         properties: {
