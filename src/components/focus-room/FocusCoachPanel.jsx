@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Send, Loader2, MessageSquare, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sparkles, Send, Loader2, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
+import { format } from "date-fns";
 
 export default function FocusCoachPanel({ selectedCourse, courses }) {
   const [conversation, setConversation] = useState(null);
@@ -16,20 +19,34 @@ export default function FocusCoachPanel({ selectedCourse, courses }) {
   const [initializing, setInitializing] = useState(false);
   const [userGoal, setUserGoal] = useState("");
   const [showGoalInput, setShowGoalInput] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState("");
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
   const courseName = courses.find(c => c.id === selectedCourse)?.name;
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["assignments", selectedCourse],
+    queryFn: () => selectedCourse
+      ? base44.entities.Assignment.filter({ course_id: selectedCourse }, "-due_date", 50)
+      : base44.entities.Assignment.list("-due_date", 50),
+    enabled: showGoalInput,
+  });
+
+  const pendingAssignments = assignments.filter(a => !a.completed && a.status !== "submitted" && a.status !== "graded");
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const openGoalInput = () => {
+    setSelectedAssignment("");
+    setUserGoal("");
     setShowGoalInput(true);
   };
 
   const startSession = async (goal) => {
+    const pickedAssignment = pendingAssignments.find(a => a.id === selectedAssignment);
     setShowGoalInput(false);
     setOpen(true);
     setInitializing(true);
@@ -43,13 +60,21 @@ export default function FocusCoachPanel({ selectedCourse, courses }) {
       setMessages(data.messages || []);
     });
 
-    const goalPart = goal?.trim()
-      ? ` I specifically want to work on: "${goal.trim()}".`
-      : "";
+    let assignmentContext = "";
+    if (pickedAssignment) {
+      assignmentContext = ` I'm specifically working on the assignment: "${pickedAssignment.name}".`
+        + (pickedAssignment.type ? ` Type: ${pickedAssignment.type}.` : "")
+        + (pickedAssignment.due_date ? ` Due: ${format(new Date(pickedAssignment.due_date), "MMM d, yyyy")}.` : "")
+        + (pickedAssignment.weight ? ` Worth ${pickedAssignment.weight}% of my grade.` : "")
+        + (pickedAssignment.priority ? ` Priority: ${pickedAssignment.priority}.` : "")
+        + (pickedAssignment.notes ? ` Notes from me: "${pickedAssignment.notes}".` : "");
+    }
+
+    const goalPart = goal?.trim() ? ` I also want to: "${goal.trim()}".` : "";
 
     const contextMsg = courseName
-      ? `I'm about to start a 25-minute Pomodoro session for "${courseName}".${goalPart} Please analyze my pending assignments and study materials for this course and give me a prioritized agenda for this session.`
-      : `I'm about to start a 25-minute Pomodoro session.${goalPart} Please look at all my upcoming assignments and give me the top 2–3 things I should focus on right now.`;
+      ? `I'm about to start a 25-minute Pomodoro session for "${courseName}".${assignmentContext}${goalPart} Please give me a focused, actionable agenda for this session.`
+      : `I'm about to start a 25-minute Pomodoro session.${assignmentContext}${goalPart} Please look at my upcoming assignments and give me the top 2–3 things to focus on right now.`;
 
     await base44.agents.addMessage(conv, { role: "user", content: contextMsg });
     setInitializing(false);
@@ -104,23 +129,50 @@ export default function FocusCoachPanel({ selectedCourse, courses }) {
                 <span className="text-sm font-semibold text-primary">Focus Coach</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                What do you want to work on this session? <span className="text-foreground/60">(optional — leave blank and I'll suggest based on your tasks)</span>
+                What do you want to work on this session? <span className="text-foreground/60">(optional)</span>
               </p>
-              <Input
-                autoFocus
-                value={userGoal}
-                onChange={e => setUserGoal(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && startSession(userGoal)}
-                placeholder="e.g. Review Chapter 4, finish the lab report…"
-                className="rounded-xl text-sm"
-              />
+
+              {pendingAssignments.length > 0 && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Pick an assignment</label>
+                  <Select value={selectedAssignment} onValueChange={setSelectedAssignment}>
+                    <SelectTrigger className="rounded-xl text-sm">
+                      <SelectValue placeholder="Select an assignment (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pendingAssignments.map(a => (
+                        <SelectItem key={a.id} value={a.id}>
+                          <span>{a.name}</span>
+                          {a.due_date && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              — due {format(new Date(a.due_date), "MMM d")}
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Or describe what you want to do</label>
+                <Input
+                  autoFocus={pendingAssignments.length === 0}
+                  value={userGoal}
+                  onChange={e => setUserGoal(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && startSession(userGoal)}
+                  placeholder="e.g. Review Chapter 4, finish the lab report…"
+                  className="rounded-xl text-sm"
+                />
+              </div>
               <div className="flex gap-2">
                 <Button
                   onClick={() => startSession(userGoal)}
                   className="flex-1 rounded-xl bg-primary hover:bg-primary/90 text-sm"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  {userGoal.trim() ? "Plan my session" : "Suggest what to study"}
+                  {selectedAssignment || userGoal.trim() ? "Plan my session" : "Suggest what to study"}
                 </Button>
                 <Button
                   onClick={() => setShowGoalInput(false)}
