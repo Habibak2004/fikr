@@ -1,7 +1,8 @@
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Clock, TrendingUp, FileText, Brain, Headphones } from "lucide-react";
-import { differenceInDays, isAfter } from "date-fns";
+import { Progress } from "@/components/ui/progress";
+import { Clock, TrendingUp, FileText, Brain, Headphones, CalendarClock } from "lucide-react";
+import { differenceInDays, isAfter, format } from "date-fns";
+import { Link } from "react-router-dom";
 
 export default function CourseSidebar({ course, assignments }) {
   const nextDeadline = assignments
@@ -10,11 +11,10 @@ export default function CourseSidebar({ course, assignments }) {
 
   const daysLeft = nextDeadline ? differenceInDays(new Date(nextDeadline.due_date), new Date()) : null;
 
-  // Calculate grade projection
   const graded = assignments.filter(a => a.grade != null && a.weight);
   const totalWeight = graded.reduce((s, a) => s + (a.weight || 0), 0);
   const weightedSum = graded.reduce((s, a) => s + ((a.grade || 0) * (a.weight || 0) / 100), 0);
-  const projection = totalWeight > 0 ? Math.round(weightedSum / totalWeight * 100) : null;
+  const projectionPct = totalWeight > 0 ? Math.round(weightedSum / totalWeight * 100) : null;
 
   const getLetterGrade = (p) => {
     if (p >= 93) return "A";
@@ -28,80 +28,78 @@ export default function CourseSidebar({ course, assignments }) {
     return "D";
   };
 
+  const pointsEarned = graded.reduce((s, a) => s + (a.grade || 0), 0);
+  const pointsTotal = graded.length * 100;
+
   return (
     <div className="space-y-4">
-      {/* Next Deadline */}
-      <Card className="p-5 rounded-2xl">
-        <div className="flex items-center gap-2 mb-3">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Next Deadline</h4>
+      {/* Next Major Deadline — bold dark card */}
+      {nextDeadline ? (
+        <div className="rounded-2xl bg-primary p-5 text-white">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-white/60 mb-2">Next Major Deadline</p>
+          <h3 className="text-xl font-extrabold leading-tight mb-1">{nextDeadline.name}</h3>
+          {nextDeadline.due_date && (
+            <p className="text-xs text-white/70 mb-3">{format(new Date(nextDeadline.due_date), "MMM dd, yyyy")}</p>
+          )}
+          <div className="inline-flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1 text-xs font-semibold">
+            <Clock className="h-3 w-3" />
+            {daysLeft === 0 ? "Due Today" : `${daysLeft} Days Left`}
+          </div>
         </div>
-        {nextDeadline ? (
-          <>
-            <p className="text-3xl font-bold text-primary">{daysLeft}d</p>
-            <p className="text-sm text-muted-foreground mt-1">{nextDeadline.name}</p>
-            <Badge className={`mt-2 text-[10px] ${daysLeft <= 1 ? "bg-red-100 text-red-700" : daysLeft <= 3 ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"}`}>
-              {daysLeft <= 1 ? "Urgent" : daysLeft <= 3 ? "Soon" : "On Track"}
-            </Badge>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">No upcoming deadlines</p>
-        )}
-      </Card>
+      ) : (
+        <div className="rounded-2xl bg-muted p-5">
+          <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-1">Next Major Deadline</p>
+          <p className="text-sm text-muted-foreground">No upcoming deadlines 🎉</p>
+        </div>
+      )}
 
       {/* Grade Projection */}
-      <Card className="p-5 rounded-2xl">
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Grade Projection</h4>
-        </div>
-        {projection != null ? (
+      <div className="bg-white border rounded-2xl p-5">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-3">Grade Projection</p>
+        {projectionPct != null ? (
           <>
-            <p className="text-3xl font-bold">{getLetterGrade(projection)}</p>
-            <p className="text-sm text-muted-foreground mt-1">{projection}% weighted average</p>
-            <div className="flex items-center gap-1 mt-2 text-green-600 text-xs font-medium">
-              <TrendingUp className="h-3 w-3" /> Trending up
-            </div>
+            <p className="text-xs text-muted-foreground mb-1">Current Estimated Grade</p>
+            <p className="text-4xl font-extrabold mb-1">{getLetterGrade(projectionPct)}</p>
+            <p className="text-xs text-green-600 font-medium mb-3">+{projectionPct}% weighted avg</p>
+            {pointsTotal > 0 && (
+              <>
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-muted-foreground">Points Earned</span>
+                  <span className="font-semibold">{pointsEarned} / {pointsTotal}</span>
+                </div>
+                <Progress value={(pointsEarned / pointsTotal) * 100} className="h-1.5 rounded-full" />
+              </>
+            )}
           </>
         ) : (
           <p className="text-sm text-muted-foreground">Enter grades to see projection</p>
         )}
-      </Card>
-
-      {/* Weights Breakdown */}
-      {course.weights && course.weights.length > 0 && (
-        <Card className="p-5 rounded-2xl">
-          <div className="flex items-center gap-2 mb-3">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Grade Weights</h4>
-          </div>
-          <div className="space-y-2">
-            {course.weights.map((w, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <span className="text-sm">{w.category}</span>
-                <span className="text-sm font-medium">{w.weight}%</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+      </div>
 
       {/* Study Aids */}
-      <Card className="p-5 rounded-2xl">
-        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Study Aids</h4>
-        <div className="space-y-2">
+      <div className="bg-white border rounded-2xl p-5">
+        <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-3">Study Aids</p>
+        <div className="divide-y">
           {[
-            { icon: FileText, label: "Formula Sheets" },
-            { icon: Headphones, label: "Recordings" },
-            { icon: Brain, label: "AI Quiz" },
+            { icon: FileText, label: "Formula Sheet", sub: "PDF", href: "/materials" },
+            { icon: Headphones, label: "Lecture Recordings", sub: "Videos", href: "/materials" },
+            { icon: Brain, label: "AI Practice Quiz", sub: "Interactive", href: "/practice" },
           ].map((aid) => (
-            <button key={aid.label} className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted transition-colors text-left">
-              <aid.icon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{aid.label}</span>
-            </button>
+            <div key={aid.label} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <aid.icon className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{aid.label}</p>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{aid.sub}</p>
+                </div>
+              </div>
+              <span className="text-muted-foreground text-xs">›</span>
+            </div>
           ))}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
