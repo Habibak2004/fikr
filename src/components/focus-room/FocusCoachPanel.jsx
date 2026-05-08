@@ -1,54 +1,32 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Send, Loader2, X, ChevronDown, ChevronUp } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { Sparkles, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 
-// Parse numbered steps out of any assistant message
-function extractSteps(text) {
-  if (!text) return [];
-  const lines = text.split("\n");
-  const steps = [];
-  const stepRegex = /^[\*\-]?\s*(?:\*\*)?(\d+[\.\)])\s*(?:\*\*)?(.+?)(?:\*\*)?\s*[:—\-]?\s*(.*)/;
-  const boldHeaderRegex = /^\*\*(.+?)\*\*[:\s]+(.*)/;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const m = stepRegex.exec(line);
-    if (m) {
-      const titleRaw = m[2].replace(/\*\*/g, "").trim();
-      const detailRaw = m[3].replace(/\*\*/g, "").trim();
-      const durationMatch = (titleRaw + " " + detailRaw).match(/\((\d+[\-–]\d+\s*min|\d+\s*min)\)/i);
-      steps.push({
-        title: titleRaw.replace(/\(.*?\)/g, "").trim(),
-        detail: detailRaw || undefined,
-        duration: durationMatch ? durationMatch[1] : undefined,
-      });
+function parseTaskJSON(messages) {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "assistant" || !m.content) continue;
+    const jsonMatch = m.content.match(/\{[\s\S]*"sessionGoal"[\s\S]*\}/);
+    if (jsonMatch) {
+      try { return JSON.parse(jsonMatch[0]); } catch { /* continue */ }
     }
   }
-  return steps;
+  return null;
 }
 
-export default function FocusCoachPanel({ selectedCourse, courses, onStepsGenerated, onStepActivated }) {
+export default function FocusCoachPanel({ selectedCourse, courses, onPlanReady }) {
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [initializing, setInitializing] = useState(false);
   const [userGoal, setUserGoal] = useState("");
-  const [showGoalInput, setShowGoalInput] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState("");
-  const [collapsed, setCollapsed] = useState(false);
-  const bottomRef = useRef(null);
-  const inputRef = useRef(null);
+  const [phase, setPhase] = useState("idle"); // idle | setup | loading | done
 
   const courseName = courses.find(c => c.id === selectedCourse)?.name;
 
@@ -57,39 +35,16 @@ export default function FocusCoachPanel({ selectedCourse, courses, onStepsGenera
     queryFn: () => selectedCourse
       ? base44.entities.Assignment.filter({ course_id: selectedCourse }, "-due_date", 50)
       : base44.entities.Assignment.list("-due_date", 50),
-    enabled: showGoalInput,
+    enabled: phase === "setup",
   });
 
-  const pendingAssignments = assignments.filter(a => !a.completed && a.status !== "submitted" && a.status !== "graded");
+  const pendingAssignments = assignments.filter(
+    a => !a.completed && a.status !== "submitted" && a.status !== "graded"
+  );
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Extract steps from latest assistant message and pass up
-  useEffect(() => {
-    const assistantMsgs = messages.filter(m => m.role === "assistant" && m.content);
-    if (assistantMsgs.length === 0) return;
-    const latest = assistantMsgs[assistantMsgs.length - 1].content;
-    const parsed = extractSteps(latest);
-    if (parsed.length > 0) {
-      onStepsGenerated(parsed);
-      onStepActivated(0);
-    }
-  }, [messages]);
-
-  const openGoalInput = () => {
-    setSelectedAssignment("");
-    setUserGoal("");
-    setShowGoalInput(true);
-  };
-
-  const startSession = async (goal) => {
+  const startSession = async () => {
     const pickedAssignment = pendingAssignments.find(a => a.id === selectedAssignment);
-    setShowGoalInput(false);
-    setOpen(true);
-    setCollapsed(false);
-    setInitializing(true);
+    setPhase("loading");
 
     const conv = await base44.agents.createConversation({
       agent_name: "focus_coach",
@@ -97,200 +52,155 @@ export default function FocusCoachPanel({ selectedCourse, courses, onStepsGenera
     });
     setConversation(conv);
 
-    base44.agents.subscribeToConversation(conv.id, (data) => {
-      setMessages(data.messages || []);
+    const unsubscribe = base44.agents.subscribeToConversation(conv.id, (data) => {
+      const msgs = data.messages || [];
+      setMessages(msgs);
+      const parsed = parseTaskJSON(msgs);
+      if (parsed?.tasks?.length) {
+        setPhase("done");
+        onPlanReady(parsed);
+        unsubscribe();
+      }
     });
 
     let assignmentContext = "";
     if (pickedAssignment) {
-      assignmentContext = ` I'm working on: "${pickedAssignment.name}".`
-        + (pickedAssignment.description ? ` Details: ${pickedAssignment.description}.` : "")
+      assignmentContext = ` Working on: "${pickedAssignment.name}".`
+        + (pickedAssignment.description ? ` Context: ${pickedAssignment.description}.` : "")
         + (pickedAssignment.type ? ` Type: ${pickedAssignment.type}.` : "")
-        + (pickedAssignment.due_date ? ` Due: ${format(new Date(pickedAssignment.due_date), "MMM d, yyyy")}.` : "")
-        + (pickedAssignment.weight ? ` Worth ${pickedAssignment.weight}% of my grade.` : "");
+        + (pickedAssignment.due_date ? ` Due: ${format(new Date(pickedAssignment.due_date), "MMM d")}.` : "")
+        + (pickedAssignment.weight ? ` Worth ${pickedAssignment.weight}%.` : "");
     }
 
-    const goalPart = goal?.trim() ? ` My goal: "${goal.trim()}".` : "";
+    const goalPart = userGoal.trim() ? ` Goal: "${userGoal.trim()}".` : "";
+    const courseCtx = courseName ? ` Course: "${courseName}".` : "";
 
-    const contextMsg = courseName
-      ? `I'm starting a focus session for "${courseName}".${assignmentContext}${goalPart} Break my session into 3–5 clear numbered steps I can follow, each with a short description and estimated time. Format each step as: 1. Step Title (X min) — brief description.`
-      : `I'm starting a focus session.${assignmentContext}${goalPart} Look at my upcoming assignments and break the session into 3–5 clear numbered steps with estimated times. Format each step as: 1. Step Title (X min) — brief description.`;
+    const prompt = `Generate a focused session plan for me.${courseCtx}${assignmentContext}${goalPart} Return ONLY the JSON object with sessionGoal and tasks array. No explanation, no markdown, just the raw JSON.`;
 
-    await base44.agents.addMessage(conv, { role: "user", content: contextMsg });
-    setInitializing(false);
+    await base44.agents.addMessage(conv, { role: "user", content: prompt });
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || !conversation || loading) return;
-    const text = input.trim();
-    setInput("");
-    setLoading(true);
-    await base44.agents.addMessage(conversation, { role: "user", content: text });
-    setLoading(false);
-    inputRef.current?.focus();
+  const regenerate = () => {
+    setPhase("setup");
+    setMessages([]);
+    setConversation(null);
+    onPlanReady(null);
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
-  };
+  if (phase === "idle") {
+    return (
+      <motion.button
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={() => setPhase("setup")}
+        className="w-full flex items-center gap-3 px-5 py-4 bg-white/70 backdrop-blur-sm border border-stone-200/60 rounded-2xl shadow-sm hover:bg-white/90 hover:border-primary/30 transition-all group text-left"
+      >
+        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Sparkles className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-stone-700 group-hover:text-primary transition-colors">
+            Build my focus plan
+          </p>
+          <p className="text-xs text-stone-400 mt-0.5">AI breaks your session into small, concrete tasks</p>
+        </div>
+      </motion.button>
+    );
+  }
 
-  const visibleMessages = messages.filter(m => m.role !== "system" && m.content);
-  const isStreaming = messages.some(m => m.role === "assistant" && !m.content && m.tool_calls?.length);
+  if (phase === "loading") {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="bg-white/80 rounded-2xl border border-stone-200/60 p-8 flex flex-col items-center gap-4 text-center"
+      >
+        <div className="relative h-12 w-12">
+          <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
+          <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-stone-700">Building your focus plan…</p>
+          <p className="text-xs text-stone-400 mt-1">Breaking your goals into small, actionable steps</p>
+        </div>
+      </motion.div>
+    );
+  }
 
+  if (phase === "done") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-primary/5 border border-primary/20 rounded-2xl px-5 py-4 flex items-center justify-between"
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold text-primary">Plan ready! Check your task cards →</p>
+        </div>
+        <button onClick={regenerate} className="text-xs text-stone-400 hover:text-primary underline">
+          Regenerate
+        </button>
+      </motion.div>
+    );
+  }
+
+  // phase === "setup"
   return (
-    <>
-      {!open && !showGoalInput && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <button
-            onClick={openGoalInput}
-            className="w-full flex items-center gap-3 px-5 py-4 bg-white/70 backdrop-blur-sm border border-stone-200/60 rounded-2xl shadow-sm hover:bg-white/90 hover:border-primary/30 transition-all group"
-          >
-            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-semibold text-stone-700 group-hover:text-primary transition-colors">Ask Focus Coach to plan my session</p>
-              <p className="text-xs text-stone-400">Break it into steps & build a roadmap</p>
-            </div>
-          </button>
-        </motion.div>
-      )}
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 10 }}
+        className="bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/20 shadow-sm p-5 space-y-4"
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className="text-sm font-bold text-primary">Focus Coach</span>
+        </div>
+        <p className="text-sm text-stone-500 leading-relaxed">
+          Tell me what you're working on and I'll build a concrete, step-by-step plan — no vague advice.
+        </p>
 
-      <AnimatePresence>
-        {showGoalInput && !open && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="w-full">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/20 shadow-sm p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-primary">Focus Coach</span>
-              </div>
-              <p className="text-sm text-stone-500">What do you want to work on? I'll break it into steps.</p>
-
-              {pendingAssignments.length > 0 && (
-                <div>
-                  <label className="text-xs font-semibold text-stone-400 mb-1.5 block">Pick an assignment</label>
-                  <Select value={selectedAssignment} onValueChange={setSelectedAssignment}>
-                    <SelectTrigger className="rounded-xl text-sm border-stone-200">
-                      <SelectValue placeholder="Select an assignment (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pendingAssignments.map(a => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}{a.due_date && ` — due ${format(new Date(a.due_date), "MMM d")}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div>
-                <label className="text-xs font-semibold text-stone-400 mb-1.5 block">Or describe what you want to do</label>
-                <Input
-                  autoFocus={pendingAssignments.length === 0}
-                  value={userGoal}
-                  onChange={e => setUserGoal(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && startSession(userGoal)}
-                  placeholder="e.g. Review Chapter 4, finish the lab report…"
-                  className="rounded-xl text-sm border-stone-200"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button onClick={() => startSession(userGoal)} className="flex-1 rounded-xl bg-primary hover:bg-primary/90 text-sm">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {selectedAssignment || userGoal.trim() ? "Plan my session" : "Suggest what to study"}
-                </Button>
-                <Button onClick={() => setShowGoalInput(false)} variant="ghost" className="rounded-xl text-sm">Cancel</Button>
-              </div>
-            </div>
-          </motion.div>
+        {pendingAssignments.length > 0 && (
+          <div>
+            <label className="text-xs font-bold text-stone-400 uppercase tracking-wide mb-1.5 block">Pick an assignment</label>
+            <Select value={selectedAssignment} onValueChange={setSelectedAssignment}>
+              <SelectTrigger className="rounded-xl text-sm border-stone-200">
+                <SelectValue placeholder="Select assignment (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {pendingAssignments.map(a => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}{a.due_date && ` — due ${format(new Date(a.due_date), "MMM d")}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }} className="w-full">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden border border-primary/20 shadow-sm">
-              {/* Coach header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100 bg-primary/5">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-primary">Focus Coach</span>
-                  {courseName && <span className="text-xs text-stone-400">— {courseName}</span>}
-                </div>
-                <div className="flex gap-1">
-                  <button onClick={() => setCollapsed(c => !c)} className="text-stone-400 hover:text-stone-600 p-1">
-                    {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-                  </button>
-                  <button onClick={() => setOpen(false)} className="text-stone-400 hover:text-stone-600 p-1">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+        <div>
+          <label className="text-xs font-bold text-stone-400 uppercase tracking-wide mb-1.5 block">Or describe what you need to do</label>
+          <Input
+            autoFocus
+            value={userGoal}
+            onChange={e => setUserGoal(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && startSession()}
+            placeholder="e.g. Prepare for Circuits midterm, finish lab report section 3…"
+            className="rounded-xl text-sm border-stone-200"
+          />
+        </div>
 
-              {!collapsed && (
-                <>
-                  <div className="h-64 overflow-y-auto p-4 space-y-3">
-                    {initializing && (
-                      <div className="flex items-center gap-2 text-stone-400 text-sm">
-                        <Loader2 className="h-4 w-4 animate-spin" /> Building your plan…
-                      </div>
-                    )}
-
-                    {visibleMessages.map((msg, i) => (
-                      <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                        <div className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm ${
-                          msg.role === "user"
-                            ? "bg-primary text-white"
-                            : "bg-stone-100 text-stone-800"
-                        }`}>
-                          {msg.role === "user" ? (
-                            <p>{msg.content}</p>
-                          ) : (
-                            <ReactMarkdown className="prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-stone">
-                              {msg.content}
-                            </ReactMarkdown>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-
-                    {(loading || isStreaming) && (
-                      <div className="flex justify-start">
-                        <div className="bg-stone-100 rounded-2xl px-3 py-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-stone-400" />
-                        </div>
-                      </div>
-                    )}
-                    <div ref={bottomRef} />
-                  </div>
-
-                  <div className="flex items-center gap-2 p-3 border-t border-stone-100">
-                    <Input
-                      ref={inputRef}
-                      value={input}
-                      onChange={e => setInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Ask a follow-up…"
-                      className="rounded-xl text-sm border-stone-200"
-                      disabled={loading || initializing}
-                    />
-                    <Button
-                      onClick={handleSend}
-                      size="icon"
-                      className="rounded-xl shrink-0 bg-primary hover:bg-primary/90"
-                      disabled={!input.trim() || loading || initializing}
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+        <div className="flex gap-2">
+          <Button onClick={startSession} className="flex-1 rounded-xl bg-primary hover:bg-primary/90 text-sm">
+            <Sparkles className="h-4 w-4 mr-2" /> Build my plan
+          </Button>
+          <Button onClick={() => setPhase("idle")} variant="ghost" className="rounded-xl text-sm text-stone-500">
+            Cancel
+          </Button>
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
