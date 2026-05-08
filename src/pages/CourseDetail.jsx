@@ -35,6 +35,10 @@ export default function CourseDetail() {
     enabled: !!courseId,
   });
 
+  const completedCount = assignments.filter(a => a.completed || a.status === "graded" || a.status === "submitted").length;
+  const totalCount = assignments.length;
+  const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
   if (isLoading || !course) {
     return (
       <div className="p-8 flex items-center justify-center min-h-[60vh]">
@@ -78,12 +82,12 @@ export default function CourseDetail() {
         <div className="mt-8 bg-white border rounded-2xl p-5">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-sm">Course Progress</span>
-            <span className="text-primary font-bold text-sm">{course.progress || 0}%</span>
+            <span className="text-primary font-bold text-sm">{progress}%</span>
           </div>
-          <Progress value={course.progress || 0} className="h-2.5 rounded-full" />
+          <Progress value={progress} className="h-2.5 rounded-full" />
           <div className="flex items-center gap-4 mt-2.5 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary inline-block"></span>{Math.round((course.progress || 0) / 100 * 22)}/22 Topics Covered</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-muted-foreground/30 inline-block"></span>{22 - Math.round((course.progress || 0) / 100 * 22)} Remaining</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary inline-block"></span>{completedCount}/{totalCount} Assignments Completed</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-muted-foreground/30 inline-block"></span>{totalCount - completedCount} Remaining</span>
           </div>
         </div>
       </motion.div>
