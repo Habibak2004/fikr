@@ -6,12 +6,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Plus, BookOpen, Flame, Brain, ArrowRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Plus, BookOpen, Flame, Brain, ArrowRight, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import AddCourseModal from "@/components/courses/AddCourseModal";
 
 export default function Courses() {
   const [showAdd, setShowAdd] = useState(false);
+  const [editCourse, setEditCourse] = useState(null); // { id, name }
+  const [editName, setEditName] = useState("");
   const queryClient = useQueryClient();
 
   const { data: courses = [], isLoading } = useQuery({
@@ -22,6 +27,16 @@ export default function Courses() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Course.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["courses"] }); setShowAdd(false); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Course.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: ({ id, name }) => base44.entities.Course.update(id, { name }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["courses"] }); setEditCourse(null); },
   });
 
   const activeCourses = courses.filter(c => c.status === "active");
@@ -62,7 +77,7 @@ export default function Courses() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {courses.map((course, i) => (
-            <motion.div key={course.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+            <motion.div key={course.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="relative group">
               <Link to={`/courses/${course.id}`}>
                 <Card className="p-5 rounded-2xl hover:shadow-lg hover:border-primary/20 transition-all duration-300 cursor-pointer group h-full">
                   <div className="flex items-start justify-between mb-3">
@@ -94,6 +109,27 @@ export default function Courses() {
                   </div>
                 </Card>
               </Link>
+              {/* Actions menu — outside Link so clicks don't navigate */}
+              <div className="absolute top-3 right-3" onClick={e => e.preventDefault()}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="h-7 w-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-muted transition-all">
+                      <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => { setEditCourse(course); setEditName(course.name); }}>
+                      <Pencil className="h-4 w-4 mr-2" /> Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => deleteMutation.mutate(course.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -133,6 +169,31 @@ export default function Courses() {
       )}
 
       <AddCourseModal open={showAdd} onClose={() => setShowAdd(false)} onSave={(data) => createMutation.mutate(data)} />
+
+      <Dialog open={!!editCourse} onOpenChange={() => setEditCourse(null)}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Rename Course</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={editName}
+            onChange={e => setEditName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && renameMutation.mutate({ id: editCourse?.id, name: editName })}
+            className="rounded-xl"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditCourse(null)}>Cancel</Button>
+            <Button
+              onClick={() => renameMutation.mutate({ id: editCourse?.id, name: editName })}
+              disabled={!editName.trim() || renameMutation.isPending}
+              className="bg-primary hover:bg-primary/90 rounded-xl"
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
