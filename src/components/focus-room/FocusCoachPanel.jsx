@@ -14,6 +14,8 @@ export default function FocusCoachPanel({ selectedCourse, courses }) {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [initializing, setInitializing] = useState(false);
+  const [userGoal, setUserGoal] = useState("");
+  const [showGoalInput, setShowGoalInput] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -23,7 +25,12 @@ export default function FocusCoachPanel({ selectedCourse, courses }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const startSession = async () => {
+  const openGoalInput = () => {
+    setShowGoalInput(true);
+  };
+
+  const startSession = async (goal) => {
+    setShowGoalInput(false);
     setOpen(true);
     setInitializing(true);
     const conv = await base44.agents.createConversation({
@@ -32,19 +39,20 @@ export default function FocusCoachPanel({ selectedCourse, courses }) {
     });
     setConversation(conv);
 
-    const unsubscribe = base44.agents.subscribeToConversation(conv.id, (data) => {
+    base44.agents.subscribeToConversation(conv.id, (data) => {
       setMessages(data.messages || []);
     });
 
-    // Send the initial context prompt automatically
+    const goalPart = goal?.trim()
+      ? ` I specifically want to work on: "${goal.trim()}".`
+      : "";
+
     const contextMsg = courseName
-      ? `I'm about to start a 25-minute Pomodoro session for "${courseName}". Please analyze my pending assignments and study materials for this course and give me a prioritized agenda for this session.`
-      : `I'm about to start a 25-minute Pomodoro session. Please look at all my upcoming assignments and give me the top 2–3 things I should focus on right now.`;
+      ? `I'm about to start a 25-minute Pomodoro session for "${courseName}".${goalPart} Please analyze my pending assignments and study materials for this course and give me a prioritized agenda for this session.`
+      : `I'm about to start a 25-minute Pomodoro session.${goalPart} Please look at all my upcoming assignments and give me the top 2–3 things I should focus on right now.`;
 
     await base44.agents.addMessage(conv, { role: "user", content: contextMsg });
     setInitializing(false);
-
-    return unsubscribe;
   };
 
   const handleSend = async () => {
@@ -69,18 +77,63 @@ export default function FocusCoachPanel({ selectedCourse, courses }) {
 
   return (
     <>
-      {!open && (
+      {!open && !showGoalInput && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
           <Button
-            onClick={startSession}
+            onClick={openGoalInput}
             variant="outline"
             className="rounded-2xl h-12 px-6 border-primary/30 text-primary hover:bg-primary/5 gap-2"
           >
             <Sparkles className="h-4 w-4" />
-            Ask Focus Coach to prioritize my tasks
+            Ask Focus Coach to plan my session
           </Button>
         </motion.div>
       )}
+
+      <AnimatePresence>
+        {showGoalInput && !open && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="w-full"
+          >
+            <Card className="rounded-2xl p-4 border border-primary/20 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">Focus Coach</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                What do you want to work on this session? <span className="text-foreground/60">(optional — leave blank and I'll suggest based on your tasks)</span>
+              </p>
+              <Input
+                autoFocus
+                value={userGoal}
+                onChange={e => setUserGoal(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && startSession(userGoal)}
+                placeholder="e.g. Review Chapter 4, finish the lab report…"
+                className="rounded-xl text-sm"
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => startSession(userGoal)}
+                  className="flex-1 rounded-xl bg-primary hover:bg-primary/90 text-sm"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {userGoal.trim() ? "Plan my session" : "Suggest what to study"}
+                </Button>
+                <Button
+                  onClick={() => setShowGoalInput(false)}
+                  variant="ghost"
+                  className="rounded-xl text-sm"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {open && (
