@@ -51,9 +51,9 @@ export default function TaskCard({ task, index, isActive, isCompleted, onComplet
           <p className={`text-sm font-bold leading-snug ${isCompleted ? "line-through text-stone-400" : "text-stone-800"}`}>
             {task.title}
           </p>
-          {task.startHere && (
+          {task.subtitle && (
             <p className={`text-xs mt-0.5 ${isCompleted ? "text-stone-300" : "text-stone-400"}`}>
-              {task.startHere}
+              {task.subtitle}
             </p>
           )}
         </div>
