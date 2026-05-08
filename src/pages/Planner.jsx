@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Filter, CalendarDays, AlertTriangle } from "lucide-react";
+import { Plus, Filter, CalendarDays, AlertTriangle, Trash2 } from "lucide-react";
 import { format, differenceInDays, isAfter, isBefore, addDays, startOfWeek, endOfWeek } from "date-fns";
 import { motion } from "framer-motion";
 
@@ -38,6 +38,11 @@ export default function Planner() {
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Assignment.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["assignments"] }); setShowAdd(false); },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Assignment.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assignments"] }),
   });
 
   const now = new Date();
@@ -117,7 +122,7 @@ export default function Planner() {
               <div className="space-y-2 mb-6">
                 {items.map((a, i) => (
                   <motion.div key={a.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}>
-                    <Card className={`p-4 rounded-2xl flex items-center gap-3 hover:shadow-md transition-shadow ${urgencyClass(a.due_date)}`}>
+                    <Card className={`p-4 rounded-2xl flex items-center gap-3 hover:shadow-md transition-shadow group ${urgencyClass(a.due_date)}`}>
                       <Checkbox checked={a.completed} onCheckedChange={(v) => toggleMutation.mutate({ id: a.id, completed: v })} />
                       <div className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: a.course_color || "hsl(var(--primary))" }} />
                       <div className="flex-1 min-w-0">
@@ -128,6 +133,12 @@ export default function Planner() {
                       {a.due_date && (
                         <span className="text-xs text-muted-foreground whitespace-nowrap">{format(new Date(a.due_date), "MMM d")}</span>
                       )}
+                      <button
+                        onClick={() => deleteMutation.mutate(a.id)}
+                        className="ml-1 p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </Card>
                   </motion.div>
                 ))}
