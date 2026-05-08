@@ -15,13 +15,18 @@ const SEMESTER_PROGRESS = Math.min(100, Math.round((ELAPSED_DAYS / TOTAL_DAYS) *
 const WEEKS_REMAINING = Math.max(0, differenceInWeeks(SEMESTER_END, now));
 
 const milestones = [
-  { date: "2026-01-19", label: "Semester Start",   sub: "Completed",  type: "done" },
-  { date: "2026-02-06", label: "Add/Drop Ends",    sub: "Completed",  type: "done" },
-  { date: "2026-03-09", label: "Midterm Week",     sub: "Active Now", type: "active" },
+  { date: "2026-01-19", label: "Semester Start",   sub: "Jan 19",     type: "done" },
+  { date: "2026-02-06", label: "Add/Drop Ends",    sub: "Feb 6",      type: "done" },
+  { date: "2026-02-16", label: "Presidents Day",   sub: "No Classes", type: "done" },
+  { date: "2026-03-09", label: "Midterm Week",     sub: "Mar 9–13",   type: "active" },
   { date: "2026-03-16", label: "Spring Break",     sub: "Mar 16–20",  type: "upcoming" },
   { date: "2026-04-06", label: "Registration",     sub: "Opens",      type: "upcoming" },
+  { date: "2026-04-20", label: "Withdraw Deadline",sub: "Apr 20",     type: "upcoming" },
   { date: "2026-05-04", label: "Last Day Classes", sub: "May 4",      type: "upcoming" },
   { date: "2026-05-08", label: "Final Exams",      sub: "May 8–15",   type: "upcoming" },
+  { date: "2026-05-22", label: "Grades Released",  sub: "May 22",     type: "upcoming" },
+  { date: "2026-06-01", label: "Summer Session",   sub: "Begins",     type: "upcoming" },
+  { date: "2026-08-24", label: "Fall Semester",    sub: "Begins",     type: "upcoming" },
 ];
 
 const criticalDeadlines = [
