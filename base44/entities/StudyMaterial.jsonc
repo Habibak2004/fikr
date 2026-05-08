@@ -1,0 +1,36 @@
+{
+  "name": "StudyMaterial",
+  "type": "object",
+  "properties": {
+    "course_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "notes",
+        "past_exam",
+        "formula_sheet",
+        "recording",
+        "other"
+      ],
+      "default": "notes"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "uploader_name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "course_id"
+  ]
+}

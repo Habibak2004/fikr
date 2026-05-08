@@ -1,0 +1,35 @@
+{
+  "name": "FocusSession",
+  "type": "object",
+  "properties": {
+    "course_id": {
+      "type": "string"
+    },
+    "course_name": {
+      "type": "string"
+    },
+    "duration_minutes": {
+      "type": "number"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "pomodoro",
+        "deep_work",
+        "review"
+      ],
+      "default": "pomodoro"
+    },
+    "completed": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "duration_minutes"
+  ]
+}

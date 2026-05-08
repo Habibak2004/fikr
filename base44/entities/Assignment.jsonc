@@ -1,0 +1,80 @@
+{
+  "name": "Assignment",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "course_id": {
+      "type": "string",
+      "description": "Reference to Course"
+    },
+    "course_name": {
+      "type": "string"
+    },
+    "course_color": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "homework",
+        "exam",
+        "quiz",
+        "project",
+        "paper",
+        "lab",
+        "presentation",
+        "other"
+      ],
+      "default": "homework"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Grade weight %"
+    },
+    "grade": {
+      "type": "number",
+      "description": "Grade received (0-100)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "submitted",
+        "graded",
+        "late",
+        "missed"
+      ],
+      "default": "pending"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "reminder": {
+      "type": "boolean",
+      "default": false
+    },
+    "completed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "course_id"
+  ]
+}
