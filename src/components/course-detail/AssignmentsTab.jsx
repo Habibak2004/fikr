@@ -81,7 +81,7 @@ export default function AssignmentsTab({ courseId, assignments, courseName, cour
       </div>
 
       {/* Column Headers */}
-      <div className="grid grid-cols-[2fr_80px_70px_90px_120px_44px] border-b bg-muted/30 py-3">
+      <div className="grid grid-cols-[2fr_80px_70px_90px_120px_44px] border-b bg-muted/30 py-3 px-2">
         <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Assignment</span>
         <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Type</span>
         <span className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground">Weight</span>
@@ -92,7 +92,7 @@ export default function AssignmentsTab({ courseId, assignments, courseName, cour
 
       {/* Add Row */}
       {adding &&
-      <div className="grid grid-cols-[2fr_80px_70px_90px_120px_44px] items-center px-6 py-3 border-b bg-primary/5 gap-2">
+      <div className="grid grid-cols-[2fr_80px_70px_90px_120px_44px] items-center py-3 border-b bg-primary/5 gap-2 px-1">
           <Input
           value={newItem.name}
           onChange={(e) => setNewItem((p) => ({ ...p, name: e.target.value }))}
