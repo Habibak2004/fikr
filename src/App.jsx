@@ -13,7 +13,7 @@ import CourseDetail from './pages/CourseDetail';
 import Planner from './pages/Planner';
 import AcademicCalendar from './pages/AcademicCalendar';
 import Heatmap from './pages/Heatmap';
-import FocusRoom from './pages/FocusRoom';
+import FocusRoom from './pages/FocusRoom.jsx';
 import Community from './pages/Community';
 import StudyCoach from './pages/StudyCoach';
 import Insights from './pages/Insights';

@@ -1,17 +1,27 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import TaskCard from "./TaskCard";
+import WorldInteraction from "./world/WorldInteraction";
 
-export default function SessionPlan({ plan, onStartTimer, onTaskComplete }) {
+export default function SessionPlan({ plan, onStartTimer, onTaskComplete, archetype }) {
   const [completedIds, setCompletedIds] = useState([]);
+  const [pendingInteraction, setPendingInteraction] = useState(null); // index awaiting world interaction
 
   if (!plan) return null;
 
-  const complete = (i) => {
+  const triggerComplete = (i) => {
+    // Show the world interaction before marking done
+    setPendingInteraction(i);
+  };
+
+  const finishInteraction = () => {
+    const i = pendingInteraction;
+    setPendingInteraction(null);
     setCompletedIds(prev => [...new Set([...prev, i])]);
     if (onTaskComplete) onTaskComplete();
   };
-  const activeIndex = plan.tasks.findIndex((_, i) => !completedIds.includes(i));
+
+  const activeIndex = plan.tasks.findIndex((_, i) => !completedIds.includes(i) && pendingInteraction !== i);
   const pct = Math.round((completedIds.length / plan.tasks.length) * 100);
 
   return (
@@ -48,21 +58,39 @@ export default function SessionPlan({ plan, onStartTimer, onTaskComplete }) {
         </p>
       </div>
 
+      {/* World Interaction overlay */}
+      <AnimatePresence>
+        {pendingInteraction !== null && (
+          <motion.div
+            key="world-interaction"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <WorldInteraction
+              archetype={archetype}
+              onComplete={finishInteraction}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Task cards */}
-      <div className="space-y-3 relative">
-        {plan.tasks.map((task, i) => (
-          <div key={i} className="relative">
+      {pendingInteraction === null && (
+        <div className="space-y-3">
+          {plan.tasks.map((task, i) => (
             <TaskCard
+              key={i}
               task={task}
               index={i}
               isActive={i === activeIndex}
               isCompleted={completedIds.includes(i)}
-              onComplete={() => complete(i)}
+              onComplete={() => triggerComplete(i)}
               onStart={() => onStartTimer(task.duration)}
             />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* All done */}
       {pct === 100 && (

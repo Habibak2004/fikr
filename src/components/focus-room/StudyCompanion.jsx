@@ -74,7 +74,7 @@ function Bubble({ msg }) {
 
 const CHECKIN_INTERVALS = [3 * 60 * 1000, 8 * 60 * 1000, 15 * 60 * 1000];
 
-export default function StudyCompanion({ isTimerRunning, isBreak, completedTaskCount, plan }) {
+export default function StudyCompanion({ isTimerRunning, isBreak, completedTaskCount, plan, archetype, worldLevel }) {
   const [isOpen, setIsOpen]             = useState(false);
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages]         = useState([]);
@@ -135,9 +135,10 @@ export default function StudyCompanion({ isTimerRunning, isBreak, completedTaskC
     unsubRef.current = unsub;
 
     const courseCtx = plan?.sessionGoal ? ` We're working on: "${plan.sessionGoal}".` : "";
+    const worldCtx = archetype ? ` Our world is the ${archetype.name} — currently ${["Dormant","Awakening","Stirring","Blossoming","Radiant","Restored"][worldLevel] || "Dormant"}. Your name in this world is ${archetype.companionName}.` : "";
     await base44.agents.addMessage(conv, {
       role: "user",
-      content: `I just opened the Focus Room.${courseCtx} Say hi — brief, warm, 1–2 sentences.`,
+      content: `I just opened the Focus Room.${courseCtx}${worldCtx} Say hi — brief, warm, 1–2 sentences. Reference the world softly if it feels natural.`,
     });
   };
 
@@ -173,9 +174,10 @@ export default function StudyCompanion({ isTimerRunning, isBreak, completedTaskC
     prevCompleted.current = completedTaskCount;
     setIsTyping(true);
     if (!isOpen) setHasNew(true);
+    const progressWord = archetype?.progressWords?.[Math.min(completedTaskCount - 1, 3)] || "Progress made";
     base44.agents.addMessage(conversation, {
       role: "user",
-      content: `[Task completed — ${completedTaskCount} done. Acknowledge warmly in 1 sentence.]`,
+      content: `[Task completed — ${completedTaskCount} done. ${progressWord}. Acknowledge in 1 warm sentence. You may softly reference the world restoring.]`,
     });
   }, [completedTaskCount, conversation]);
 
@@ -273,7 +275,7 @@ export default function StudyCompanion({ isTimerRunning, isBreak, completedTaskC
 
               <CompanionFace mood={mood} isSpeaking={isSpeaking} size={80} />
 
-              <p className="text-white text-xs font-semibold mt-3 tracking-wide">Study Companion</p>
+              <p className="text-white text-xs font-semibold mt-3 tracking-wide">{archetype?.companionName || "Study Companion"}</p>
               <div className="flex items-center gap-1.5 mt-1">
                 {isTimerRunning ? (
                   <>
