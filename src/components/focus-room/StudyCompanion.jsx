@@ -1,41 +1,59 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
-import { Send, X, MessageCircle } from "lucide-react";
+import { Send, Volume2, VolumeX, ChevronDown } from "lucide-react";
+import CompanionFace from "./CompanionFace";
 
-// Soft breathing orb that pulses
-function CompanionOrb({ isOpen, onClick, hasMessage }) {
+// ── Speech synthesis helper ──────────────────────────────────────────────────
+function speak(text, onStart, onEnd) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 0.88;
+  utt.pitch = 1.05;
+  utt.volume = 0.9;
+  // prefer a soft female voice if available
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v =>
+    /samantha|karen|moira|victoria|zira|google uk english female/i.test(v.name)
+  ) || voices.find(v => v.lang.startsWith("en") && v.name.toLowerCase().includes("female"))
+    || voices.find(v => v.lang.startsWith("en")) || null;
+  if (preferred) utt.voice = preferred;
+  utt.onstart = onStart;
+  utt.onend = onEnd;
+  utt.onerror = onEnd;
+  window.speechSynthesis.speak(utt);
+}
+
+// ── Mood detection ────────────────────────────────────────────────────────────
+function detectMood(text = "") {
+  const t = text.toLowerCase();
+  if (/nice|great|done|good job|proud|well done|crushed|amazing/i.test(t)) return "happy";
+  if (/break|rest|breathe|recharge/i.test(t)) return "break";
+  if (/stuck|hard|tough|struggling/i.test(t)) return "encouraging";
+  if (/let me think|checking|hold on/i.test(t)) return "thinking";
+  return "idle";
+}
+
+// ── Typing dots ───────────────────────────────────────────────────────────────
+function TypingDots() {
   return (
-    <motion.button
-      onClick={onClick}
-      className="relative h-12 w-12 rounded-full focus:outline-none"
-      whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      {/* Outer pulse ring */}
-      {hasMessage && (
+    <div className="flex gap-1 items-center px-3 py-2">
+      {[0, 0.2, 0.4].map((delay, i) => (
         <motion.span
-          className="absolute inset-0 rounded-full bg-primary/20"
-          animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0, 0.6] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          key={i}
+          className="h-1.5 w-1.5 rounded-full bg-white/60"
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 0.7, repeat: Infinity, delay, ease: "easeInOut" }}
         />
-      )}
-      {/* Orb */}
-      <motion.span
-        className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/80 to-blue-400/80 shadow-md"
-        animate={isOpen ? {} : { scale: [1, 1.04, 1] }}
-        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-      />
-      {/* Icon */}
-      <span className="absolute inset-0 flex items-center justify-center text-white text-lg">
-        {isOpen ? <X className="h-4 w-4" /> : "✦"}
-      </span>
-    </motion.button>
+      ))}
+    </div>
   );
 }
 
-function Message({ msg }) {
+// ── Individual message bubble ─────────────────────────────────────────────────
+function Bubble({ msg }) {
   const isUser = msg.role === "user";
   return (
     <motion.div
@@ -43,10 +61,10 @@ function Message({ msg }) {
       animate={{ opacity: 1, y: 0 }}
       className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
-      <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+      <div className={`max-w-[85%] px-3.5 py-2 rounded-2xl text-sm leading-relaxed ${
         isUser
-          ? "bg-stone-800 text-white rounded-br-sm"
-          : "bg-white/90 text-stone-700 border border-stone-100 rounded-bl-sm shadow-sm"
+          ? "bg-white/20 text-white rounded-br-sm"
+          : "bg-white/15 text-white rounded-bl-sm"
       }`}>
         {msg.content}
       </div>
@@ -54,50 +72,45 @@ function Message({ msg }) {
   );
 }
 
-// Typing indicator
-function TypingIndicator() {
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-      <div className="bg-white/90 border border-stone-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm flex gap-1 items-center">
-        {[0, 0.2, 0.4].map((delay, i) => (
-          <motion.span
-            key={i}
-            className="h-1.5 w-1.5 rounded-full bg-stone-300"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 0.8, repeat: Infinity, delay, ease: "easeInOut" }}
-          />
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-const CHECKIN_INTERVALS_MS = [3 * 60 * 1000, 8 * 60 * 1000, 15 * 60 * 1000]; // 3, 8, 15 min
+const CHECKIN_INTERVALS = [3 * 60 * 1000, 8 * 60 * 1000, 15 * 60 * 1000];
 
 export default function StudyCompanion({ isTimerRunning, isBreak, completedTaskCount, plan }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen]             = useState(false);
   const [conversation, setConversation] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [hasNewMessage, setHasNewMessage] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-  const unsubRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const checkinTimerRef = useRef(null);
-  const checkinIndexRef = useRef(0);
-  const prevCompletedRef = useRef(0);
+  const [messages, setMessages]         = useState([]);
+  const [input, setInput]               = useState("");
+  const [isTyping, setIsTyping]         = useState(false);
+  const [hasNew, setHasNew]             = useState(false);
+  const [initialized, setInitialized]   = useState(false);
+  const [mood, setMood]                 = useState("idle");
+  const [isSpeaking, setIsSpeaking]     = useState(false);
+  const [voiceOn, setVoiceOn]           = useState(true);
+  const [latestMsg, setLatestMsg]       = useState("");
 
-  // Scroll to bottom
+  const unsubRef        = useRef(null);
+  const messagesEndRef  = useRef(null);
+  const checkinTimer    = useRef(null);
+  const checkinIdx      = useRef(0);
+  const prevCompleted   = useRef(0);
+  const lastMsgCount    = useRef(0);
+
+  // scroll to bottom
   useEffect(() => {
     if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isTyping]);
 
-  // Init conversation on first open
+  // speak new assistant messages
+  const speakMessage = useCallback((text) => {
+    if (!voiceOn) return;
+    setIsSpeaking(true);
+    speak(text, () => setIsSpeaking(true), () => setIsSpeaking(false));
+  }, [voiceOn]);
+
   const initConversation = async () => {
     if (initialized) return;
     setInitialized(true);
     setIsTyping(true);
+
     const conv = await base44.agents.createConversation({
       agent_name: "study_companion",
       metadata: { name: "Study Session" },
@@ -106,71 +119,74 @@ export default function StudyCompanion({ isTimerRunning, isBreak, completedTaskC
 
     if (unsubRef.current) unsubRef.current();
     const unsub = base44.agents.subscribeToConversation(conv.id, (data) => {
-      const msgs = (data.messages || []).filter(m => m.content);
+      const msgs = (data.messages || []).filter(m => m.content && !m.content.startsWith("["));
       setMessages(msgs);
-      setIsTyping(false);
-      if (!isOpen) setHasNewMessage(true);
+
+      const lastAssistant = [...msgs].reverse().find(m => m.role === "assistant");
+      if (lastAssistant && msgs.length > lastMsgCount.current) {
+        lastMsgCount.current = msgs.length;
+        setIsTyping(false);
+        setMood(detectMood(lastAssistant.content));
+        setLatestMsg(lastAssistant.content);
+        if (!isOpen) setHasNew(true);
+        speakMessage(lastAssistant.content);
+      }
     });
     unsubRef.current = unsub;
 
-    const courseContext = plan?.sessionGoal ? ` We're working on: "${plan.sessionGoal}".` : "";
+    const courseCtx = plan?.sessionGoal ? ` We're working on: "${plan.sessionGoal}".` : "";
     await base44.agents.addMessage(conv, {
       role: "user",
-      content: `I just opened the Focus Room.${courseContext} Say hi — just a brief, warm greeting. Keep it to 1–2 sentences.`,
+      content: `I just opened the Focus Room.${courseCtx} Say hi — brief, warm, 1–2 sentences.`,
     });
   };
 
   const handleOpen = () => {
     setIsOpen(true);
-    setHasNewMessage(false);
+    setHasNew(false);
     if (!initialized) initConversation();
   };
 
-  // Auto check-ins when timer is running
+  // Auto check-ins
   useEffect(() => {
-    if (!isTimerRunning || !conversation) {
-      clearTimeout(checkinTimerRef.current);
-      return;
-    }
-    const scheduleCheckin = () => {
-      const delay = CHECKIN_INTERVALS_MS[checkinIndexRef.current] || CHECKIN_INTERVALS_MS[CHECKIN_INTERVALS_MS.length - 1];
-      checkinTimerRef.current = setTimeout(async () => {
-        checkinIndexRef.current = Math.min(checkinIndexRef.current + 1, CHECKIN_INTERVALS_MS.length - 1);
+    if (!isTimerRunning || !conversation) { clearTimeout(checkinTimer.current); return; }
+    const schedule = () => {
+      const delay = CHECKIN_INTERVALS[checkinIdx.current] ?? CHECKIN_INTERVALS.at(-1);
+      checkinTimer.current = setTimeout(async () => {
+        checkinIdx.current = Math.min(checkinIdx.current + 1, CHECKIN_INTERVALS.length - 1);
         setIsTyping(true);
-        if (!isOpen) setHasNewMessage(true);
+        if (!isOpen) setHasNew(true);
         await base44.agents.addMessage(conversation, {
           role: "user",
-          content: `[Auto check-in after ${Math.round(delay / 60000)} minutes of focus time. Give a gentle, brief check-in. 1 sentence max. No explanation needed — just speak to me directly.]`,
+          content: `[Auto check-in after ${Math.round(delay / 60000)} min of focus. One gentle sentence, speak directly to me.]`,
         });
-        scheduleCheckin();
+        schedule();
       }, delay);
     };
-    scheduleCheckin();
-    return () => clearTimeout(checkinTimerRef.current);
+    schedule();
+    return () => clearTimeout(checkinTimer.current);
   }, [isTimerRunning, conversation]);
 
-  // Task completion nudge
+  // Task complete
   useEffect(() => {
-    if (!conversation) return;
-    if (completedTaskCount > prevCompletedRef.current) {
-      prevCompletedRef.current = completedTaskCount;
-      setIsTyping(true);
-      if (!isOpen) setHasNewMessage(true);
-      base44.agents.addMessage(conversation, {
-        role: "user",
-        content: `[I just completed a task. ${completedTaskCount} done so far. Acknowledge briefly and warmly — 1 sentence.]`,
-      });
-    }
+    if (!conversation || completedTaskCount <= prevCompleted.current) return;
+    prevCompleted.current = completedTaskCount;
+    setIsTyping(true);
+    if (!isOpen) setHasNew(true);
+    base44.agents.addMessage(conversation, {
+      role: "user",
+      content: `[Task completed — ${completedTaskCount} done. Acknowledge warmly in 1 sentence.]`,
+    });
   }, [completedTaskCount, conversation]);
 
-  // Break nudge
+  // Break
   useEffect(() => {
     if (!conversation || !isBreak) return;
     setIsTyping(true);
-    if (!isOpen) setHasNewMessage(true);
+    if (!isOpen) setHasNew(true);
     base44.agents.addMessage(conversation, {
       role: "user",
-      content: `[Break started. Say something brief and supportive about taking a break. 1 sentence.]`,
+      content: `[Break started. One supportive sentence.]`,
     });
   }, [isBreak]);
 
@@ -182,59 +198,127 @@ export default function StudyCompanion({ isTimerRunning, isBreak, completedTaskC
     await base44.agents.addMessage(conversation, { role: "user", content: text });
   };
 
+  // ── Collapsed floating face ───────────────────────────────────────────────
+  const FloatingFace = () => (
+    <motion.button
+      onClick={handleOpen}
+      className="relative focus:outline-none"
+      whileHover={{ scale: 1.06 }}
+      whileTap={{ scale: 0.94 }}
+    >
+      {/* Breathing halo */}
+      <motion.span
+        className="absolute inset-0 rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(74,127,181,0.35) 0%, transparent 70%)" }}
+        animate={{ scale: [1, 1.18, 1], opacity: [0.7, 0.2, 0.7] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+      {/* New message ring */}
+      {hasNew && (
+        <motion.span
+          className="absolute inset-0 rounded-full border-2 border-white/70"
+          animate={{ scale: [1, 1.4, 1], opacity: [0.8, 0, 0.8] }}
+          transition={{ duration: 1.6, repeat: Infinity }}
+        />
+      )}
+      <CompanionFace mood={mood} isSpeaking={isSpeaking} size={64} />
+      {/* Latest message tooltip */}
+      <AnimatePresence>
+        {latestMsg && !isOpen && (
+          <motion.div
+            key={latestMsg}
+            initial={{ opacity: 0, x: 10, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 10, scale: 0.9 }}
+            className="absolute right-16 bottom-1 w-48 bg-white rounded-2xl rounded-br-sm shadow-lg border border-stone-100 px-3 py-2 text-xs text-stone-600 leading-snug pointer-events-none"
+          >
+            {latestMsg.length > 80 ? latestMsg.slice(0, 80) + "…" : latestMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.button>
+  );
+
+  // ── Expanded panel ────────────────────────────────────────────────────────
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-      {/* Chat panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 16, scale: 0.95 }}
+            initial={{ opacity: 0, y: 20, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="w-72 rounded-3xl shadow-xl overflow-hidden border border-stone-100"
-            style={{ background: "linear-gradient(160deg, #fdf8f4 0%, #f5f0f8 100%)" }}
+            exit={{ opacity: 0, y: 20, scale: 0.94 }}
+            transition={{ type: "spring", stiffness: 280, damping: 26 }}
+            className="w-72 rounded-3xl shadow-2xl overflow-hidden"
+            style={{
+              background: "linear-gradient(160deg, #3a6fa8 0%, #5b3f9e 100%)",
+              border: "1px solid rgba(255,255,255,0.15)",
+            }}
           >
-            {/* Header */}
-            <div className="px-4 py-3.5 border-b border-stone-100/80 flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-primary/70 to-blue-400/70 flex items-center justify-center text-white text-xs">✦</div>
-              <div>
-                <p className="text-xs font-bold text-stone-700">Study Companion</p>
-                <p className="text-[10px] text-stone-400">here with you</p>
-              </div>
-              <div className="ml-auto">
-                {isTimerRunning && (
-                  <motion.span
-                    className="h-2 w-2 rounded-full bg-green-400 block"
-                    animate={{ opacity: [1, 0.3, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
+            {/* Face header */}
+            <div className="flex flex-col items-center pt-6 pb-4 px-4 relative">
+              <button
+                onClick={() => setIsOpen(false)}
+                className="absolute top-3 right-3 h-7 w-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => { setVoiceOn(v => !v); if (isSpeaking) window.speechSynthesis?.cancel(); }}
+                className="absolute top-3 left-3 h-7 w-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                title={voiceOn ? "Mute voice" : "Enable voice"}
+              >
+                {voiceOn ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+              </button>
+
+              <CompanionFace mood={mood} isSpeaking={isSpeaking} size={80} />
+
+              <p className="text-white text-xs font-semibold mt-3 tracking-wide">Study Companion</p>
+              <div className="flex items-center gap-1.5 mt-1">
+                {isTimerRunning ? (
+                  <>
+                    <motion.span
+                      className="h-1.5 w-1.5 rounded-full bg-green-300"
+                      animate={{ opacity: [1, 0.3, 1] }}
+                      transition={{ duration: 1.8, repeat: Infinity }}
+                    />
+                    <span className="text-white/50 text-[10px]">with you</span>
+                  </>
+                ) : (
+                  <span className="text-white/40 text-[10px]">here when you're ready</span>
                 )}
               </div>
             </div>
 
             {/* Messages */}
-            <div className="h-64 overflow-y-auto px-4 py-4 space-y-3">
-              {messages.filter(m => m.role !== "user" || !m.content?.startsWith("[")).map((msg, i) => (
-                <Message key={i} msg={msg} />
-              ))}
-              {isTyping && <TypingIndicator />}
+            <div
+              className="h-52 overflow-y-auto px-4 py-3 space-y-2.5"
+              style={{ scrollbarWidth: "none" }}
+            >
+              {messages.map((msg, i) => <Bubble key={i} msg={msg} />)}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-white/15 rounded-2xl rounded-bl-sm">
+                    <TypingDots />
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
-            <div className="px-3 pb-3 pt-2 border-t border-stone-100/80 flex gap-2">
-              <Input
+            <div className="px-3 pb-4 pt-2 flex gap-2">
+              <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendMessage()}
                 placeholder="Say something…"
-                className="rounded-xl text-sm border-stone-200 bg-white/80 h-9 flex-1"
+                className="flex-1 h-9 rounded-xl bg-white/15 text-white placeholder:text-white/40 text-sm px-3 border border-white/10 focus:outline-none focus:border-white/30 transition-colors"
               />
               <button
                 onClick={sendMessage}
                 disabled={!input.trim()}
-                className="h-9 w-9 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-colors disabled:opacity-30"
+                className="h-9 w-9 rounded-xl bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors disabled:opacity-30"
               >
                 <Send className="h-3.5 w-3.5" />
               </button>
@@ -243,8 +327,8 @@ export default function StudyCompanion({ isTimerRunning, isBreak, completedTaskC
         )}
       </AnimatePresence>
 
-      {/* Orb trigger */}
-      <CompanionOrb isOpen={isOpen} onClick={isOpen ? () => setIsOpen(false) : handleOpen} hasMessage={hasNewMessage} />
+      {/* Floating face when closed */}
+      {!isOpen && <FloatingFace />}
     </div>
   );
 }
