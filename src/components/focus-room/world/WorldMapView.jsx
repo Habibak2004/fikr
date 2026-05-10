@@ -101,7 +101,7 @@ export default function WorldMapView({ archetype, totalXP, taskCount }) {
         <div
           className="relative rounded-2xl overflow-hidden border border-white/10 flex-shrink-0"
           style={{
-            background: `radial-gradient(ellipse at 50% 100%, ${archetype.glowColor} 0%, #08080f 65%)`,
+            background: `radial-gradient(ellipse at 50% 100%, ${archetype.glowColor} 0%, #1a1a2e 65%)`,
             width: "100%",
             maxWidth: 280,
             minHeight: 320,
@@ -183,7 +183,7 @@ export default function WorldMapView({ archetype, totalXP, taskCount }) {
           {/* Current region card */}
           <div
             className="rounded-2xl border border-white/10 p-5"
-            style={{ background: "rgba(255,255,255,0.03)" }}
+            style={{ background: "rgba(255,255,255,0.06)" }}
           >
             <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 mb-1">Current Region</p>
             <div className="flex items-center gap-3 mb-3">
@@ -222,7 +222,7 @@ export default function WorldMapView({ archetype, totalXP, taskCount }) {
           {/* Badges */}
           <div
             className="rounded-2xl border border-white/10 p-5"
-            style={{ background: "rgba(255,255,255,0.03)" }}
+            style={{ background: "rgba(255,255,255,0.06)" }}
           >
             <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 mb-3">
               Badges — {earnedBadges.length}/{MILESTONE_BADGES.length} Earned
@@ -259,7 +259,7 @@ export default function WorldMapView({ archetype, totalXP, taskCount }) {
       {/* Milestone timeline strip */}
       <div
         className="rounded-2xl border border-white/10 p-5"
-        style={{ background: "rgba(255,255,255,0.02)" }}
+        style={{ background: "rgba(255,255,255,0.05)" }}
       >
         <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 mb-4">Restoration Timeline</p>
         <div className="flex items-center gap-0">

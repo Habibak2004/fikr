@@ -40,12 +40,12 @@ const ARCHETYPE_ICONS = {
 };
 
 const CARD_BG = {
-  observatory: "from-[#0d0d2b] to-[#1a1a4e]",
-  forest:      "from-[#071a0f] to-[#0d2b1a]",
-  city:        "from-[#050a14] to-[#0a0f1e]",
-  library:     "from-[#120a00] to-[#1a0f00]",
-  journey:     "from-[#080f1a] to-[#0f1a2e]",
-  kingdom:     "from-[#0d0618] to-[#1a0a2e]",
+  observatory: "from-[#1e1e4a] to-[#2a2a6a]",
+  forest:      "from-[#102a18] to-[#1a4028]",
+  city:        "from-[#0e1828] to-[#162035]",
+  library:     "from-[#2a1800] to-[#3a2200]",
+  journey:     "from-[#141e30] to-[#1e2d45]",
+  kingdom:     "from-[#1a0e2e] to-[#281545]",
 };
 
 function WorldCard({ archetype, course, sessionCount, taskCount, onEnter }) {
@@ -163,7 +163,7 @@ export default function WorldHub({ courses, allSessions, allTaskCounts, onEnterW
   return (
     <div
       className="min-h-screen"
-      style={{ background: "linear-gradient(160deg, #08080f 0%, #0d0d1a 60%, #0a0810 100%)" }}
+      style={{ background: "linear-gradient(160deg, #1a1a2e 0%, #1e1e35 60%, #1a2230 100%)" }}
     >
       <div className="max-w-5xl mx-auto px-6 py-10">
 
