@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import TaskCard from "./TaskCard";
 import WorldInteraction from "./world/WorldInteraction";
 
-export default function SessionPlan({ plan, onStartTimer, onTaskComplete, archetype }) {
+export default function SessionPlan({ plan, onStartTimer, onTaskComplete, archetype, compact = false }) {
   const [completedIds, setCompletedIds] = useState([]);
   const [pendingInteraction, setPendingInteraction] = useState(null); // index awaiting world interaction
 
@@ -23,6 +23,45 @@ export default function SessionPlan({ plan, onStartTimer, onTaskComplete, archet
 
   const activeIndex = plan.tasks.findIndex((_, i) => !completedIds.includes(i) && pendingInteraction !== i);
   const pct = Math.round((completedIds.length / plan.tasks.length) * 100);
+
+  // Compact mode for immersive overlay
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+          <motion.div className="h-full rounded-full"
+            style={{ background: archetype?.accentColor || "#38bdf8" }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.5 }} />
+        </div>
+        <p className="text-[10px] text-white/40">{completedIds.length} / {plan.tasks.length} tasks · {pct}%</p>
+        <div className="space-y-1.5 max-h-36 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+          {plan.tasks.map((task, i) => (
+            <div key={i}
+              className={`flex items-center gap-2 text-xs py-1.5 px-2.5 rounded-xl cursor-pointer transition-all
+                ${completedIds.includes(i) ? "opacity-30 line-through" : i === activeIndex ? "text-white bg-white/10" : "text-white/40"}`}
+              onClick={() => !completedIds.includes(i) && triggerComplete(i)}
+            >
+              <span className="h-1.5 w-1.5 rounded-full shrink-0"
+                style={{ background: completedIds.includes(i) ? "#4ade80" : i === activeIndex ? (archetype?.accentColor || "#fff") : "rgba(255,255,255,0.2)" }} />
+              <span className="truncate">{task.title || task.name}</span>
+              {i === activeIndex && !completedIds.includes(i) && (
+                <span className="ml-auto text-[9px] font-bold uppercase tracking-widest shrink-0"
+                  style={{ color: archetype?.accentColor }}>Complete</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <AnimatePresence>
+          {pendingInteraction !== null && (
+            <motion.div key="wi" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <WorldInteraction archetype={archetype} onComplete={finishInteraction} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
 
   return (
     <motion.div
