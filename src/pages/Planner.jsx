@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Plus, Filter, CalendarDays, AlertTriangle, Trash2 } from "lucide-react";
 import { format, differenceInDays, isAfter, isBefore, addDays, startOfWeek, endOfWeek } from "date-fns";
 import { motion } from "framer-motion";
+import CalendarSync from "@/components/planner/CalendarSync";
 
 export default function Planner() {
   const [showAdd, setShowAdd] = useState(false);
@@ -147,6 +148,9 @@ export default function Planner() {
           </div>
         );
       })}
+
+      {/* Google Calendar Sync */}
+      <CalendarSync />
 
       <AddAssignmentModal open={showAdd} onClose={() => setShowAdd(false)} courses={courses} onSave={d => createMutation.mutate(d)} />
     </div>
