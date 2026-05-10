@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import TimerSettingsModal from "@/components/focus-room/TimerSettingsModal";
 import StudyCompanion from "@/components/focus-room/StudyCompanion";
-import WorldHub from "@/components/focus-room/world/WorldHub";
+import WorldHub from "@/components/focus-room/world/WorldHub.jsx";
 import ImmersiveFocusRoom from "@/components/focus-room/ImmersiveFocusRoom";
 import { getArchetypeForCourse, getWorldLevel, getLevelProgress, LEVEL_NAMES } from "@/components/focus-room/world/WorldEngine";
 import { Globe, Timer } from "lucide-react";
