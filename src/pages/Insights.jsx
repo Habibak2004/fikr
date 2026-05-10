@@ -6,6 +6,7 @@ import { Target, Flame, Brain, TrendingUp, Clock, Sparkles } from "lucide-react"
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { format, subDays } from "date-fns";
 import { motion } from "framer-motion";
+import SessionHistory from "@/components/insights/SessionHistory";
 
 export default function Insights() {
   const { data: sessions = [] } = useQuery({
@@ -142,6 +143,9 @@ export default function Insights() {
           )}
         </Card>
       </div>
+
+      {/* Session History */}
+      <SessionHistory courses={courses} />
 
       {/* AI Summary */}
       <Card className="p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 border-0">

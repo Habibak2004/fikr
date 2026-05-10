@@ -1,0 +1,75 @@
+{
+  "name": "StudySession",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the study session"
+    },
+    "course_id": {
+      "type": "string",
+      "description": "Reference to Course"
+    },
+    "course_name": {
+      "type": "string"
+    },
+    "course_color": {
+      "type": "string"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Total minutes studied"
+    },
+    "location": {
+      "type": "string",
+      "enum": [
+        "home",
+        "library",
+        "cafe",
+        "classroom",
+        "dorm",
+        "other"
+      ],
+      "default": "home"
+    },
+    "location_note": {
+      "type": "string",
+      "description": "Custom location detail"
+    },
+    "session_type": {
+      "type": "string",
+      "enum": [
+        "pomodoro",
+        "deep_work",
+        "review",
+        "homework",
+        "exam_prep"
+      ],
+      "default": "pomodoro"
+    },
+    "notes": {
+      "type": "string",
+      "description": "What was covered / accomplished"
+    },
+    "mood": {
+      "type": "string",
+      "enum": [
+        "great",
+        "good",
+        "okay",
+        "tired",
+        "stressed"
+      ],
+      "default": "good"
+    },
+    "tasks_completed": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "date",
+    "duration_minutes"
+  ]
+}
