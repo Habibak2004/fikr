@@ -6,7 +6,7 @@ const mobileItems = [
   { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
   { icon: BookOpen, label: "Classes", path: "/courses" },
   { icon: CalendarDays, label: "Planner", path: "/planner" },
-  { icon: Timer, label: "Focus", path: "/focus" },
+  { icon: Timer, label: "Focus", path: "/garden" },
   { icon: BarChart3, label: "Insights", path: "/insights" },
 ];
 

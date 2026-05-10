@@ -11,7 +11,7 @@ const navItems = [
   { icon: CalendarDays, label: "Planner", path: "/planner" },
   { icon: Map, label: "Calendar", path: "/calendar" },
   { icon: Flame, label: "Heatmap", path: "/heatmap" },
-  { icon: Timer, label: "Focus Room", path: "/focus" },
+  { icon: Timer, label: "Focus Room", path: "/garden" },
   { icon: Users, label: "Community", path: "/community" },
   { icon: Brain, label: "Study Coach", path: "/coach" },
   { icon: BarChart3, label: "Insights", path: "/insights" },

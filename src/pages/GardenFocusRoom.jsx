@@ -1,28 +1,14 @@
-import { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pause, Play, ArrowLeft } from "lucide-react";
+import { Pause, Play, Leaf } from "lucide-react";
 import { Link } from "react-router-dom";
 import GardenSetup from "@/components/focus-room/garden/GardenSetup";
-import PlantGrowth from "@/components/focus-room/garden/PlantGrowth";
-import GardenInteraction from "@/components/focus-room/garden/GardenInteraction";
+import PlantStage from "@/components/focus-room/garden/PlantStage";
+import PlantInteraction from "@/components/focus-room/garden/PlantInteraction";
 import TaskTimer from "@/components/focus-room/garden/TaskTimer";
 import CompanionMessage from "@/components/focus-room/garden/CompanionMessage";
 import StuckModal from "@/components/focus-room/garden/StuckModal";
 import SmallerStepModal from "@/components/focus-room/garden/SmallerStepModal";
-
-// Map completed count to plant stage (0–7)
-function toPlantStage(completed) {
-  if (completed === 0) return 0;
-  if (completed === 1) return 1;
-  if (completed === 2) return 2;
-  if (completed === 3) return 3;
-  if (completed === 4) return 4;
-  if (completed === 5) return 5;
-  if (completed === 6) return 6;
-  return 7;
-}
 
 export default function GardenFocusRoom() {
   const [plan, setPlan] = useState(null);
@@ -37,25 +23,17 @@ export default function GardenFocusRoom() {
   const [timeUpMessage, setTimeUpMessage] = useState(false);
   const [sessionDone, setSessionDone] = useState(false);
 
-  const { data: courses = [] } = useQuery({
-    queryKey: ["courses"],
-    queryFn: () => base44.entities.Course.list("-created_date", 50),
-  });
-
-  // Build active task list (skip skipped ones)
   const allTasks = plan?.tasks || [];
   const activeTasks = allTasks.filter((_, i) => !skippedIds.includes(i));
   const currentTask = activeTasks[currentIdx] ?? null;
   const totalTasks = activeTasks.length;
   const isLastTask = currentIdx >= totalTasks - 1;
+  const pct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
 
-  // Auto-start timer when task changes
+  // Auto-start when task changes
   useEffect(() => {
-    if (currentTask) {
-      setIsRunning(true);
-      setTimeUpMessage(false);
-    }
-  }, [currentIdx]);
+    if (currentTask) { setIsRunning(true); setTimeUpMessage(false); }
+  }, [currentIdx, !!currentTask]);
 
   const handleComplete = () => {
     setIsRunning(false);
@@ -66,11 +44,8 @@ export default function GardenFocusRoom() {
     setShowInteraction(false);
     setCompletedCount(c => c + 1);
     setCompanionCtx("progress");
-    if (isLastTask) {
-      setSessionDone(true);
-    } else {
-      setCurrentIdx(i => i + 1);
-    }
+    if (isLastTask) setSessionDone(true);
+    else setCurrentIdx(i => i + 1);
   };
 
   const handleSkip = () => {
@@ -85,7 +60,6 @@ export default function GardenFocusRoom() {
   const handleSmallerTask = (subtask) => {
     setShowSmaller(false);
     setShowStuck(false);
-    // Insert subtask at current position
     setPlan(prev => {
       const tasks = [...prev.tasks];
       const insertAt = allTasks.indexOf(currentTask) + 1;
@@ -101,41 +75,34 @@ export default function GardenFocusRoom() {
     setCompanionCtx("timer_low");
   };
 
-  const plantStage = toPlantStage(completedCount);
+  // ── Setup ────────────────────────────────────────────────────────────────────
+  if (!plan) return <GardenSetup onPlanReady={setPlan} />;
 
-  // ── Setup screen ────────────────────────────────────────────────────────────
-  if (!plan) {
-    return <GardenSetup courses={courses} onPlanReady={setPlan} />;
-  }
-
-  // ── Session complete ────────────────────────────────────────────────────────
+  // ── Session complete ─────────────────────────────────────────────────────────
   if (sessionDone) {
     return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center px-4 gap-8"
-        style={{ background: "linear-gradient(160deg, #f9fdf6 0%, #f0fdf4 60%, #fdf9f0 100%)" }}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center space-y-4 max-w-sm"
-        >
-          <PlantGrowth stage={7} />
-          <h2 className="text-2xl font-bold text-stone-700">Session complete! 🌸</h2>
-          <p className="text-stone-500 text-sm leading-relaxed">
-            You completed {completedCount} task{completedCount !== 1 ? "s" : ""}. Your plant has grown with you.
-          </p>
-          <p className="text-stone-400 text-sm">That took real effort. Be proud.</p>
-          <div className="flex gap-3 justify-center pt-2">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4"
+        style={{ background: "linear-gradient(160deg, #fafdf7 0%, #f0fdf4 60%, #fdf9f5 100%)" }}>
+        <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-5 max-w-sm w-full text-center">
+          <PlantStage completedCount={completedCount} />
+          <div>
+            <h2 className="text-2xl font-bold text-stone-700">Session complete 🌸</h2>
+            <p className="text-stone-400 text-sm mt-2 leading-relaxed">
+              You finished {completedCount} question{completedCount !== 1 ? "s" : ""}.
+              {plan.assignmentName ? ` Great work on ${plan.assignmentName}.` : " That took real effort."} Be proud.
+            </p>
+          </div>
+          <div className="flex gap-3">
             <button
               onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); }}
               className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white"
-              style={{ background: "#5a9a6f" }}
-            >
-              Start new session
+              style={{ background: "#5a9a6f" }}>
+              New session
             </button>
-            <Link to="/focus" className="px-5 py-2.5 rounded-2xl text-sm font-medium text-stone-500 border border-stone-200 hover:bg-stone-50 transition-colors">
-              Back to Focus Room
+            <Link to="/focus"
+              className="px-5 py-2.5 rounded-2xl text-sm font-medium text-stone-500 border border-stone-200 hover:bg-stone-50 transition-colors">
+              Timer mode
             </Link>
           </div>
         </motion.div>
@@ -143,148 +110,148 @@ export default function GardenFocusRoom() {
     );
   }
 
-  // ── Main Focus Room ─────────────────────────────────────────────────────────
+  // ── Main Focus Room ──────────────────────────────────────────────────────────
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: "linear-gradient(160deg, #f9fdf6 0%, #f0fdf4 50%, #fdf9f0 100%)" }}
-    >
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+    <div className="min-h-screen"
+      style={{ background: "linear-gradient(160deg, #fafdf7 0%, #f0fdf4 50%, #fdf9f5 100%)" }}>
+      <div className="max-w-lg mx-auto px-4 py-5 flex flex-col gap-4">
 
-        {/* Top bar */}
-        <div className="flex items-center justify-between">
-          <Link to="/focus" className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-600 transition-colors">
-            <ArrowLeft className="h-3.5 w-3.5" /> Focus Room
+        {/* ── Top bar ── */}
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            {(plan.courseName || plan.courseCode) && (
+              <p className="text-xs font-bold text-stone-500 uppercase tracking-wider truncate">
+                {plan.courseCode && <span className="text-green-600 mr-1">{plan.courseCode}</span>}
+                {plan.courseName}
+              </p>
+            )}
+            {plan.assignmentName && (
+              <p className="text-sm font-semibold text-stone-700 mt-0.5 leading-snug">{plan.assignmentName}</p>
+            )}
+            {plan.sessionGoal && !plan.assignmentName && (
+              <p className="text-sm text-stone-500 mt-0.5 leading-snug">{plan.sessionGoal}</p>
+            )}
+          </div>
+          <Link to="/focus"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ml-3 shrink-0 transition-colors hover:bg-green-50"
+            style={{ color: "#5a9a6f", border: "1.5px solid #d1fae5" }}>
+            <Leaf className="h-3 w-3" /> Timer
           </Link>
-          <div className="text-center">
-            <p className="text-xs font-bold text-stone-600">{plan.courseName || "Study Session"}</p>
-            <p className="text-[10px] text-stone-400">{plan.sessionGoal}</p>
+        </div>
+
+        {/* ── Progress bar ── */}
+        <div className="space-y-1">
+          <div className="flex justify-between text-[10px] text-stone-400 font-medium">
+            <span>{completedCount} of {totalTasks} done</span>
+            <span>{pct}%</span>
           </div>
-          <div className="text-xs text-stone-400 text-right">
-            {completedCount} / {totalTasks} done
+          <div className="h-2 rounded-full bg-stone-100 overflow-hidden">
+            <motion.div className="h-full rounded-full"
+              style={{ background: "linear-gradient(90deg, #5a9a6f, #8bc49a)" }}
+              animate={{ width: `${pct}%` }}
+              transition={{ duration: 0.6 }} />
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="h-1.5 rounded-full bg-stone-100 overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg, #5a9a6f, #8bc49a)" }}
-            animate={{ width: `${totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0}%` }}
-            transition={{ duration: 0.6 }}
-          />
-        </div>
-
+        {/* ── Main content ── */}
         <AnimatePresence mode="wait">
-          {showInteraction ? (
-            /* ── Garden interaction ── */
+
+          {/* PLANT INTERACTION after completing a task */}
+          {showInteraction && (
             <motion.div key="interaction"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <GardenInteraction
-                taskIndex={completedCount}
-                onComplete={handleInteractionDone}
-              />
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <PlantInteraction completedCount={completedCount} onDone={handleInteractionDone} />
             </motion.div>
-          ) : (
-            <motion.div key="task"
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-              className="space-y-4"
-            >
+          )}
+
+          {/* TASK CARD */}
+          {!showInteraction && currentTask && (
+            <motion.div key={`task-${currentIdx}`}
+              initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              className="space-y-4">
+
               {/* Task card */}
-              {currentTask && (
-                <div
-                  className="rounded-3xl p-6 space-y-4"
-                  style={{ background: "white", border: "1.5px solid #d1fae5", boxShadow: "0 2px 20px rgba(90,154,111,0.08)" }}
-                >
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
-                      Question {currentIdx + 1} of {totalTasks}
-                    </p>
-                    <h2 className="text-xl font-bold text-stone-800 mt-1 leading-snug">
-                      {currentTask.title}
-                    </h2>
-                    {currentTask.subtitle && (
-                      <p className="text-sm text-stone-500 mt-1">{currentTask.subtitle}</p>
-                    )}
-                  </div>
+              <div className="rounded-3xl p-6 space-y-5"
+                style={{ background: "white", border: "1.5px solid #d1fae5", boxShadow: "0 4px 24px rgba(90,154,111,0.07)" }}>
 
-                  {/* Timer */}
-                  <div className="flex justify-center py-2">
-                    <TaskTimer
-                      durationMinutes={currentTask.duration || 7}
-                      isRunning={isRunning}
-                      onTimeUp={handleTimeUp}
-                    />
-                  </div>
+                {/* Task label */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                    Question {currentIdx + 1} of {totalTasks}
+                  </p>
+                  <h2 className="text-2xl font-bold text-stone-800 mt-1.5 leading-snug">
+                    {currentTask.title}
+                  </h2>
+                  {currentTask.subtitle && (
+                    <p className="text-base text-stone-500 mt-1">{currentTask.subtitle}</p>
+                  )}
+                </div>
 
-                  {/* Time up gentle message */}
-                  <AnimatePresence>
-                    {timeUpMessage && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-center py-2 px-4 rounded-2xl text-sm text-amber-700"
-                        style={{ background: "#fffbeb", border: "1px solid #fde68a" }}
-                      >
-                        Time's up — want to try a smaller version? That's totally okay. 🌤️
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                {/* Timer */}
+                <div className="flex justify-center">
+                  <TaskTimer
+                    durationMinutes={currentTask.duration || 7}
+                    isRunning={isRunning}
+                    onTimeUp={handleTimeUp}
+                  />
+                </div>
 
-                  {/* Action buttons */}
-                  <div className="space-y-2.5">
-                    <button
-                      onClick={handleComplete}
-                      className="w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95"
-                      style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)" }}
-                    >
-                      ✓ Complete Question
+                {/* Time up message */}
+                <AnimatePresence>
+                  {timeUpMessage && (
+                    <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                      className="text-center py-2.5 px-4 rounded-2xl text-sm text-amber-700"
+                      style={{ background: "#fffbeb", border: "1px solid #fde68a" }}>
+                      Time's up — it's okay. Want to try a smaller piece? 🌤️
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Action buttons */}
+                <div className="space-y-2.5">
+                  <button onClick={handleComplete}
+                    className="w-full py-4 rounded-2xl text-base font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                    style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)" }}>
+                    ✓ Complete Question
+                  </button>
+
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowStuck(true)}
+                      className="flex-1 py-3 rounded-2xl text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-50 active:scale-[0.98]"
+                      style={{ border: "1.5px solid #e5e7eb" }}>
+                      I'm Stuck
                     </button>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowStuck(true)}
-                        className="flex-1 py-2.5 rounded-2xl text-xs font-semibold text-stone-600 transition-colors hover:bg-stone-100"
-                        style={{ border: "1.5px solid #e5e7eb" }}
-                      >
-                        I'm Stuck
-                      </button>
-                      <button
-                        onClick={() => setShowSmaller(true)}
-                        className="flex-1 py-2.5 rounded-2xl text-xs font-semibold text-stone-600 transition-colors hover:bg-stone-100"
-                        style={{ border: "1.5px solid #e5e7eb" }}
-                      >
-                        Smaller Step
-                      </button>
-                      <button
-                        onClick={() => setIsRunning(r => !r)}
-                        className="h-10 w-10 rounded-2xl flex items-center justify-center text-stone-500 transition-colors hover:bg-stone-100"
-                        style={{ border: "1.5px solid #e5e7eb" }}
-                      >
-                        {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                      </button>
-                    </div>
+                    <button onClick={() => setShowSmaller(true)}
+                      className="flex-1 py-3 rounded-2xl text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-50 active:scale-[0.98]"
+                      style={{ border: "1.5px solid #e5e7eb" }}>
+                      Smaller Step
+                    </button>
+                    <button onClick={() => setIsRunning(r => !r)}
+                      className="h-12 w-12 rounded-2xl flex items-center justify-center text-stone-500 transition-colors hover:bg-stone-50"
+                      style={{ border: "1.5px solid #e5e7eb" }}>
+                      {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Bottom row: plant + companion */}
-              <div className="flex items-end gap-5 px-2">
-                <PlantGrowth stage={plantStage} />
-                <div className="flex-1 pb-1">
+              {/* Plant + companion row */}
+              <div className="flex items-end gap-4 px-1">
+                <PlantStage completedCount={completedCount} />
+                <div className="flex-1 pb-2">
                   <CompanionMessage context={companionCtx} />
                 </div>
               </div>
 
-              {/* Upcoming tasks (subtle, low-distraction) */}
+              {/* Up next (low-distraction) */}
               {activeTasks.length > currentIdx + 1 && (
-                <div className="px-1">
-                  <p className="text-[10px] text-stone-300 uppercase tracking-widest mb-1.5 font-bold">Up next</p>
+                <div className="px-1 pb-1">
+                  <p className="text-[10px] text-stone-300 uppercase tracking-widest mb-1.5 font-semibold">Up next</p>
                   <div className="space-y-1">
                     {activeTasks.slice(currentIdx + 1, currentIdx + 3).map((t, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs text-stone-300 py-1">
-                        <span className="h-1 w-1 rounded-full bg-stone-200" />
-                        <span>{t.title}{t.subtitle ? ` — ${t.subtitle}` : ""}</span>
+                      <div key={i} className="flex items-center gap-2 text-xs text-stone-300 py-0.5">
+                        <span className="h-1 w-1 rounded-full bg-stone-200 shrink-0" />
+                        <span className="truncate">{t.title}{t.subtitle ? ` — ${t.subtitle}` : ""}</span>
                       </div>
                     ))}
                     {activeTasks.length > currentIdx + 3 && (
@@ -301,21 +268,17 @@ export default function GardenFocusRoom() {
       {/* Modals */}
       <AnimatePresence>
         {showStuck && (
-          <StuckModal
-            task={currentTask}
+          <StuckModal task={currentTask}
             onSmallerStep={() => { setShowStuck(false); setShowSmaller(true); }}
             onSkip={handleSkip}
-            onClose={() => setShowStuck(false)}
-          />
+            onClose={() => setShowStuck(false)} />
         )}
       </AnimatePresence>
       <AnimatePresence>
         {showSmaller && (
-          <SmallerStepModal
-            task={currentTask}
+          <SmallerStepModal task={currentTask}
             onSubtask={handleSmallerTask}
-            onClose={() => setShowSmaller(false)}
-          />
+            onClose={() => setShowSmaller(false)} />
         )}
       </AnimatePresence>
     </div>
