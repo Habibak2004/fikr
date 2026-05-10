@@ -3,7 +3,6 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import FocusCoachPanel from "@/components/focus-room/FocusCoachPanel";
 import TimerSettingsModal from "@/components/focus-room/TimerSettingsModal";
 import StudyCompanion from "@/components/focus-room/StudyCompanion";
 import WorldHub from "@/components/focus-room/world/WorldHub";
