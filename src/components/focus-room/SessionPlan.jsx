@@ -2,12 +2,15 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import TaskCard from "./TaskCard";
 
-export default function SessionPlan({ plan, onStartTimer }) {
+export default function SessionPlan({ plan, onStartTimer, onTaskComplete }) {
   const [completedIds, setCompletedIds] = useState([]);
 
   if (!plan) return null;
 
-  const complete = (i) => setCompletedIds(prev => [...new Set([...prev, i])]);
+  const complete = (i) => {
+    setCompletedIds(prev => [...new Set([...prev, i])]);
+    if (onTaskComplete) onTaskComplete();
+  };
   const activeIndex = plan.tasks.findIndex((_, i) => !completedIds.includes(i));
   const pct = Math.round((completedIds.length / plan.tasks.length) * 100);
 

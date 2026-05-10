@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import FocusCoachPanel from "@/components/focus-room/FocusCoachPanel";
 import TimerSettingsModal from "@/components/focus-room/TimerSettingsModal";
 import SessionPlan from "@/components/focus-room/SessionPlan";
+import StudyCompanion from "@/components/focus-room/StudyCompanion";
 
 export default function FocusRoom() {
   const [selectedCourse, setSelectedCourse] = useState("");
@@ -20,6 +21,7 @@ export default function FocusRoom() {
   const [totalFocused, setTotalFocused] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [plan, setPlan] = useState(null);
+  const [completedTaskCount, setCompletedTaskCount] = useState(0);
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const queryClient = useQueryClient();
@@ -237,7 +239,7 @@ export default function FocusRoom() {
         {/* RIGHT — Session Plan */}
         <div className="flex-1 min-w-0">
           {plan ? (
-            <SessionPlan plan={plan} onStartTimer={startTimer} />
+            <SessionPlan plan={plan} onStartTimer={startTimer} onTaskComplete={() => setCompletedTaskCount(c => c + 1)} />
           ) : (
             <motion.div
               initial={{ opacity: 0 }}
@@ -260,6 +262,13 @@ export default function FocusRoom() {
         focusMinutes={focusMinutes}
         breakMinutes={breakMinutes}
         onSave={handleSettingsSave}
+      />
+
+      <StudyCompanion
+        isTimerRunning={isRunning}
+        isBreak={isBreak}
+        completedTaskCount={completedTaskCount}
+        plan={plan}
       />
     </div>
   );
