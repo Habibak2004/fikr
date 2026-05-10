@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 
@@ -20,13 +20,25 @@ function parseTaskJSON(messages) {
   return null;
 }
 
+function getLastAssistantText(messages) {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role === "assistant" && m.content && !m.content.match(/\{[\s\S]*"sessionGoal"/)) {
+      return m.content.trim();
+    }
+  }
+  return null;
+}
+
 export default function FocusCoachPanel({ selectedCourse, courses, onPlanReady }) {
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [userGoal, setUserGoal] = useState("");
   const [selectedAssignment, setSelectedAssignment] = useState("");
-  const [phase, setPhase] = useState("idle"); // idle | setup | loading | done
+  const [phase, setPhase] = useState("idle"); // idle | setup | loading | clarifying | replying | done
+  const [clarifyingQuestion, setClarifyingQuestion] = useState("");
+  const [clarifyReply, setClarifyReply] = useState("");
+  const unsubscribeRef = useRef(null);
 
   const courseName = courses.find(c => c.id === selectedCourse)?.name;
 
@@ -42,6 +54,32 @@ export default function FocusCoachPanel({ selectedCourse, courses, onPlanReady }
     a => !a.completed && a.status !== "submitted" && a.status !== "graded"
   );
 
+  const subscribeAndListen = (conv) => {
+    if (unsubscribeRef.current) unsubscribeRef.current();
+    const unsub = base44.agents.subscribeToConversation(conv.id, (data) => {
+      const msgs = data.messages || [];
+      setMessages(msgs);
+
+      // Check if we got a final plan
+      const parsed = parseTaskJSON(msgs);
+      if (parsed?.tasks?.length) {
+        setPhase("done");
+        onPlanReady(parsed);
+        unsub();
+        unsubscribeRef.current = null;
+        return;
+      }
+
+      // Check if the last assistant message is a clarifying question (not JSON)
+      const lastAssistant = getLastAssistantText(msgs);
+      if (lastAssistant && msgs[msgs.length - 1]?.role === "assistant") {
+        setClarifyingQuestion(lastAssistant);
+        setPhase("clarifying");
+      }
+    });
+    unsubscribeRef.current = unsub;
+  };
+
   const startSession = async () => {
     const pickedAssignment = pendingAssignments.find(a => a.id === selectedAssignment);
     setPhase("loading");
@@ -51,17 +89,7 @@ export default function FocusCoachPanel({ selectedCourse, courses, onPlanReady }
       metadata: { name: "Focus Session" },
     });
     setConversation(conv);
-
-    const unsubscribe = base44.agents.subscribeToConversation(conv.id, (data) => {
-      const msgs = data.messages || [];
-      setMessages(msgs);
-      const parsed = parseTaskJSON(msgs);
-      if (parsed?.tasks?.length) {
-        setPhase("done");
-        onPlanReady(parsed);
-        unsubscribe();
-      }
-    });
+    subscribeAndListen(conv);
 
     let assignmentContext = "";
     if (pickedAssignment) {
@@ -75,18 +103,33 @@ export default function FocusCoachPanel({ selectedCourse, courses, onPlanReady }
     const goalPart = userGoal.trim() ? ` Goal: "${userGoal.trim()}".` : "";
     const courseCtx = courseName ? ` Course: "${courseName}".` : "";
 
-    const prompt = `Generate a focused session plan for me.${courseCtx}${assignmentContext}${goalPart} Return ONLY the JSON object with sessionGoal and tasks array. No explanation, no markdown, just the raw JSON.`;
+    const prompt = `Generate a focused session plan for me.${courseCtx}${assignmentContext}${goalPart} If you have enough detail to name specific sections, question numbers, or worksheet chunks — return ONLY the JSON. If you need more information to give literal task names (e.g. which section, which questions), ask ONE short clarifying question instead of returning JSON.`;
 
     await base44.agents.addMessage(conv, { role: "user", content: prompt });
   };
 
+  const sendClarification = async () => {
+    if (!clarifyReply.trim() || !conversation) return;
+    setPhase("replying");
+    const reply = clarifyReply.trim();
+    setClarifyReply("");
+    await base44.agents.addMessage(conversation, {
+      role: "user",
+      content: reply + " Now return ONLY the JSON plan with sessionGoal and tasks.",
+    });
+  };
+
   const regenerate = () => {
+    if (unsubscribeRef.current) { unsubscribeRef.current(); unsubscribeRef.current = null; }
     setPhase("setup");
     setMessages([]);
     setConversation(null);
+    setClarifyingQuestion("");
+    setClarifyReply("");
     onPlanReady(null);
   };
 
+  // ── IDLE ──
   if (phase === "idle") {
     return (
       <motion.button
@@ -108,7 +151,8 @@ export default function FocusCoachPanel({ selectedCourse, courses, onPlanReady }
     );
   }
 
-  if (phase === "loading") {
+  // ── LOADING / REPLYING ──
+  if (phase === "loading" || phase === "replying") {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -120,13 +164,53 @@ export default function FocusCoachPanel({ selectedCourse, courses, onPlanReady }
           <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin" />
         </div>
         <div>
-          <p className="text-sm font-bold text-stone-700">Building your focus plan…</p>
+          <p className="text-sm font-bold text-stone-700">
+            {phase === "replying" ? "Got it, building your plan…" : "Building your focus plan…"}
+          </p>
           <p className="text-xs text-stone-400 mt-1">Breaking your goals into small, actionable steps</p>
         </div>
       </motion.div>
     );
   }
 
+  // ── CLARIFYING ──
+  if (phase === "clarifying") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/80 backdrop-blur-sm rounded-2xl border border-primary/20 shadow-sm p-5 space-y-4"
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className="text-sm font-bold text-primary">Focus Coach</span>
+        </div>
+        <p className="text-sm text-stone-700 leading-relaxed">{clarifyingQuestion}</p>
+        <div className="flex gap-2">
+          <Input
+            autoFocus
+            value={clarifyReply}
+            onChange={e => setClarifyReply(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && sendClarification()}
+            placeholder="Type your answer…"
+            className="rounded-xl text-sm border-stone-200 flex-1"
+          />
+          <Button
+            onClick={sendClarification}
+            disabled={!clarifyReply.trim()}
+            className="rounded-xl bg-primary hover:bg-primary/90 px-4"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+        <button onClick={regenerate} className="text-xs text-stone-400 hover:text-primary underline">
+          Start over
+        </button>
+      </motion.div>
+    );
+  }
+
+  // ── DONE ──
   if (phase === "done") {
     return (
       <motion.div
@@ -145,7 +229,7 @@ export default function FocusCoachPanel({ selectedCourse, courses, onPlanReady }
     );
   }
 
-  // phase === "setup"
+  // ── SETUP ──
   return (
     <AnimatePresence>
       <motion.div
