@@ -18,6 +18,7 @@ import Community from './pages/Community';
 import StudyCoach from './pages/StudyCoach';
 import Insights from './pages/Insights';
 import AppLayout from './components/layout/AppLayout';
+import GardenFocusRoom from './pages/GardenFocusRoom';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -50,6 +51,7 @@ const AuthenticatedApp = () => {
         <Route path="/calendar" element={<AcademicCalendar />} />
         <Route path="/heatmap" element={<Heatmap />} />
         <Route path="/focus" element={<FocusRoom />} />
+        <Route path="/garden" element={<GardenFocusRoom />} />
         <Route path="/community" element={<Community />} />
         <Route path="/coach" element={<StudyCoach />} />
         <Route path="/insights" element={<Insights />} />

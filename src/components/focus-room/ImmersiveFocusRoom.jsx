@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Square, Settings2, Coffee, ChevronRight, Globe, Sparkles } from "lucide-react";
+import { Play, Pause, Square, Settings2, Coffee, ChevronRight, Globe, Sparkles, Leaf } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Link } from "react-router-dom";
 import FocusCoachPanel from "./FocusCoachPanel";
 import WorldScene from "./world/WorldScene";
 import SessionPlan from "./SessionPlan";
@@ -182,6 +183,15 @@ export default function ImmersiveFocusRoom({
                   Today: <span className="font-semibold text-stone-600">{totalFocused} min focused</span>
                 </p>
               )}
+
+              {/* Garden Focus Room link */}
+              <Link
+                to="/garden"
+                className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-semibold transition-colors hover:bg-green-50"
+                style={{ color: "#5a9a6f", border: "1.5px solid #d1fae5" }}
+              >
+                <Leaf className="h-3 w-3" /> Try Garden Mode
+              </Link>
             </div>
 
             {/* Course selector */}
