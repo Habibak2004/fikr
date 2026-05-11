@@ -4,26 +4,36 @@ import { motion } from "framer-motion";
 export default function TaskTimer({ durationMinutes = 7, isRunning, onTimeUp }) {
   const [secondsLeft, setSecondsLeft] = useState(durationMinutes * 60);
   const intervalRef = useRef(null);
-  const warnedRef = useRef(false);
 
+  // Reset when duration changes
   useEffect(() => {
     setSecondsLeft(durationMinutes * 60);
-    warnedRef.current = false;
   }, [durationMinutes]);
 
+  // Single interval, only cleared/started when isRunning flips
   useEffect(() => {
-    if (!isRunning) { clearInterval(intervalRef.current); return; }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (!isRunning) return;
+
     intervalRef.current = setInterval(() => {
       setSecondsLeft(prev => {
         if (prev <= 1) {
           clearInterval(intervalRef.current);
+          intervalRef.current = null;
           onTimeUp?.();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(intervalRef.current);
+
+    return () => {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    };
   }, [isRunning]);
 
   const total = durationMinutes * 60;
