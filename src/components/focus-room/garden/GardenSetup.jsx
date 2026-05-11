@@ -41,6 +41,20 @@ export default function GardenSetup({ onPlanReady }) {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
 
+  const isYesNoQuestion = (text = "") => {
+    const t = text.toLowerCase();
+    // Ends with a question mark and contains yes/no indicators
+    return /\?/.test(t) && /(yes or no|yes\/no|\bdo you\b|\bare you\b|\bwould you\b|\bhave you\b|\bcan you\b|\bis (this|it|there)\b|\bdid you\b)/.test(t);
+  };
+
+  const lastAssistantMessage = [...messages].reverse().find(m => m.role === "assistant");
+  const showYesNo = !isTyping && lastAssistantMessage && isYesNoQuestion(lastAssistantMessage.content);
+
+  const sendQuick = async (text) => {
+    setIsTyping(true);
+    await base44.agents.addMessage(conversation, { role: "user", content: text });
+  };
+
   const tryParsePlan = (text) => {
     try {
       const match = text.match(/\{[\s\S]*\}/);
@@ -217,6 +231,23 @@ export default function GardenSetup({ onPlanReady }) {
                 )}
                 <div ref={endRef} />
               </div>
+
+              {/* Yes/No quick buttons */}
+              {showYesNo && (
+                <div className="flex gap-2 px-3 pt-3">
+                  {["Yes", "No"].map(opt => (
+                    <button key={opt} onClick={() => sendQuick(opt)}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all hover:opacity-90 active:scale-95"
+                      style={{
+                        background: opt === "Yes" ? "#5a9a6f" : "white",
+                        color: opt === "Yes" ? "white" : "#374151",
+                        border: `1.5px solid ${opt === "Yes" ? "#5a9a6f" : "#e5e7eb"}`,
+                      }}>
+                      {opt === "Yes" ? "✓ Yes" : "✗ No"}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Input */}
               <div className="flex gap-2 p-3 border-t border-green-50">
