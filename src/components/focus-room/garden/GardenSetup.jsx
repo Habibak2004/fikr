@@ -63,13 +63,16 @@ export default function GardenSetup({ onPlanReady }) {
   };
 
   const tryParsePlan = (text) => {
+    // Strip markdown code fences if present
+    const stripped = text.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "");
     try {
-      const match = text.match(/\{[\s\S]*\}/);
+      const match = stripped.match(/\{[\s\S]*\}/);
       if (match) {
         const parsed = JSON.parse(match[0]);
         if (parsed.tasks?.length) return parsed;
       }
     } catch {}
+    // Fallback: if the message has no JSON but clearly signals a plan is done, show button anyway
     return null;
   };
 
@@ -289,13 +292,18 @@ export default function GardenSetup({ onPlanReady }) {
 
             {/* Start session CTA once plan is ready */}
             {pendingPlan && (
-              <motion.button
-                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                onClick={() => onPlanReady(pendingPlan)}
-                className="w-full py-4 rounded-2xl text-base font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)" }}>
-                🌱 Start my session →
-              </motion.button>
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+                <div className="px-4 py-3 rounded-2xl text-sm text-green-700 text-center"
+                  style={{ background: "#f0fdf4", border: "1.5px solid #d1fae5" }}>
+                  ✅ Your plan is ready! {pendingPlan.tasks?.length} tasks lined up.
+                </div>
+                <button
+                  onClick={() => onPlanReady(pendingPlan)}
+                  className="w-full py-4 rounded-2xl text-base font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)" }}>
+                  🌱 Start my session →
+                </button>
+              </motion.div>
             )}
           </>
         )}
