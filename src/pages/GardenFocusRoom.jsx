@@ -10,6 +10,7 @@ import CompanionMessage from "@/components/focus-room/garden/CompanionMessage";
 import StuckModal from "@/components/focus-room/garden/StuckModal";
 import SmallerStepModal from "@/components/focus-room/garden/SmallerStepModal";
 import BreathingModal from "@/components/focus-room/garden/BreathingModal";
+import AmbientPlayer from "@/components/focus-room/garden/AmbientPlayer";
 
 export default function GardenFocusRoom() {
   const [plan, setPlan] = useState(null);
@@ -118,8 +119,9 @@ export default function GardenFocusRoom() {
       style={{ background: "linear-gradient(160deg, #fafdf7 0%, #f0fdf4 50%, #fdf9f5 100%)" }}>
       <div className="max-w-lg mx-auto px-4 py-5 flex flex-col gap-4">
 
-        {/* ── SOS Button ── */}
-        <div className="flex justify-end">
+        {/* ── Ambient Player + SOS ── */}
+        <div className="flex justify-between items-center">
+          <AmbientPlayer />
           <button
             onClick={() => { setIsRunning(false); setShowBreathing(true); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all hover:opacity-90 active:scale-95"
