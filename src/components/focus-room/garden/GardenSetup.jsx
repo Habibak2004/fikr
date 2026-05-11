@@ -43,7 +43,8 @@ export default function GardenSetup({ onPlanReady }) {
 
   const isYesNoQuestion = (text = "") => {
     const t = text.toLowerCase();
-    return /\?/.test(t) && /(yes or no|yes\/no|\bdo you\b|\bare you\b|\bwould you\b|\bhave you\b|\bcan you\b|\bis (this|it|there)\b|\bdid you\b)/.test(t);
+    // Only show yes/no buttons for clearly binary questions
+    return /\?/.test(t) && /(yes or no|yes\/no|\(yes\/no\)|\(yes or no\)|answer yes or no)/.test(t);
   };
 
   const isTimeQuestion = (text = "") => {
