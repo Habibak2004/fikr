@@ -103,7 +103,7 @@ export default function GardenSetup({ onPlanReady }) {
     const assignCtx = selectedAssignment ? ` Assignment: "${selectedAssignment.name}".` : "";
     await base44.agents.addMessage(conv, {
       role: "user",
-      content: `I want to start a focused study session. ${courseCtx}${assignCtx} Please ask me your 2–3 clarifying questions (all at once) so you can build a problem-level task plan.`,
+      content: `I want to start a focused study session. ${courseCtx}${assignCtx} Ask me your clarifying questions ONE AT A TIME — ask the first question now, wait for my answer, then ask the next. Do not list multiple questions at once. Once you have enough info (2–3 answers), generate the task plan.`,
     });
   };
 
