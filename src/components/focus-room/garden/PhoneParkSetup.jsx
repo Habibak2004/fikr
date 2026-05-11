@@ -70,13 +70,13 @@ export default function PhoneParkSetup({ task, onParked, onSkip }) {
               className="rounded-2xl p-5 text-center space-y-3"
               style={{ background: "white", border: "1.5px solid #d1fae5" }}
             >
-              {/* Simple SVG QR placeholder — represents "scan this to confirm park" */}
-              <div className="mx-auto w-24 h-24 rounded-xl flex items-center justify-center"
-                style={{ background: "#f0fdf4", border: "1.5px solid #d1fae5" }}>
-                <QrCode className="h-12 w-12 text-green-500" />
-              </div>
+                  <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent("https://fikr.app/parked")}&bgcolor=f0fdf4&color=3d7a52&margin=10`}
+                alt="QR Code — scan to park"
+                className="mx-auto w-40 h-40 rounded-xl"
+              />
               <p className="text-xs text-stone-400 leading-relaxed">
-                Scan this on the device you're parking, then tap <strong className="text-stone-600">I parked my phone</strong> below.
+                Scan this QR on your phone, then tap <strong className="text-stone-600">Done, phone is parked</strong> below.
               </p>
               <button onClick={() => onParked("qr")}
                 className="px-5 py-2.5 rounded-2xl text-sm font-bold text-white"
