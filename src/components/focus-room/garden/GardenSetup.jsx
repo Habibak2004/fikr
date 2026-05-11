@@ -43,12 +43,17 @@ export default function GardenSetup({ onPlanReady }) {
 
   const isYesNoQuestion = (text = "") => {
     const t = text.toLowerCase();
-    // Ends with a question mark and contains yes/no indicators
     return /\?/.test(t) && /(yes or no|yes\/no|\bdo you\b|\bare you\b|\bwould you\b|\bhave you\b|\bcan you\b|\bis (this|it|there)\b|\bdid you\b)/.test(t);
+  };
+
+  const isTimeQuestion = (text = "") => {
+    const t = text.toLowerCase();
+    return /\?/.test(t) && /(how (long|much time)|how many (minutes|hours)|time do you have|available (time|to study)|study (for|time)|minutes|hours)/.test(t);
   };
 
   const lastAssistantMessage = [...messages].reverse().find(m => m.role === "assistant");
   const showYesNo = !isTyping && lastAssistantMessage && isYesNoQuestion(lastAssistantMessage.content);
+  const showTimePicker = !isTyping && !showYesNo && lastAssistantMessage && isTimeQuestion(lastAssistantMessage.content);
 
   const sendQuick = async (text) => {
     setIsTyping(true);
@@ -244,6 +249,19 @@ export default function GardenSetup({ onPlanReady }) {
                         border: `1.5px solid ${opt === "Yes" ? "#5a9a6f" : "#e5e7eb"}`,
                       }}>
                       {opt === "Yes" ? "✓ Yes" : "✗ No"}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Time quick buttons */}
+              {showTimePicker && (
+                <div className="flex gap-2 px-3 pt-3 flex-wrap">
+                  {["15 min", "30 min", "45 min", "1 hour", "2 hours"].map(opt => (
+                    <button key={opt} onClick={() => sendQuick(opt)}
+                      className="px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+                      style={{ background: "#f0fdf4", color: "#4a7c59", border: "1.5px solid #d1fae5" }}>
+                      {opt}
                     </button>
                   ))}
                 </div>
