@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 
 const PHASES = [
-  { label: "Breathe in", duration: 4, color: "#5a9a6f" },
+  { label: "Breathe in", duration: 5, color: "#5a9a6f" },
+  { label: "Hold", duration: 6, color: "#8bc49a" },
+  { label: "Breathe out", duration: 8, color: "#4a7c59" },
   { label: "Hold", duration: 4, color: "#8bc49a" },
-  { label: "Breathe out", duration: 6, color: "#4a7c59" },
-  { label: "Hold", duration: 2, color: "#8bc49a" },
 ];
 
 const TOTAL_CYCLE = PHASES.reduce((s, p) => s + p.duration, 0); // 16s
