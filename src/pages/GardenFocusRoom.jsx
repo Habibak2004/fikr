@@ -9,6 +9,7 @@ import TaskTimer from "@/components/focus-room/garden/TaskTimer";
 import CompanionMessage from "@/components/focus-room/garden/CompanionMessage";
 import StuckModal from "@/components/focus-room/garden/StuckModal";
 import SmallerStepModal from "@/components/focus-room/garden/SmallerStepModal";
+import BreathingModal from "@/components/focus-room/garden/BreathingModal";
 
 export default function GardenFocusRoom() {
   const [plan, setPlan] = useState(null);
@@ -19,6 +20,7 @@ export default function GardenFocusRoom() {
   const [showInteraction, setShowInteraction] = useState(false);
   const [showStuck, setShowStuck] = useState(false);
   const [showSmaller, setShowSmaller] = useState(false);
+  const [showBreathing, setShowBreathing] = useState(false);
   const [companionCtx, setCompanionCtx] = useState("start");
   const [timeUpMessage, setTimeUpMessage] = useState(false);
   const [sessionDone, setSessionDone] = useState(false);
@@ -115,6 +117,16 @@ export default function GardenFocusRoom() {
     <div className="min-h-screen"
       style={{ background: "linear-gradient(160deg, #fafdf7 0%, #f0fdf4 50%, #fdf9f5 100%)" }}>
       <div className="max-w-lg mx-auto px-4 py-5 flex flex-col gap-4">
+
+        {/* ── SOS Button ── */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => { setIsRunning(false); setShowBreathing(true); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all hover:opacity-90 active:scale-95"
+            style={{ background: "#fff1f2", color: "#e11d48", border: "1.5px solid #fecdd3" }}>
+            🆘 SOS
+          </button>
+        </div>
 
         {/* ── Top bar ── */}
         <div className="flex items-start justify-between">
@@ -279,6 +291,11 @@ export default function GardenFocusRoom() {
           <SmallerStepModal task={currentTask}
             onSubtask={handleSmallerTask}
             onClose={() => setShowSmaller(false)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showBreathing && (
+          <BreathingModal onClose={() => setShowBreathing(false)} />
         )}
       </AnimatePresence>
     </div>
