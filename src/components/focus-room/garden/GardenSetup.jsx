@@ -24,6 +24,7 @@ export default function GardenSetup({ onPlanReady }) {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState(null);
   const unsubRef = useRef(null);
   const endRef = useRef(null);
   const lastCount = useRef(0);
@@ -88,7 +89,7 @@ export default function GardenSetup({ onPlanReady }) {
         setIsTyping(false);
         const plan = tryParsePlan(last.content);
         if (plan) {
-          onPlanReady({
+          setPendingPlan({
             ...plan,
             courseId: selectedCourse?.id,
             courseName: selectedCourse?.name,
@@ -268,8 +269,8 @@ export default function GardenSetup({ onPlanReady }) {
                 </div>
               )}
 
-              {/* Input */}
-              <div className="flex gap-2 p-3 border-t border-green-50">
+              {/* Input — hide when plan ready */}
+              <div className="flex gap-2 p-3 border-t border-green-50" style={{ display: pendingPlan ? "none" : "flex" }}>
                 <input
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -285,6 +286,17 @@ export default function GardenSetup({ onPlanReady }) {
                 </button>
               </div>
             </div>
+
+            {/* Start session CTA once plan is ready */}
+            {pendingPlan && (
+              <motion.button
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                onClick={() => onPlanReady(pendingPlan)}
+                className="w-full py-4 rounded-2xl text-base font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)" }}>
+                🌱 Start my session →
+              </motion.button>
+            )}
           </>
         )}
       </motion.div>
