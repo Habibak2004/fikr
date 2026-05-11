@@ -11,6 +11,9 @@ import StuckModal from "@/components/focus-room/garden/StuckModal";
 import SmallerStepModal from "@/components/focus-room/garden/SmallerStepModal";
 import BreathingModal from "@/components/focus-room/garden/BreathingModal";
 import AmbientPlayer from "@/components/focus-room/garden/AmbientPlayer";
+import PhoneParkSetup from "@/components/focus-room/garden/PhoneParkSetup";
+import PhoneParkedScreen from "@/components/focus-room/garden/PhoneParkedScreen";
+import PhoneReturnScreen from "@/components/focus-room/garden/PhoneReturnScreen";
 
 export default function GardenFocusRoom() {
   const [plan, setPlan] = useState(null);
@@ -26,6 +29,11 @@ export default function GardenFocusRoom() {
   const [timeUpMessage, setTimeUpMessage] = useState(false);
   const [sessionDone, setSessionDone] = useState(false);
 
+  // Phone Parking state
+  // "setup" | "parked" | "moved" | null (skipped/not started)
+  const [phoneState, setPhoneState] = useState(null);
+  const [phoneParkedBonus, setPhoneParkedBonus] = useState(false); // earned water drop
+
   const allTasks = plan?.tasks || [];
   const activeTasks = allTasks.filter((_, i) => !skippedIds.includes(i));
   const currentTask = activeTasks[currentIdx] ?? null;
@@ -33,9 +41,12 @@ export default function GardenFocusRoom() {
   const isLastTask = currentIdx >= totalTasks - 1;
   const pct = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
 
-  // Auto-start when task changes
+  // Auto-start when task changes (only in skipped/standard mode)
   useEffect(() => {
-    if (currentTask) { setIsRunning(true); setTimeUpMessage(false); }
+    if (currentTask && phoneState === "skipped") {
+      setIsRunning(true);
+      setTimeUpMessage(false);
+    }
   }, [currentIdx, !!currentTask]);
 
   const handleComplete = () => {
@@ -45,8 +56,13 @@ export default function GardenFocusRoom() {
 
   const handleInteractionDone = () => {
     setShowInteraction(false);
-    setCompletedCount(c => c + 1);
+    // If phone was parked, award bonus and reset for next task
+    const bonus = phoneParkedBonus ? 1 : 0;
+    setPhoneParkedBonus(false);
+    setCompletedCount(c => c + 1 + bonus);
     setCompanionCtx("progress");
+    // Reset phone state so next task also prompts phone park
+    if (phoneState === "parked") setPhoneState(null);
     if (isLastTask) setSessionDone(true);
     else setCurrentIdx(i => i + 1);
   };
@@ -78,8 +94,75 @@ export default function GardenFocusRoom() {
     setCompanionCtx("timer_low");
   };
 
+  // Phone parking handlers
+  const handlePhoneParked = () => {
+    setPhoneState("parked");
+    setIsRunning(true);
+    setTimeUpMessage(false);
+  };
+
+  const handlePhoneMoved = () => {
+    setIsRunning(false);
+    setPhoneState("moved");
+  };
+
+  const handleReturnFromPhone = () => {
+    setPhoneParkedBonus(true); // award a water drop for returning
+    setPhoneState("parked");
+    setIsRunning(true);
+  };
+
+  const handlePhoneBreak = () => {
+    setPhoneState(null);
+    setIsRunning(false);
+    setShowBreathing(true);
+  };
+
+  const handleEmergencyUnlock = () => {
+    setPhoneState(null);
+    setIsRunning(false);
+  };
+
   // ── Setup ────────────────────────────────────────────────────────────────────
   if (!plan) return <GardenSetup onPlanReady={setPlan} />;
+
+  // ── Phone Park Setup (shown after plan is ready, before session starts) ──────
+  if (phoneState === null && plan && !sessionDone) {
+    return (
+      <PhoneParkSetup
+        task={currentTask}
+        onParked={(method) => handlePhoneParked()}
+        onSkip={() => setPhoneState("skipped")}
+      />
+    );
+  }
+
+  // ── Phone Parked Screen ───────────────────────────────────────────────────────
+  if (phoneState === "parked" && !showInteraction && !sessionDone) {
+    return (
+      <PhoneParkedScreen
+        task={currentTask}
+        isRunning={isRunning}
+        onTimeUp={handleTimeUp}
+        onComplete={handleComplete}
+        onMoved={handlePhoneMoved}
+        onTogglePause={() => setIsRunning(r => !r)}
+      />
+    );
+  }
+
+  // ── Phone Moved / Return Screen ───────────────────────────────────────────────
+  if (phoneState === "moved") {
+    return (
+      <PhoneReturnScreen
+        task={currentTask}
+        onBack={handleReturnFromPhone}
+        onMakeEasier={() => { setPhoneState("skipped"); setShowSmaller(true); }}
+        onBreak={handlePhoneBreak}
+        onEmergency={handleEmergencyUnlock}
+      />
+    );
+  }
 
   // ── Session complete ─────────────────────────────────────────────────────────
   if (sessionDone) {
@@ -98,7 +181,7 @@ export default function GardenFocusRoom() {
           </div>
           <div className="flex gap-3">
             <button
-              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); }}
+              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); setPhoneState(null); setPhoneParkedBonus(false); }}
               className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white"
               style={{ background: "#5a9a6f" }}>
               New session
