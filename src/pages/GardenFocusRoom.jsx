@@ -127,8 +127,8 @@ export default function GardenFocusRoom() {
       setSessionDone(true);
     } else {
       setCurrentIdx(i => i + 1);
-      // Always show phone park again between tasks
-      setPhoneState(null);
+      // Show phone park again between tasks
+      setPhoneState("between_tasks");
     }
   };
 
@@ -166,6 +166,13 @@ export default function GardenFocusRoom() {
     setTimeUpMessage(false);
   };
 
+  // First-time park done → show seed planting
+  useEffect(() => {
+    if (phoneState === "parked_pending_seed") {
+      setShowSeedPlanted(true);
+    }
+  }, [phoneState]);
+
   const handlePhoneMoved = () => {
     setIsRunning(false);
     setPhoneState("moved");
@@ -189,9 +196,21 @@ export default function GardenFocusRoom() {
   };
 
   // ── Setup ────────────────────────────────────────────────────────────────────
-  if (!plan) return <GardenSetup onPlanReady={(p) => { setPlan(p); setShowSeedPlanted(true); }} />;
+  if (!plan) return <GardenSetup onPlanReady={(p) => { setPlan(p); }} />;
 
-  // ── Plant the Seed (tappable, before first phone park) ────────────────────────
+  // ── Phone Park Setup (first time: before seed planting; between tasks: phoneState reset to null) ─
+  // Only show phone park on first time if seed hasn't been planted yet
+  if (phoneState === null && !showSeedPlanted && plan && !sessionDone) {
+    return (
+      <PhoneParkSetup
+        task={currentTask}
+        onParked={() => { setPhoneState("parked_pending_seed"); }}
+        onSkip={() => { setPhoneState("skipped"); setShowSeedPlanted(true); }}
+      />
+    );
+  }
+
+  // ── Plant the Seed (tappable, after first phone park) ────────────────────────
   if (showSeedPlanted) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-5"
@@ -205,7 +224,7 @@ export default function GardenFocusRoom() {
             <p className="text-sm text-stone-400 leading-relaxed">Tap the seed — it'll grow as you complete each focus block.</p>
           </div>
 
-          <SeedTapPlant onPlanted={() => setShowSeedPlanted(false)} />
+          <SeedTapPlant onPlanted={() => { setShowSeedPlanted(false); setPhoneState("parked"); setIsRunning(true); }} />
 
           <p className="text-[11px] text-stone-300">{plan.tasks?.length} focus blocks ready 🌿</p>
         </motion.div>
@@ -213,12 +232,12 @@ export default function GardenFocusRoom() {
     );
   }
 
-  // ── Phone Park Setup (shown after seed planted and between tasks) ─────────────
-  if (phoneState === null && plan && !sessionDone) {
+  // ── Between-task Phone Park ───────────────────────────────────────────────────
+  if (phoneState === "between_tasks" && plan && !sessionDone) {
     return (
       <PhoneParkSetup
         task={currentTask}
-        onParked={(method) => handlePhoneParked()}
+        onParked={() => handlePhoneParked()}
         onSkip={() => setPhoneState("skipped")}
       />
     );
