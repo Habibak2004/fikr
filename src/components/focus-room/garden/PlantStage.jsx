@@ -1,167 +1,347 @@
 import { motion, AnimatePresence } from "framer-motion";
 
-// 8 stages mapped to completed task count (0–7+)
-// 0: soil, 1: seed, 2: sprout, 3: stem, 4: leaves, 5: buds, 6: flower, 7: full bloom
+// Magical glowing lotus / fantasy flower stages
+// Colors
+const TEAL = "#22d3ee";
+const VIOLET = "#a78bfa";
+const PINK = "#f472b6";
+const GOLD = "#fde68a";
+const BLUE = "#60a5fa";
+const WHITE = "#e0f2fe";
+const STEM = "#34d399";
+const WATER = "#0ea5e9";
 
-const G = "#5a9a6f";
-const GL = "#8bc49a";
-const GD = "#3d7a52";
-const PINK = "#f9a8d4";
-const YELLOW = "#fde68a";
-
-function Stage0() { // bare soil
+// Shared glow filter definitions
+function Defs() {
   return (
-    <>
-      <ellipse cx="60" cy="115" rx="38" ry="9" fill="#c8a97a" opacity="0.5" />
-      <path d="M36 115 L42 140 Q60 146 78 140 L84 115 Z" fill="#c07a50" />
-      <rect x="32" y="112" width="56" height="7" rx="3.5" fill="#b06840" />
-    </>
+    <defs>
+      <filter id="glow-soft" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+      </filter>
+      <filter id="glow-strong" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="5" result="blur" />
+        <feMerge><feMergeNode in="blur" /><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+      </filter>
+      <filter id="glow-ambient" x="-80%" y="-80%" width="260%" height="260%">
+        <feGaussianBlur stdDeviation="8" result="blur" />
+        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+      </filter>
+      <radialGradient id="water-grad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.6" />
+        <stop offset="100%" stopColor="#0369a1" stopOpacity="0.2" />
+      </radialGradient>
+      <radialGradient id="lotus-center" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#fde68a" />
+        <stop offset="60%" stopColor="#f97316" />
+        <stop offset="100%" stopColor="#ec4899" />
+      </radialGradient>
+      <radialGradient id="petal-grad-pink" cx="30%" cy="30%" r="70%">
+        <stop offset="0%" stopColor="#f9a8d4" />
+        <stop offset="100%" stopColor="#db2777" stopOpacity="0.7" />
+      </radialGradient>
+      <radialGradient id="petal-grad-teal" cx="30%" cy="30%" r="70%">
+        <stop offset="0%" stopColor="#a5f3fc" />
+        <stop offset="100%" stopColor="#0891b2" stopOpacity="0.7" />
+      </radialGradient>
+      <radialGradient id="petal-grad-violet" cx="30%" cy="30%" r="70%">
+        <stop offset="0%" stopColor="#ddd6fe" />
+        <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.7" />
+      </radialGradient>
+    </defs>
   );
 }
 
-function Stage1() { // seed planted
+// Floating sparkle particle
+function Sparkle({ cx, cy, delay = 0, color = GOLD, size = 2 }) {
   return (
-    <>
-      <Stage0 />
-      <motion.ellipse cx="60" cy="109" rx="5" ry="3.5" fill="#8B6914"
-        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.5 }} />
-    </>
+    <motion.circle cx={cx} cy={cy} r={size} fill={color} filter="url(#glow-soft)"
+      animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5], cy: [cy, cy - 8, cy] }}
+      transition={{ duration: 2.5, repeat: Infinity, delay, ease: "easeInOut" }} />
   );
 }
 
-function Stage2() { // sprout
+// Calm dark water surface
+function WaterPad() {
   return (
     <>
-      <Stage0 />
-      <motion.g initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
-        transition={{ duration: 0.6 }} style={{ transformOrigin: "60px 112px" }}>
-        <path d="M60 112 Q60 102 60 96" stroke={G} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M60 102 Q54 96 48 98" stroke={GL} strokeWidth="2" fill="none" strokeLinecap="round" />
-        <path d="M60 99 Q66 93 72 95" stroke={GL} strokeWidth="2" fill="none" strokeLinecap="round" />
-      </motion.g>
-    </>
-  );
-}
-
-function Stage3() { // stem
-  return (
-    <>
-      <Stage0 />
-      <motion.g initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
-        transition={{ duration: 0.7 }} style={{ transformOrigin: "60px 112px" }}>
-        <path d="M60 112 Q61 88 60 72" stroke={G} strokeWidth="3" fill="none" strokeLinecap="round" />
-        <path d="M60 94 Q70 86 76 88" stroke={GL} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <path d="M60 84 Q50 76 44 78" stroke={GL} strokeWidth="2" fill="none" strokeLinecap="round" />
-      </motion.g>
-    </>
-  );
-}
-
-function Stage4() { // leaves
-  return (
-    <>
-      <Stage0 />
-      <path d="M60 112 Q61 82 60 62" stroke={G} strokeWidth="3.5" fill="none" strokeLinecap="round" />
-      <motion.g initial={{ scale: 0 }} animate={{ scale: 1 }}
-        transition={{ duration: 0.6 }} style={{ transformOrigin: "60px 75px" }}>
-        <path d="M60 90 Q74 82 80 85" stroke={GD} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <ellipse cx="75" cy="82" rx="10" ry="6" fill={G} opacity="0.9" transform="rotate(-20 75 82)" />
-        <path d="M60 78 Q46 70 40 73" stroke={GD} strokeWidth="2" fill="none" strokeLinecap="round" />
-        <ellipse cx="45" cy="70" rx="10" ry="6" fill={GL} opacity="0.9" transform="rotate(20 45 70)" />
-        <ellipse cx="60" cy="60" rx="9" ry="5" fill={G} />
-      </motion.g>
-    </>
-  );
-}
-
-function Stage5() { // more leaves / pre-bud
-  return (
-    <>
-      <Stage0 />
-      <path d="M60 112 Q62 78 60 54" stroke={G} strokeWidth="4" fill="none" strokeLinecap="round" />
-      <path d="M60 95 Q75 84 82 87" stroke={GD} strokeWidth="3" fill="none" />
-      <ellipse cx="78" cy="83" rx="12" ry="7" fill={G} opacity="0.9" transform="rotate(-25 78 83)" />
-      <path d="M60 82 Q45 72 38 75" stroke={GD} strokeWidth="3" fill="none" />
-      <ellipse cx="42" cy="71" rx="12" ry="7" fill={GL} opacity="0.9" transform="rotate(25 42 71)" />
-      <ellipse cx="74" cy="92" rx="8" ry="5" fill={GL} opacity="0.8" transform="rotate(-10 74 92)" />
-      <path d="M60 68 Q50 56 44 58" stroke={GD} strokeWidth="2.5" fill="none" />
-      <path d="M60 65 Q70 53 76 55" stroke={GD} strokeWidth="2.5" fill="none" />
-      <motion.ellipse cx="60" cy="52" rx="5" ry="7" fill={PINK} opacity="0.7"
-        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.5 }} />
-    </>
-  );
-}
-
-function Stage6() { // flower blooming
-  const petals = [0, 45, 90, 135, 180, 225, 270, 315];
-  return (
-    <>
-      <Stage0 />
-      <path d="M60 112 Q62 76 60 50" stroke={G} strokeWidth="4" fill="none" strokeLinecap="round" />
-      <path d="M60 96 Q77 84 84 87" stroke={GD} strokeWidth="3" fill="none" />
-      <ellipse cx="79" cy="82" rx="13" ry="7" fill={G} opacity="0.9" transform="rotate(-25 79 82)" />
-      <path d="M60 82 Q43 72 36 75" stroke={GD} strokeWidth="3" fill="none" />
-      <ellipse cx="40" cy="71" rx="13" ry="7" fill={GL} opacity="0.9" transform="rotate(25 40 71)" />
-      <path d="M60 68 Q50 55 44 57" stroke={GD} strokeWidth="2.5" fill="none" />
-      <path d="M60 65 Q70 52 76 54" stroke={GD} strokeWidth="2.5" fill="none" />
-      <motion.g style={{ transformOrigin: "60px 42px" }}
-        initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.7, ease: "backOut" }}>
-        {petals.map((angle, i) => {
-          const r = 12;
-          const rad = (angle * Math.PI) / 180;
-          const px = 60 + r * Math.cos(rad);
-          const py = 42 + r * Math.sin(rad);
-          return (
-            <motion.ellipse key={i} cx={px} cy={py} rx="7" ry="4"
-              fill={i % 2 === 0 ? PINK : "#fce7f3"}
-              transform={`rotate(${angle + 90} ${px} ${py})`}
-              initial={{ scale: 0 }} animate={{ scale: 1 }}
-              transition={{ duration: 0.4, delay: i * 0.05, ease: "backOut" }} />
-          );
-        })}
-        <circle cx="60" cy="42" r="6" fill={YELLOW} />
-        <circle cx="60" cy="42" r="3.5" fill="#fbbf24" />
-      </motion.g>
-    </>
-  );
-}
-
-function Stage7() { // full bloom + falling petals
-  return (
-    <>
-      <Stage6 />
-      {/* Extra side flowers */}
-      {[[42, 66], [78, 66]].map(([cx, cy], fi) => (
-        <motion.g key={fi} style={{ transformOrigin: `${cx}px ${cy}px` }}
-          initial={{ scale: 0 }} animate={{ scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.3 + fi * 0.15, ease: "backOut" }}>
-          {[0, 60, 120, 180, 240, 300].map((angle, i) => {
-            const r = 8;
-            const rad = (angle * Math.PI) / 180;
-            const px = cx + r * Math.cos(rad);
-            const py = cy + r * Math.sin(rad);
-            return (
-              <ellipse key={i} cx={px} cy={py} rx="5" ry="3"
-                fill={i % 2 === 0 ? PINK : "#fce7f3"}
-                transform={`rotate(${angle + 90} ${px} ${py})`} />
-            );
-          })}
-          <circle cx={cx} cy={cy} r="4" fill={YELLOW} />
-        </motion.g>
+      {/* Water surface */}
+      <ellipse cx="60" cy="122" rx="46" ry="12" fill="url(#water-grad)" />
+      <ellipse cx="60" cy="122" rx="46" ry="12" fill="none" stroke={WATER} strokeWidth="0.5" opacity="0.4" />
+      {/* Water shimmer lines */}
+      {[48, 60, 72].map((x, i) => (
+        <motion.line key={i} x1={x - 8} y1={122 + i * 2} x2={x + 8} y2={122 + i * 2}
+          stroke={WHITE} strokeWidth="0.5" opacity="0.3"
+          animate={{ opacity: [0.1, 0.4, 0.1] }}
+          transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }} />
       ))}
-      {/* Falling petals */}
-      {[25, 45, 70, 90].map((x, i) => (
-        <motion.ellipse key={i} cx={x} cy={20} rx="3.5" ry="2"
-          fill={PINK} opacity={0.6}
-          animate={{ cy: [20, 130], cx: [x, x + 12 * Math.sin(i)], opacity: [0.6, 0] }}
-          transition={{ duration: 5 + i, repeat: Infinity, delay: i * 1.2, ease: "linear" }} />
+    </>
+  );
+}
+
+// Lotus pad (lily pad)
+function LilyPad({ cx = 60, cy = 120, r = 22 }) {
+  return (
+    <>
+      <ellipse cx={cx} cy={cy} rx={r} ry={r * 0.45} fill="#166534" opacity="0.85" />
+      <path d={`M${cx} ${cy - r * 0.45} L${cx} ${cy + r * 0.45}`} stroke="#14532d" strokeWidth="0.7" opacity="0.5" />
+      <path d={`M${cx - r * 0.6} ${cy} Q${cx} ${cy - r * 0.6} ${cx + r * 0.6} ${cy}`} stroke="#14532d" strokeWidth="0.5" fill="none" opacity="0.4" />
+    </>
+  );
+}
+
+// Glowing stem rising from water
+function GlowStem({ height = 50 }) {
+  const y1 = 118;
+  const y2 = y1 - height;
+  return (
+    <motion.g initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
+      transition={{ duration: 0.8 }} style={{ transformOrigin: `60px ${y1}px` }}>
+      <path d={`M60 ${y1} Q62 ${(y1 + y2) / 2} 60 ${y2}`}
+        stroke={STEM} strokeWidth="2.5" fill="none" strokeLinecap="round"
+        filter="url(#glow-soft)" />
+    </motion.g>
+  );
+}
+
+// Single magical lotus petal shape
+function LotusPetal({ cx, cy, angle, length = 18, width = 7, color = "url(#petal-grad-pink)", delay = 0 }) {
+  const rad = (angle * Math.PI) / 180;
+  const tip = { x: cx + Math.cos(rad) * length, y: cy + Math.sin(rad) * length };
+  const lw = { x: cx + Math.cos(rad + Math.PI / 2) * width * 0.4, y: cy + Math.sin(rad + Math.PI / 2) * width * 0.4 };
+  const rw = { x: cx + Math.cos(rad - Math.PI / 2) * width * 0.4, y: cy + Math.sin(rad - Math.PI / 2) * width * 0.4 };
+  return (
+    <motion.path
+      d={`M${lw.x} ${lw.y} Q${tip.x + Math.cos(rad + Math.PI / 2) * 3} ${tip.y + Math.sin(rad + Math.PI / 2) * 3} ${tip.x} ${tip.y} Q${tip.x + Math.cos(rad - Math.PI / 2) * 3} ${tip.y + Math.sin(rad - Math.PI / 2) * 3} ${rw.x} ${rw.y} Z`}
+      fill={color}
+      filter="url(#glow-soft)"
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.5, delay, ease: "backOut" }}
+      style={{ transformOrigin: `${cx}px ${cy}px` }}
+    />
+  );
+}
+
+// Stage 0 — just dark water
+function Stage0() {
+  return (
+    <>
+      <WaterPad />
+      <Sparkle cx={38} cy={112} delay={0} color={TEAL} size={1.5} />
+      <Sparkle cx={82} cy={115} delay={1.2} color={BLUE} size={1} />
+    </>
+  );
+}
+
+// Stage 1 — lily pad appears
+function Stage1() {
+  return (
+    <>
+      <WaterPad />
+      <motion.g initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}>
+        <LilyPad cx={60} cy={118} r={20} />
+      </motion.g>
+      <Sparkle cx={45} cy={110} delay={0.3} color={TEAL} size={1.5} />
+      <Sparkle cx={76} cy={112} delay={1.0} color={BLUE} size={1} />
+    </>
+  );
+}
+
+// Stage 2 — stem + closed bud
+function Stage2() {
+  return (
+    <>
+      <WaterPad />
+      <LilyPad cx={60} cy={118} r={22} />
+      <GlowStem height={38} />
+      <motion.g initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.5, delay: 0.5, ease: "backOut" }}>
+        <ellipse cx="60" cy="76" rx="5" ry="9" fill="url(#petal-grad-pink)" filter="url(#glow-soft)" />
+        <ellipse cx="57" cy="79" rx="3" ry="7" fill="url(#petal-grad-violet)" filter="url(#glow-soft)" opacity="0.7" />
+        <ellipse cx="63" cy="79" rx="3" ry="7" fill="url(#petal-grad-teal)" filter="url(#glow-soft)" opacity="0.7" />
+      </motion.g>
+      <Sparkle cx={60} cy={68} delay={0} color={GOLD} size={1.5} />
+    </>
+  );
+}
+
+// Stage 3 — taller stem, bud opening slightly
+function Stage3() {
+  return (
+    <>
+      <WaterPad />
+      <LilyPad cx={60} cy={118} r={24} />
+      <GlowStem height={55} />
+      {/* Slightly open bud */}
+      {[-20, 0, 20].map((angle, i) => (
+        <LotusPetal key={i} cx={60} cy={61} angle={-90 + angle} length={14} width={6}
+          color={i === 1 ? "url(#petal-grad-pink)" : "url(#petal-grad-violet)"}
+          delay={i * 0.08} />
+      ))}
+      <circle cx="60" cy="62" r="4" fill="url(#lotus-center)" filter="url(#glow-soft)" />
+      <Sparkle cx={52} cy={55} delay={0} color={GOLD} size={1.5} />
+      <Sparkle cx={68} cy={57} delay={0.8} color={TEAL} size={1} />
+    </>
+  );
+}
+
+// Stage 4 — half open lotus
+function Stage4() {
+  const angles = [-90, -50, -130, -20, -160, 10, -180];
+  const colors = ["url(#petal-grad-pink)", "url(#petal-grad-teal)", "url(#petal-grad-violet)",
+    "url(#petal-grad-pink)", "url(#petal-grad-teal)", "url(#petal-grad-violet)", "url(#petal-grad-pink)"];
+  return (
+    <>
+      <WaterPad />
+      <LilyPad cx={60} cy={118} r={26} />
+      <GlowStem height={62} />
+      {angles.map((angle, i) => (
+        <LotusPetal key={i} cx={60} cy={55} angle={angle} length={18} width={7}
+          color={colors[i % colors.length]} delay={i * 0.06} />
+      ))}
+      <circle cx="60" cy="56" r="5" fill="url(#lotus-center)" filter="url(#glow-strong)" />
+      <Sparkle cx={44} cy={48} delay={0} color={GOLD} size={2} />
+      <Sparkle cx={76} cy={50} delay={0.7} color={PINK} size={1.5} />
+      <Sparkle cx={60} cy={40} delay={1.4} color={TEAL} size={1.5} />
+    </>
+  );
+}
+
+// Stage 5 — fully open lotus with glow halo
+function Stage5() {
+  const inner = [-90, -50, -130, -20, -160, 10, -180, 50];
+  const outer = [-70, -110, -30, -150, 10, -190];
+  return (
+    <>
+      <WaterPad />
+      <LilyPad cx={60} cy={118} r={28} />
+      <GlowStem height={68} />
+      {/* Ambient glow halo */}
+      <motion.circle cx="60" cy="50" r="22" fill={VIOLET} opacity="0.12" filter="url(#glow-ambient)"
+        animate={{ r: [20, 24, 20], opacity: [0.10, 0.18, 0.10] }}
+        transition={{ duration: 3, repeat: Infinity }} />
+      {outer.map((angle, i) => (
+        <LotusPetal key={`o${i}`} cx={60} cy={50} angle={angle} length={22} width={8}
+          color={"url(#petal-grad-violet)"} delay={i * 0.07} />
+      ))}
+      {inner.map((angle, i) => (
+        <LotusPetal key={`i${i}`} cx={60} cy={50} angle={angle} length={15} width={7}
+          color={i % 2 === 0 ? "url(#petal-grad-pink)" : "url(#petal-grad-teal)"} delay={i * 0.05} />
+      ))}
+      <circle cx="60" cy="51" r="6" fill="url(#lotus-center)" filter="url(#glow-strong)" />
+      {[0, 1, 2, 3, 4].map(i => (
+        <Sparkle key={i} cx={38 + i * 12} cy={35 + (i % 2) * 8} delay={i * 0.5} color={i % 2 === 0 ? GOLD : TEAL} size={1.5} />
+      ))}
+    </>
+  );
+}
+
+// Stage 6 — full glowing bloom + floating orbs
+function Stage6() {
+  const inner = [-90, -45, -135, -20, -160, 0, -180, -70, -110];
+  const outer = [-60, -100, -30, -150, 0, -180, 30, -210];
+  return (
+    <>
+      <WaterPad />
+      <LilyPad cx={60} cy={118} r={30} />
+      <GlowStem height={70} />
+      {/* Big ambient glow */}
+      <motion.circle cx="60" cy="48" r="28" fill={PINK} opacity="0.1" filter="url(#glow-ambient)"
+        animate={{ r: [25, 31, 25], opacity: [0.08, 0.16, 0.08] }}
+        transition={{ duration: 3.5, repeat: Infinity }} />
+      <motion.circle cx="60" cy="48" r="18" fill={TEAL} opacity="0.1" filter="url(#glow-ambient)"
+        animate={{ r: [16, 20, 16], opacity: [0.10, 0.20, 0.10] }}
+        transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }} />
+      {outer.map((angle, i) => (
+        <LotusPetal key={`o${i}`} cx={60} cy={48} angle={angle} length={24} width={9}
+          color={i % 3 === 0 ? "url(#petal-grad-violet)" : i % 3 === 1 ? "url(#petal-grad-pink)" : "url(#petal-grad-teal)"}
+          delay={i * 0.06} />
+      ))}
+      {inner.map((angle, i) => (
+        <LotusPetal key={`i${i}`} cx={60} cy={48} angle={angle} length={16} width={7}
+          color={i % 2 === 0 ? "url(#petal-grad-teal)" : "url(#petal-grad-pink)"} delay={i * 0.05} />
+      ))}
+      <circle cx="60" cy="49" r="7" fill="url(#lotus-center)" filter="url(#glow-strong)" />
+      {/* Floating light orbs */}
+      {[[30, 35], [50, 22], [72, 30], [85, 45], [40, 50]].map(([cx, cy], i) => (
+        <motion.circle key={i} cx={cx} cy={cy} r="2.5" fill={[GOLD, TEAL, VIOLET, PINK, WHITE][i]}
+          filter="url(#glow-soft)" opacity={0.7}
+          animate={{ cy: [cy, cy - 10, cy], opacity: [0.5, 0.9, 0.5] }}
+          transition={{ duration: 3 + i * 0.5, repeat: Infinity, delay: i * 0.6 }} />
+      ))}
+    </>
+  );
+}
+
+// Stage 7 — transcendent full bloom + second flower + rain of light
+function Stage7() {
+  const inner = [-90, -45, -135, -20, -160, 0, -180, -70, -110];
+  const outer = [-60, -100, -30, -150, 0, -180, 30, -210, -240];
+  return (
+    <>
+      <WaterPad />
+      <LilyPad cx={60} cy={118} r={32} />
+      {/* Second small lily pad */}
+      <LilyPad cx={88} cy={120} r={12} />
+      <GlowStem height={72} />
+      {/* Small second stem + mini bloom */}
+      <path d="M88 118 Q89 108 88 100" stroke={STEM} strokeWidth="1.5" fill="none" filter="url(#glow-soft)" />
+      {[-90, -30, -150, 30, -210].map((angle, i) => (
+        <LotusPetal key={`s${i}`} cx={88} cy={100} angle={-90 + i * 60} length={11} width={5}
+          color={i % 2 === 0 ? "url(#petal-grad-teal)" : "url(#petal-grad-violet)"} delay={0.5 + i * 0.06} />
+      ))}
+      <circle cx="88" cy="100" r="4" fill="url(#lotus-center)" filter="url(#glow-strong)" />
+
+      {/* Main bloom mega glow */}
+      <motion.circle cx="60" cy="46" r="34" fill={VIOLET} opacity="0.08" filter="url(#glow-ambient)"
+        animate={{ r: [30, 36, 30], opacity: [0.06, 0.14, 0.06] }}
+        transition={{ duration: 4, repeat: Infinity }} />
+      <motion.circle cx="60" cy="46" r="22" fill={PINK} opacity="0.12" filter="url(#glow-ambient)"
+        animate={{ r: [19, 24, 19], opacity: [0.10, 0.20, 0.10] }}
+        transition={{ duration: 3, repeat: Infinity, delay: 0.7 }} />
+
+      {outer.map((angle, i) => (
+        <LotusPetal key={`o${i}`} cx={60} cy={46} angle={angle} length={26} width={10}
+          color={i % 3 === 0 ? "url(#petal-grad-violet)" : i % 3 === 1 ? "url(#petal-grad-pink)" : "url(#petal-grad-teal)"}
+          delay={i * 0.05} />
+      ))}
+      {inner.map((angle, i) => (
+        <LotusPetal key={`i${i}`} cx={60} cy={46} angle={angle} length={17} width={7}
+          color={i % 2 === 0 ? "url(#petal-grad-teal)" : "url(#petal-grad-pink)"} delay={i * 0.04} />
+      ))}
+      <circle cx="60" cy="47" r="8" fill="url(#lotus-center)" filter="url(#glow-strong)" />
+
+      {/* Rain of light particles */}
+      {[20, 35, 50, 65, 80, 95].map((x, i) => (
+        <motion.circle key={`r${i}`} cx={x} cy={15} r={1.5}
+          fill={[GOLD, TEAL, VIOLET, PINK, WHITE, BLUE][i]}
+          filter="url(#glow-soft)"
+          animate={{ cy: [10, 135], opacity: [0.8, 0] }}
+          transition={{ duration: 4 + i * 0.5, repeat: Infinity, delay: i * 0.7, ease: "linear" }} />
+      ))}
+      {/* Floating orbs */}
+      {[[25, 30], [48, 18], [74, 26], [90, 40], [38, 48], [70, 52]].map(([cx, cy], i) => (
+        <motion.circle key={`ob${i}`} cx={cx} cy={cy} r="2.5"
+          fill={[GOLD, TEAL, VIOLET, PINK, WHITE, BLUE][i]}
+          filter="url(#glow-soft)" opacity={0.8}
+          animate={{ cy: [cy, cy - 12, cy], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2.5 + i * 0.4, repeat: Infinity, delay: i * 0.5 }} />
       ))}
     </>
   );
 }
 
 const STAGES = [Stage0, Stage1, Stage2, Stage3, Stage4, Stage5, Stage6, Stage7];
-const LABELS = ["Soil ready", "Seed planted 🌱", "First sprout", "Growing stem", "Leaves opening 🍃", "Almost there…", "Flower blooming 🌸", "Fully grown! ✨"];
+const LABELS = [
+  "Waters of potential 💧",
+  "Lotus pad awakens 🍃",
+  "First bud emerges ✨",
+  "Rising from the deep 🌿",
+  "Half-bloom glowing 🌸",
+  "Lotus opening 🪷",
+  "Full magical bloom ✨",
+  "Transcendent garden 🌺✨"
+];
 
 export default function PlantStage({ completedCount = 0 }) {
   const stage = Math.min(completedCount, 7);
@@ -169,18 +349,20 @@ export default function PlantStage({ completedCount = 0 }) {
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="relative w-28 h-36">
-        <svg viewBox="0 0 120 150" className="w-full h-full" style={{ overflow: "visible" }}>
+      <div className="relative w-32 h-40">
+        <svg viewBox="0 0 120 145" className="w-full h-full" style={{ overflow: "visible" }}>
+          <Defs />
           <AnimatePresence mode="wait">
             <motion.g key={stage} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}>
+              transition={{ duration: 0.5 }}>
               <StageComp />
             </motion.g>
           </AnimatePresence>
         </svg>
       </div>
       <motion.p key={stage} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-        className="text-xs text-stone-400 text-center leading-snug">
+        className="text-xs text-center leading-snug font-medium"
+        style={{ color: "#a78bfa" }}>
         {LABELS[stage]}
       </motion.p>
     </div>

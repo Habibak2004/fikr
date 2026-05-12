@@ -14,7 +14,7 @@ const navItems = [
   { icon: Timer, label: "Focus Room", path: "/garden" },
   { icon: Users, label: "Community", path: "/community" },
   { icon: Brain, label: "Study Coach", path: "/coach" },
-  { icon: BarChart3, label: "Insights", path: "/insights" },
+  { icon: BarChart3, label: "Garden", path: "/insights" },
 ];
 
 export default function Sidebar() {
