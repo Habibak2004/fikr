@@ -130,14 +130,30 @@ export default function GardenFocusRoom() {
     if (isLastTask) {
       // Save to garden
       const bloomStage = Math.min(newCount, 7);
+      const sessionDate = new Date().toISOString().split("T")[0];
+      const totalDuration = allTasks.reduce((sum, t) => sum + (t.duration || 7), 0);
       base44.entities.GardenSession.create({
         course_name: plan.courseName || null,
         course_code: plan.courseCode || null,
         assignment_name: plan.assignmentName || null,
         tasks_completed: newCount,
         bloom_stage: bloomStage,
-        date: new Date().toISOString().split("T")[0],
-        duration_minutes: allTasks.reduce((sum, t) => sum + (t.duration || 7), 0),
+        date: sessionDate,
+        duration_minutes: totalDuration,
+      });
+      // Also log to StudySession so it appears in Insights session history
+      base44.entities.StudySession.create({
+        date: sessionDate,
+        course_id: plan.courseId || null,
+        course_name: plan.courseName || null,
+        duration_minutes: totalDuration,
+        session_type: "deep_work",
+        notes: [
+          plan.assignmentName ? `Assignment: ${plan.assignmentName}` : null,
+          `${newCount} focus block${newCount !== 1 ? "s" : ""} completed`,
+          `Bloom stage: ${bloomStage}/7`,
+        ].filter(Boolean).join(" · "),
+        tasks_completed: newCount,
       });
       setSessionDone(true);
     } else {
