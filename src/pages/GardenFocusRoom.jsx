@@ -4,6 +4,7 @@ import { Pause, Play, Leaf } from "lucide-react";
 import { Link } from "react-router-dom";
 import GardenSetup from "@/components/focus-room/garden/GardenSetup";
 import PlantStage from "@/components/focus-room/garden/PlantStage";
+import SeedPlantAnimation from "@/components/focus-room/garden/SeedPlantAnimation";
 import PlantInteraction from "@/components/focus-room/garden/PlantInteraction";
 import TaskTimer from "@/components/focus-room/garden/TaskTimer";
 import CompanionMessage from "@/components/focus-room/garden/CompanionMessage";
@@ -131,27 +132,15 @@ export default function GardenFocusRoom() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4"
         style={{ background: "linear-gradient(160deg, #0a0f1a 0%, #0d1f2d 50%, #0f1a2e 100%)" }}>
-        <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: "backOut" }}
-          className="flex flex-col items-center gap-6 max-w-sm w-full text-center">
-          <PlantStage completedCount={0} />
-          <div className="space-y-2">
-            <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="text-2xl font-bold text-white">
-              Your seed is planted 🌱
-            </motion.h2>
-            <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
-              className="text-slate-400 text-sm leading-relaxed">
-              {plan.tasks?.length} questions lined up. Each one you finish helps your lotus bloom.
-            </motion.p>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-4 max-w-sm w-full text-center">
+          <SeedPlantAnimation onComplete={() => setShowSeedPlanted(false)} />
+          <div className="space-y-1.5">
+            <p className="text-2xl font-bold text-white">Your seed is planted 🌱</p>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              {plan.tasks?.length} questions lined up. Each one helps your lotus bloom.
+            </p>
           </div>
-          <motion.button
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-            onClick={() => setShowSeedPlanted(false)}
-            className="w-full py-4 rounded-2xl text-base font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-            style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)", boxShadow: "0 4px 20px rgba(90,154,111,0.3)" }}>
-            Let's grow it →
-          </motion.button>
         </motion.div>
       </div>
     );
