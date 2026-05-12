@@ -6,8 +6,6 @@ import { base44 } from "@/api/base44Client";
 import GardenSetup from "@/components/focus-room/garden/GardenSetup";
 import PlantStage from "@/components/focus-room/garden/PlantStage";
 import PlantInteraction from "@/components/focus-room/garden/PlantInteraction";
-import MyGarden from "@/components/focus-room/garden/MyGarden";
-
 // Tappable seed → plants itself animation
 function SeedTapPlant({ onPlanted }) {
   const [phase, setPhase] = useState("idle"); // idle | planting | sprouted
@@ -98,7 +96,6 @@ export default function GardenFocusRoom() {
   const [phoneState, setPhoneState] = useState(null);
   const [showSeedPlanted, setShowSeedPlanted] = useState(false);
   const [phoneParkedBonus, setPhoneParkedBonus] = useState(false); // earned water drop
-  const [view, setView] = useState("garden"); // "garden" | "focus" — shown when no active plan
 
   const allTasks = plan?.tasks || [];
   const activeTasks = allTasks.filter((_, i) => !skippedIds.includes(i));
@@ -226,29 +223,8 @@ export default function GardenFocusRoom() {
     setIsRunning(false);
   };
 
-  // ── No active session: show garden or start-session screen ──────────────────
+  // ── No active session: go straight to setup ──────────────────────────────────
   if (!plan) {
-    if (view === "garden") {
-      return (
-        <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #fafdf7 0%, #f0fdf4 50%, #fdf9f5 100%)" }}>
-          {/* Tab switcher */}
-          <div className="max-w-lg mx-auto px-4 pt-5">
-            <div className="flex gap-1 p-1 rounded-2xl mb-2" style={{ background: "#f0fdf4", border: "1.5px solid #d1fae5" }}>
-              <button onClick={() => setView("garden")}
-                className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
-                style={{ background: "white", color: "#4a7c59", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
-                🌸 My Garden
-              </button>
-              <button onClick={() => setView("focus")}
-                className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all text-stone-400 hover:text-stone-600">
-                ＋ New Session
-              </button>
-            </div>
-          </div>
-          <MyGarden hideHeader />
-        </div>
-      );
-    }
     return <GardenSetup onPlanReady={(p) => { setPlan(p); }} />;
   }
 
@@ -341,16 +317,10 @@ export default function GardenFocusRoom() {
           </div>
           <div className="flex flex-col gap-2 w-full">
             <button
-              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); setPhoneState(null); setPhoneParkedBonus(false); setView("garden"); }}
+              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); setPhoneState(null); setPhoneParkedBonus(false); }}
               className="w-full py-3 rounded-2xl text-sm font-bold text-white"
               style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)" }}>
-              🌸 View my garden
-            </button>
-            <button
-              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); setPhoneState(null); setPhoneParkedBonus(false); setView("focus"); }}
-              className="w-full py-3 rounded-2xl text-sm font-semibold text-stone-500 hover:bg-stone-50 transition-colors"
-              style={{ border: "1.5px solid #e5e7eb" }}>
-              New session
+              🌱 New session
             </button>
           </div>
         </motion.div>
