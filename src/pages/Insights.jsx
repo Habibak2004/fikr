@@ -7,6 +7,7 @@ import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
 import { format, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import SessionHistory from "@/components/insights/SessionHistory";
+import MyGardenSection from "@/components/insights/MyGardenSection";
 
 export default function Insights() {
   const { data: sessions = [] } = useQuery({
@@ -143,6 +144,9 @@ export default function Insights() {
           )}
         </Card>
       </div>
+
+      {/* My Garden */}
+      <MyGardenSection />
 
       {/* Session History */}
       <SessionHistory courses={courses} />
