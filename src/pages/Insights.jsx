@@ -2,12 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, Flame, Brain, TrendingUp, Clock, Sparkles, Leaf } from "lucide-react";
+import { Target, Flame, Brain, TrendingUp, Clock, Sparkles } from "lucide-react";
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { format, subDays } from "date-fns";
 import { motion } from "framer-motion";
 import SessionHistory from "@/components/insights/SessionHistory";
-import MyGarden from "@/components/focus-room/garden/MyGarden";
 
 export default function Insights() {
   const { data: sessions = [] } = useQuery({
@@ -147,16 +146,6 @@ export default function Insights() {
 
       {/* Session History */}
       <SessionHistory courses={courses} />
-
-      {/* Garden Section */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Leaf className="h-5 w-5 text-emerald-500" />
-          <h2 className="text-xl font-bold">My Focus Garden</h2>
-          <p className="text-sm text-muted-foreground ml-1">— flowers bloom after each Garden session</p>
-        </div>
-        <MyGarden hideHeader />
-      </div>
 
       {/* AI Summary */}
       <Card className="p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 border-0">

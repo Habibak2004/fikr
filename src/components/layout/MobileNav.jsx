@@ -7,7 +7,7 @@ const mobileItems = [
   { icon: BookOpen, label: "Classes", path: "/courses" },
   { icon: CalendarDays, label: "Planner", path: "/planner" },
   { icon: Timer, label: "Focus", path: "/garden" },
-  { icon: BarChart3, label: "Garden", path: "/insights" },
+  { icon: BarChart3, label: "Insights", path: "/insights" },
 ];
 
 export default function MobileNav() {
