@@ -127,7 +127,7 @@ export default function GardenFocusRoom() {
   };
 
   // ── Setup ────────────────────────────────────────────────────────────────────
-  if (!plan) return <GardenSetup onPlanReady={(p) => { setPlan(p); setShowSeedPlanted(true); }} />;
+  if (!plan) return <GardenSetup onPlanReady={(p) => { setPlan(p); }} />;
 
   // ── Seed Planted Celebration ──────────────────────────────────────────────────
   if (showSeedPlanted) {

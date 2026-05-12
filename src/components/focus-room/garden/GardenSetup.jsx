@@ -26,6 +26,8 @@ export default function GardenSetup({ onPlanReady }) {
   const [isTyping, setIsTyping] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
   const [pendingPlan, setPendingPlan] = useState(null);
+  // seed planting step: "idle" | "planting" | "planted"
+  const [seedPhase, setSeedPhase] = useState("idle");
   const unsubRef = useRef(null);
   const endRef = useRef(null);
   const lastCount = useRef(0);
@@ -141,7 +143,61 @@ export default function GardenSetup({ onPlanReady }) {
           <p className="text-sm text-slate-400">Complete each question and watch your lotus bloom ✨</p>
         </div>
 
-        {!chatStarted ? (
+        {/* ── Seed Planting Step ── shown before course/chat selection */}
+        {seedPhase !== "planted" && (
+          <AnimatePresence>
+            <motion.div
+              key="seed-step"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              className="flex flex-col items-center gap-4 py-6 rounded-3xl text-center"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.08)" }}
+            >
+              <p className="text-xs font-bold uppercase tracking-widest text-emerald-400">Step 1</p>
+              <p className="text-lg font-bold text-white">Plant your seed to begin</p>
+
+              {seedPhase === "idle" && (
+                <motion.button
+                  onClick={() => {
+                    setSeedPhase("planting");
+                    setTimeout(() => setSeedPhase("planted"), 1200);
+                  }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.88 }}
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                  className="h-20 w-20 rounded-full flex items-center justify-center text-5xl cursor-pointer select-none shadow-lg"
+                  style={{ background: "rgba(90,154,111,0.18)", border: "2px solid rgba(90,154,111,0.35)" }}
+                >
+                  🌰
+                </motion.button>
+              )}
+
+              {seedPhase === "planting" && (
+                <motion.div className="relative h-20 w-20 flex items-center justify-center">
+                  <motion.span
+                    className="text-5xl absolute"
+                    animate={{ y: [0, 28], opacity: [1, 0], scale: [1, 0.6] }}
+                    transition={{ duration: 0.7, ease: "easeIn" }}
+                  >🌰</motion.span>
+                  <motion.span
+                    className="text-4xl absolute"
+                    initial={{ opacity: 0, scale: 0.3, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.6, ease: "backOut" }}
+                  >🌱</motion.span>
+                </motion.div>
+              )}
+
+              <p className="text-xs text-slate-400 mt-1">
+                {seedPhase === "idle" ? "Tap the seed to plant it 🌱" : "Planted! ✨"}
+              </p>
+            </motion.div>
+          </AnimatePresence>
+        )}
+
+        {seedPhase === "planted" && !chatStarted ? (
           <>
             {/* Course selection */}
             <div className="space-y-2">
@@ -202,7 +258,7 @@ export default function GardenSetup({ onPlanReady }) {
               🌱 Plan my session
             </button>
           </>
-        ) : (
+        ) : seedPhase === "planted" && chatStarted ? (
           <>
             {/* Context pill */}
             {(selectedCourse || selectedAssignment) && (
@@ -311,7 +367,7 @@ export default function GardenSetup({ onPlanReady }) {
               </motion.div>
             )}
           </>
-        )}
+        ) : null}
       </motion.div>
     </div>
   );
