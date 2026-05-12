@@ -57,15 +57,17 @@ export default function GardenFocusRoom() {
 
   const handleInteractionDone = () => {
     setShowInteraction(false);
-    // If phone was parked, award bonus and reset for next task
     const bonus = phoneParkedBonus ? 1 : 0;
     setPhoneParkedBonus(false);
     setCompletedCount(c => c + 1 + bonus);
     setCompanionCtx("progress");
-    // Reset phone state so next task also prompts phone park
-    if (phoneState === "parked") setPhoneState(null);
-    if (isLastTask) setSessionDone(true);
-    else setCurrentIdx(i => i + 1);
+    if (isLastTask) {
+      setSessionDone(true);
+    } else {
+      setCurrentIdx(i => i + 1);
+      // Always show phone park again between tasks
+      setPhoneState(null);
+    }
   };
 
   const handleSkip = () => {
@@ -131,14 +133,14 @@ export default function GardenFocusRoom() {
   if (showSeedPlanted) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-4"
-        style={{ background: "linear-gradient(160deg, #0a0f1a 0%, #0d1f2d 50%, #0f1a2e 100%)" }}>
+        style={{ background: "linear-gradient(160deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdf4 100%)" }}>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           className="flex flex-col items-center gap-4 max-w-sm w-full text-center">
           <SeedPlantAnimation onComplete={() => setShowSeedPlanted(false)} />
           <div className="space-y-1.5">
-            <p className="text-2xl font-bold text-white">Your seed is planted 🌱</p>
-            <p className="text-slate-400 text-sm leading-relaxed">
-              {plan.tasks?.length} questions lined up. Each one helps your lotus bloom.
+            <p className="text-2xl font-bold text-stone-800">Your seed is planted 🌱</p>
+            <p className="text-stone-400 text-sm leading-relaxed">
+              {plan.tasks?.length} tasks lined up. Complete each one to watch it bloom.
             </p>
           </div>
         </motion.div>
@@ -273,10 +275,11 @@ export default function GardenFocusRoom() {
         {/* ── Main content ── */}
         <AnimatePresence mode="wait">
 
-          {/* PLANT INTERACTION after completing a task */}
+          {/* PLANT INTERACTION after completing a task — fullscreen moment */}
           {showInteraction && (
             <motion.div key="interaction"
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center py-10">
               <PlantInteraction completedCount={completedCount} onDone={handleInteractionDone} />
             </motion.div>
           )}
