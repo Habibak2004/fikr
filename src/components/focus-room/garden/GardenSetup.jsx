@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Leaf } from "lucide-react";
+import PlantStage from "@/components/focus-room/garden/PlantStage";
 
 function TypingDots() {
   return (
@@ -122,25 +123,29 @@ export default function GardenSetup({ onPlanReady }) {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10"
-      style={{ background: "linear-gradient(160deg, #fafdf7 0%, #f0fdf4 50%, #fdf9f5 100%)" }}>
+      style={{ background: "linear-gradient(160deg, #0a0f1a 0%, #0d1f2d 50%, #0f1a2e 100%)" }}>
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md space-y-5">
 
         {/* Header */}
         <div className="text-center space-y-2 pb-2">
           <div className="flex items-center justify-center gap-2">
-            <Leaf className="h-5 w-5 text-green-500" />
-            <span className="text-xs font-bold uppercase tracking-widest text-green-500">Fikr Focus Garden</span>
+            <Leaf className="h-5 w-5 text-emerald-400" />
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Fikr Focus Garden</span>
           </div>
-          <h1 className="text-2xl font-bold text-stone-800">Let's start your session</h1>
-          <p className="text-sm text-stone-400">One question at a time. Every step helps your plant grow.</p>
+          {/* Live plant preview */}
+          <div className="flex justify-center py-2">
+            <PlantStage completedCount={0} />
+          </div>
+          <h1 className="text-2xl font-bold text-white">Let's start your session</h1>
+          <p className="text-sm text-slate-400">Complete each question and watch your lotus bloom ✨</p>
         </div>
 
         {!chatStarted ? (
           <>
             {/* Course selection */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Which course?</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Which course?</p>
               <div className="flex flex-wrap gap-2">
                 {courses.map(c => (
                   <button key={c.id} onClick={() => { setSelectedCourse(c); setSelectedAssignment(null); }}
@@ -154,7 +159,7 @@ export default function GardenSetup({ onPlanReady }) {
                   </button>
                 ))}
                 {courses.length === 0 && (
-                  <p className="text-sm text-stone-300 italic">No courses yet — you can still start a session.</p>
+                  <p className="text-sm text-slate-500 italic">No courses yet — you can still start a session.</p>
                 )}
               </div>
             </div>
@@ -163,7 +168,7 @@ export default function GardenSetup({ onPlanReady }) {
             <AnimatePresence>
               {selectedCourse && (
                 <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-                  <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Which assignment?</p>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Which assignment?</p>
                   <div className="flex flex-col gap-2">
                     {assignments.map(a => (
                       <button key={a.id} onClick={() => setSelectedAssignment(a)}
