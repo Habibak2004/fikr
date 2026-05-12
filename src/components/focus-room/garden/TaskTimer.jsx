@@ -2,42 +2,75 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
 export default function TaskTimer({ durationMinutes = 7, isRunning, onTimeUp }) {
-  const [secondsLeft, setSecondsLeft] = useState(durationMinutes * 60);
-  const intervalRef = useRef(null);
+  const totalSeconds = durationMinutes * 60;
 
-  // Reset when duration changes
+  // deadline = the wall-clock timestamp when the timer should hit 0
+  const deadlineRef = useRef(null);
+  // how many seconds were left when we last paused
+  const pausedSecondsRef = useRef(totalSeconds);
+
+  const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
+  const rafRef = useRef(null);
+  const firedRef = useRef(false);
+
+  // Reset everything when task duration changes
   useEffect(() => {
+    deadlineRef.current = null;
+    pausedSecondsRef.current = durationMinutes * 60;
     setSecondsLeft(durationMinutes * 60);
+    firedRef.current = false;
   }, [durationMinutes]);
 
-  // Single interval, only cleared/started when isRunning flips
   useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (!isRunning) return;
+    if (isRunning) {
+      // Set deadline based on how many seconds were left when paused
+      deadlineRef.current = Date.now() + pausedSecondsRef.current * 1000;
+      firedRef.current = false;
 
-    intervalRef.current = setInterval(() => {
-      setSecondsLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-          onTimeUp?.();
-          return 0;
+      const tick = () => {
+        const remaining = Math.max(0, Math.round((deadlineRef.current - Date.now()) / 1000));
+        setSecondsLeft(remaining);
+
+        if (remaining <= 0) {
+          if (!firedRef.current) {
+            firedRef.current = true;
+            onTimeUp?.();
+          }
+          return; // stop ticking
         }
-        return prev - 1;
-      });
-    }, 1000);
 
-    return () => {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    };
+        rafRef.current = requestAnimationFrame(tick);
+      };
+
+      rafRef.current = requestAnimationFrame(tick);
+    } else {
+      // Pausing — save how many seconds are left
+      if (deadlineRef.current !== null) {
+        pausedSecondsRef.current = Math.max(0, Math.round((deadlineRef.current - Date.now()) / 1000));
+      }
+      cancelAnimationFrame(rafRef.current);
+    }
+
+    return () => cancelAnimationFrame(rafRef.current);
   }, [isRunning]);
 
-  const total = durationMinutes * 60;
-  const progress = (total - secondsLeft) / total;
+  // Handle visibility change — recalculate immediately when tab becomes visible
+  useEffect(() => {
+    const onVisible = () => {
+      if (isRunning && deadlineRef.current) {
+        const remaining = Math.max(0, Math.round((deadlineRef.current - Date.now()) / 1000));
+        setSecondsLeft(remaining);
+        if (remaining <= 0 && !firedRef.current) {
+          firedRef.current = true;
+          onTimeUp?.();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [isRunning]);
+
+  const progress = (totalSeconds - secondsLeft) / totalSeconds;
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
   const circumference = 2 * Math.PI * 44;
