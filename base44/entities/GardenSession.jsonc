@@ -1,0 +1,38 @@
+{
+  "name": "GardenSession",
+  "type": "object",
+  "properties": {
+    "course_name": {
+      "type": "string"
+    },
+    "course_code": {
+      "type": "string"
+    },
+    "assignment_name": {
+      "type": "string"
+    },
+    "tasks_completed": {
+      "type": "number"
+    },
+    "bloom_stage": {
+      "type": "number",
+      "description": "Plant stage 0-7 at session end"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "duration_minutes": {
+      "type": "number"
+    },
+    "slot": {
+      "type": "number",
+      "description": "Position index in the garden grid"
+    }
+  },
+  "required": [
+    "tasks_completed",
+    "bloom_stage",
+    "date"
+  ]
+}

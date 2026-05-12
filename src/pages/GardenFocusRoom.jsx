@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pause, Play, Leaf } from "lucide-react";
 import { Link } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 import GardenSetup from "@/components/focus-room/garden/GardenSetup";
 import PlantStage from "@/components/focus-room/garden/PlantStage";
 import PlantInteraction from "@/components/focus-room/garden/PlantInteraction";
+import MyGarden from "@/components/focus-room/garden/MyGarden";
 
 // Tappable seed → plants itself animation
 function SeedTapPlant({ onPlanted }) {
@@ -96,6 +98,7 @@ export default function GardenFocusRoom() {
   const [phoneState, setPhoneState] = useState(null);
   const [showSeedPlanted, setShowSeedPlanted] = useState(false);
   const [phoneParkedBonus, setPhoneParkedBonus] = useState(false); // earned water drop
+  const [view, setView] = useState("garden"); // "garden" | "focus" — shown when no active plan
 
   const allTasks = plan?.tasks || [];
   const activeTasks = allTasks.filter((_, i) => !skippedIds.includes(i));
@@ -121,9 +124,21 @@ export default function GardenFocusRoom() {
     setShowInteraction(false);
     const bonus = phoneParkedBonus ? 1 : 0;
     setPhoneParkedBonus(false);
-    setCompletedCount(c => c + 1 + bonus);
+    const newCount = completedCount + 1 + bonus;
+    setCompletedCount(newCount);
     setCompanionCtx("progress");
     if (isLastTask) {
+      // Save to garden
+      const bloomStage = Math.min(newCount, 7);
+      base44.entities.GardenSession.create({
+        course_name: plan.courseName || null,
+        course_code: plan.courseCode || null,
+        assignment_name: plan.assignmentName || null,
+        tasks_completed: newCount,
+        bloom_stage: bloomStage,
+        date: new Date().toISOString().split("T")[0],
+        duration_minutes: allTasks.reduce((sum, t) => sum + (t.duration || 7), 0),
+      });
       setSessionDone(true);
     } else {
       setCurrentIdx(i => i + 1);
@@ -195,8 +210,31 @@ export default function GardenFocusRoom() {
     setIsRunning(false);
   };
 
-  // ── Setup ────────────────────────────────────────────────────────────────────
-  if (!plan) return <GardenSetup onPlanReady={(p) => { setPlan(p); }} />;
+  // ── No active session: show garden or start-session screen ──────────────────
+  if (!plan) {
+    if (view === "garden") {
+      return (
+        <div className="min-h-screen" style={{ background: "linear-gradient(160deg, #fafdf7 0%, #f0fdf4 50%, #fdf9f5 100%)" }}>
+          {/* Tab switcher */}
+          <div className="max-w-lg mx-auto px-4 pt-5">
+            <div className="flex gap-1 p-1 rounded-2xl mb-2" style={{ background: "#f0fdf4", border: "1.5px solid #d1fae5" }}>
+              <button onClick={() => setView("garden")}
+                className="flex-1 py-2 rounded-xl text-sm font-bold transition-all"
+                style={{ background: "white", color: "#4a7c59", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
+                🌸 My Garden
+              </button>
+              <button onClick={() => setView("focus")}
+                className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all text-stone-400 hover:text-stone-600">
+                ＋ New Session
+              </button>
+            </div>
+          </div>
+          <MyGarden hideHeader />
+        </div>
+      );
+    }
+    return <GardenSetup onPlanReady={(p) => { setPlan(p); }} />;
+  }
 
   // ── Phone Park Setup (first time: before seed planting; between tasks: phoneState reset to null) ─
   // Only show phone park on first time if seed hasn't been planted yet
@@ -285,17 +323,19 @@ export default function GardenFocusRoom() {
               {plan.assignmentName ? ` Great work on ${plan.assignmentName}.` : " That took real effort."} Be proud.
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-2 w-full">
             <button
-              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); setPhoneState(null); setPhoneParkedBonus(false); }}
-              className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white"
-              style={{ background: "#5a9a6f" }}>
+              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); setPhoneState(null); setPhoneParkedBonus(false); setView("garden"); }}
+              className="w-full py-3 rounded-2xl text-sm font-bold text-white"
+              style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)" }}>
+              🌸 View my garden
+            </button>
+            <button
+              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); setPhoneState(null); setPhoneParkedBonus(false); setView("focus"); }}
+              className="w-full py-3 rounded-2xl text-sm font-semibold text-stone-500 hover:bg-stone-50 transition-colors"
+              style={{ border: "1.5px solid #e5e7eb" }}>
               New session
             </button>
-            <Link to="/focus"
-              className="px-5 py-2.5 rounded-2xl text-sm font-medium text-stone-500 border border-stone-200 hover:bg-stone-50 transition-colors">
-              Timer mode
-            </Link>
           </div>
         </motion.div>
       </div>
