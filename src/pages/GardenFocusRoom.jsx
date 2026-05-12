@@ -29,9 +29,9 @@ export default function GardenFocusRoom() {
   const [timeUpMessage, setTimeUpMessage] = useState(false);
   const [sessionDone, setSessionDone] = useState(false);
 
-  // Phone Parking state
-  // "setup" | "parked" | "moved" | null (skipped/not started)
+  // "celebrate" = seed planted screen, null = phone park setup, "parked" | "moved" | "skipped"
   const [phoneState, setPhoneState] = useState(null);
+  const [showSeedPlanted, setShowSeedPlanted] = useState(false);
   const [phoneParkedBonus, setPhoneParkedBonus] = useState(false); // earned water drop
 
   const allTasks = plan?.tasks || [];
@@ -124,7 +124,38 @@ export default function GardenFocusRoom() {
   };
 
   // ── Setup ────────────────────────────────────────────────────────────────────
-  if (!plan) return <GardenSetup onPlanReady={setPlan} />;
+  if (!plan) return <GardenSetup onPlanReady={(p) => { setPlan(p); setShowSeedPlanted(true); }} />;
+
+  // ── Seed Planted Celebration ──────────────────────────────────────────────────
+  if (showSeedPlanted) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4"
+        style={{ background: "linear-gradient(160deg, #0a0f1a 0%, #0d1f2d 50%, #0f1a2e 100%)" }}>
+        <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: "backOut" }}
+          className="flex flex-col items-center gap-6 max-w-sm w-full text-center">
+          <PlantStage completedCount={0} />
+          <div className="space-y-2">
+            <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              className="text-2xl font-bold text-white">
+              Your seed is planted 🌱
+            </motion.h2>
+            <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+              className="text-slate-400 text-sm leading-relaxed">
+              {plan.tasks?.length} questions lined up. Each one you finish helps your lotus bloom.
+            </motion.p>
+          </div>
+          <motion.button
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+            onClick={() => setShowSeedPlanted(false)}
+            className="w-full py-4 rounded-2xl text-base font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+            style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)", boxShadow: "0 4px 20px rgba(90,154,111,0.3)" }}>
+            Let's grow it →
+          </motion.button>
+        </motion.div>
+      </div>
+    );
+  }
 
   // ── Phone Park Setup (shown after plan is ready, before session starts) ──────
   if (phoneState === null && plan && !sessionDone) {
