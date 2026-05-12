@@ -96,6 +96,7 @@ export default function GardenFocusRoom() {
   const [phoneState, setPhoneState] = useState(null);
   const [showSeedPlanted, setShowSeedPlanted] = useState(false);
   const [phoneParkedBonus, setPhoneParkedBonus] = useState(false); // earned water drop
+  const [sessionStartTime, setSessionStartTime] = useState(null); // actual wall-clock start
 
   const allTasks = plan?.tasks || [];
   const activeTasks = allTasks.filter((_, i) => !skippedIds.includes(i));
@@ -128,7 +129,9 @@ export default function GardenFocusRoom() {
       // Save to garden
       const bloomStage = Math.min(newCount, 7);
       const sessionDate = new Date().toISOString().split("T")[0];
-      const totalDuration = allTasks.reduce((sum, t) => sum + (t.duration || 7), 0);
+      const totalDuration = sessionStartTime
+        ? Math.round((Date.now() - sessionStartTime) / 60000)
+        : allTasks.reduce((sum, t) => sum + (t.duration || 7), 0);
       base44.entities.GardenSession.create({
         course_name: plan.courseName || null,
         course_code: plan.courseCode || null,
@@ -192,6 +195,7 @@ export default function GardenFocusRoom() {
     setPhoneState("parked");
     setIsRunning(true);
     setTimeUpMessage(false);
+    if (!sessionStartTime) setSessionStartTime(Date.now());
   };
 
   // First-time park done → show seed planting
@@ -254,7 +258,7 @@ export default function GardenFocusRoom() {
             <p className="text-sm text-stone-400 leading-relaxed">Tap the seed — it'll grow as you complete each focus block.</p>
           </div>
 
-          <SeedTapPlant onPlanted={() => { setShowSeedPlanted(false); setPhoneState("parked"); setIsRunning(true); }} />
+          <SeedTapPlant onPlanted={() => { setShowSeedPlanted(false); setPhoneState("parked"); setIsRunning(true); setSessionStartTime(Date.now()); }} />
 
           <p className="text-[11px] text-stone-300">{plan.tasks?.length} focus blocks ready 🌿</p>
         </motion.div>
@@ -317,7 +321,7 @@ export default function GardenFocusRoom() {
           </div>
           <div className="flex flex-col gap-2 w-full">
             <button
-              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); setPhoneState(null); setPhoneParkedBonus(false); }}
+              onClick={() => { setPlan(null); setCurrentIdx(0); setCompletedCount(0); setSkippedIds([]); setSessionDone(false); setPhoneState(null); setPhoneParkedBonus(false); setSessionStartTime(null); }}
               className="w-full py-3 rounded-2xl text-sm font-bold text-white"
               style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)" }}>
               🌱 New session
