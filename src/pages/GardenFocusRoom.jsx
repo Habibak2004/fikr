@@ -4,8 +4,70 @@ import { Pause, Play, Leaf } from "lucide-react";
 import { Link } from "react-router-dom";
 import GardenSetup from "@/components/focus-room/garden/GardenSetup";
 import PlantStage from "@/components/focus-room/garden/PlantStage";
-import SeedPlantAnimation from "@/components/focus-room/garden/SeedPlantAnimation";
 import PlantInteraction from "@/components/focus-room/garden/PlantInteraction";
+
+// Tappable seed → plants itself animation
+function SeedTapPlant({ onPlanted }) {
+  const [phase, setPhase] = useState("idle"); // idle | planting | sprouted
+
+  const handleTap = () => {
+    if (phase !== "idle") return;
+    setPhase("planting");
+    setTimeout(() => {
+      setPhase("sprouted");
+      setTimeout(onPlanted, 1000);
+    }, 900);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div className="relative h-28 w-28 flex items-center justify-center">
+        {phase === "idle" && (
+          <motion.button
+            onClick={handleTap}
+            animate={{ y: [0, -7, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            whileHover={{ scale: 1.12 }} whileTap={{ scale: 0.88 }}
+            className="h-24 w-24 rounded-full flex items-center justify-center text-6xl cursor-pointer select-none shadow-md"
+            style={{ background: "rgba(90,154,111,0.12)", border: "2px solid rgba(90,154,111,0.3)" }}>
+            🌰
+          </motion.button>
+        )}
+        {phase === "planting" && (
+          <div className="relative h-24 w-24 flex items-center justify-center">
+            <motion.span className="text-6xl absolute"
+              animate={{ y: [0, 32], opacity: [1, 0], scale: [1, 0.55] }}
+              transition={{ duration: 0.65, ease: "easeIn" }}>🌰</motion.span>
+            {/* Dirt splash */}
+            {[-20, 0, 20].map((x, i) => (
+              <motion.span key={i} className="text-xl absolute"
+                style={{ bottom: 0 }}
+                initial={{ opacity: 0, y: 0 }}
+                animate={{ opacity: [0, 1, 0], y: [-8, -20], x: [0, x] }}
+                transition={{ duration: 0.5, delay: 0.3 + i * 0.07 }}>
+                🪨
+              </motion.span>
+            ))}
+          </div>
+        )}
+        {phase === "sprouted" && (
+          <motion.div
+            initial={{ scale: 0.2, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, ease: "backOut" }}
+            className="text-7xl">
+            🌱
+          </motion.div>
+        )}
+      </div>
+      <motion.p className="text-sm font-medium text-stone-500" animate={{ opacity: 1 }}>
+        {phase === "idle" && "Tap to plant 🌰"}
+        {phase === "planting" && "Planting…"}
+        {phase === "sprouted" && "Sprouted! ✨"}
+      </motion.p>
+    </div>
+  );
+}
 import TaskTimer from "@/components/focus-room/garden/TaskTimer";
 import CompanionMessage from "@/components/focus-room/garden/CompanionMessage";
 import StuckModal from "@/components/focus-room/garden/StuckModal";
@@ -127,28 +189,31 @@ export default function GardenFocusRoom() {
   };
 
   // ── Setup ────────────────────────────────────────────────────────────────────
-  if (!plan) return <GardenSetup onPlanReady={(p) => { setPlan(p); }} />;
+  if (!plan) return <GardenSetup onPlanReady={(p) => { setPlan(p); setShowSeedPlanted(true); }} />;
 
-  // ── Seed Planted Celebration ──────────────────────────────────────────────────
+  // ── Plant the Seed (tappable, before first phone park) ────────────────────────
   if (showSeedPlanted) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4"
+      <div className="min-h-screen flex flex-col items-center justify-center px-5"
         style={{ background: "linear-gradient(160deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdf4 100%)" }}>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="flex flex-col items-center gap-4 max-w-sm w-full text-center">
-          <SeedPlantAnimation onComplete={() => setShowSeedPlanted(false)} />
-          <div className="space-y-1.5">
-            <p className="text-2xl font-bold text-stone-800">Your seed is planted 🌱</p>
-            <p className="text-stone-400 text-sm leading-relaxed">
-              {plan.tasks?.length} tasks lined up. Complete each one to watch it bloom.
-            </p>
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-6 max-w-sm w-full text-center">
+
+          <div className="space-y-1">
+            <p className="text-xs font-bold uppercase tracking-widest text-emerald-500">Your garden awaits</p>
+            <h1 className="text-2xl font-bold text-stone-800">Plant your seed to begin</h1>
+            <p className="text-sm text-stone-400 leading-relaxed">Tap the seed — it'll grow as you complete each focus block.</p>
           </div>
+
+          <SeedTapPlant onPlanted={() => setShowSeedPlanted(false)} />
+
+          <p className="text-[11px] text-stone-300">{plan.tasks?.length} focus blocks ready 🌿</p>
         </motion.div>
       </div>
     );
   }
 
-  // ── Phone Park Setup (shown after plan is ready, before session starts) ──────
+  // ── Phone Park Setup (shown after seed planted and between tasks) ─────────────
   if (phoneState === null && plan && !sessionDone) {
     return (
       <PhoneParkSetup
