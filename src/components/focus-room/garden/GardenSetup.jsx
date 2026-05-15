@@ -26,19 +26,23 @@ export default function GardenSetup({ onPlanReady }) {
   const [isTyping, setIsTyping] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
   const [pendingPlan, setPendingPlan] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
   const unsubRef = useRef(null);
   const endRef = useRef(null);
   const lastCount = useRef(0);
 
+  useEffect(() => { base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {}); }, []);
+
   const { data: courses = [] } = useQuery({
-    queryKey: ["courses"],
-    queryFn: () => base44.entities.Course.list("-created_date", 50),
+    queryKey: ["courses", userEmail],
+    queryFn: () => base44.entities.Course.filter({ created_by: userEmail }, "-created_date", 50),
+    enabled: !!userEmail,
   });
 
   const { data: assignments = [] } = useQuery({
-    queryKey: ["assignments", selectedCourse?.id],
-    queryFn: () => base44.entities.Assignment.filter({ course_id: selectedCourse.id, completed: false }),
-    enabled: !!selectedCourse,
+    queryKey: ["assignments", selectedCourse?.id, userEmail],
+    queryFn: () => base44.entities.Assignment.filter({ course_id: selectedCourse.id, created_by: userEmail, completed: false }),
+    enabled: !!selectedCourse && !!userEmail,
   });
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
