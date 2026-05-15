@@ -9,14 +9,16 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Plus, BookOpen, Flame, Brain, ArrowRight, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import AddCourseModal from "@/components/courses/AddCourseModal";
 
 export default function Courses() {
   const [showAdd, setShowAdd] = useState(false);
-  const [editCourse, setEditCourse] = useState(null); // { id, name }
-  const [editName, setEditName] = useState("");
+  const [editCourse, setEditCourse] = useState(null);
+  const [editFields, setEditFields] = useState({});
   const [userEmail, setUserEmail] = useState(null);
   const queryClient = useQueryClient();
 
@@ -42,8 +44,8 @@ export default function Courses() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["courses"] }),
   });
 
-  const renameMutation = useMutation({
-    mutationFn: ({ id, name }) => base44.entities.Course.update(id, { name }),
+  const editMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Course.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["courses"] }); setEditCourse(null); },
   });
 
@@ -126,7 +128,7 @@ export default function Courses() {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => { setEditCourse(course); setEditName(course.name); }}>
+                    <DropdownMenuItem onClick={() => { setEditCourse(course); setEditFields({ name: course.name, code: course.code || "", professor: course.professor || "", semester: course.semester || "", status: course.status || "active" }); }}>
                       <Pencil className="h-4 w-4 mr-2" /> Rename
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -179,25 +181,51 @@ export default function Courses() {
       <AddCourseModal open={showAdd} onClose={() => setShowAdd(false)} onSave={(data) => createMutation.mutate(data)} />
 
       <Dialog open={!!editCourse} onOpenChange={() => setEditCourse(null)}>
-        <DialogContent className="rounded-2xl">
+        <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
-            <DialogTitle>Rename Course</DialogTitle>
+            <DialogTitle>Edit Course</DialogTitle>
           </DialogHeader>
-          <Input
-            value={editName}
-            onChange={e => setEditName(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && renameMutation.mutate({ id: editCourse?.id, name: editName })}
-            className="rounded-xl"
-            autoFocus
-          />
+          <div className="space-y-4 py-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Course Name</Label>
+                <Input value={editFields.name || ""} onChange={e => setEditFields(f => ({ ...f, name: e.target.value }))} className="rounded-xl" autoFocus />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Course Code</Label>
+                <Input value={editFields.code || ""} onChange={e => setEditFields(f => ({ ...f, code: e.target.value }))} className="rounded-xl" placeholder="e.g. CS101" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Professor</Label>
+              <Input value={editFields.professor || ""} onChange={e => setEditFields(f => ({ ...f, professor: e.target.value }))} className="rounded-xl" placeholder="Prof. Smith" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Semester / Term</Label>
+                <Input value={editFields.semester || ""} onChange={e => setEditFields(f => ({ ...f, semester: e.target.value }))} className="rounded-xl" placeholder="e.g. Fall 2026" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Status</Label>
+                <Select value={editFields.status || "active"} onValueChange={v => setEditFields(f => ({ ...f, status: v }))}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="dropped">Dropped</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditCourse(null)}>Cancel</Button>
             <Button
-              onClick={() => renameMutation.mutate({ id: editCourse?.id, name: editName })}
-              disabled={!editName.trim() || renameMutation.isPending}
+              onClick={() => editMutation.mutate({ id: editCourse?.id, data: editFields })}
+              disabled={!editFields.name?.trim() || editMutation.isPending}
               className="bg-primary hover:bg-primary/90 rounded-xl"
             >
-              Save
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
