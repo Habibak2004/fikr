@@ -5,10 +5,11 @@ import { motion } from "framer-motion";
 import PlantStage from "@/components/focus-room/garden/PlantStage";
 import { format } from "date-fns";
 
-export default function MyGardenSection() {
+export default function MyGardenSection({ userEmail }) {
   const { data: gardenSessions = [], isLoading } = useQuery({
-    queryKey: ["garden-sessions"],
-    queryFn: () => base44.entities.GardenSession.list("-date", 50),
+    queryKey: ["garden-sessions", userEmail],
+    queryFn: () => base44.entities.GardenSession.filter({ created_by: userEmail }, "-date", 50),
+    enabled: !!userEmail,
   });
 
   if (isLoading) return null;

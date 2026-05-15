@@ -31,7 +31,10 @@ export default function CourseDetail() {
 
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments", courseId],
-    queryFn: () => base44.entities.Assignment.filter({ course_id: courseId }, "-due_date", 100),
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return base44.entities.Assignment.filter({ course_id: courseId, created_by: user.email }, "-due_date", 100);
+    },
     enabled: !!courseId,
   });
 

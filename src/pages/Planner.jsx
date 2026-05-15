@@ -19,16 +19,21 @@ export default function Planner() {
   const [showAdd, setShowAdd] = useState(false);
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterType, setFilterType] = useState("all");
+  const [userEmail, setUserEmail] = useState(null);
   const queryClient = useQueryClient();
 
+  useState(() => { base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {}); });
+
   const { data: assignments = [] } = useQuery({
-    queryKey: ["assignments"],
-    queryFn: () => base44.entities.Assignment.list("-due_date", 200),
+    queryKey: ["assignments", userEmail],
+    queryFn: () => base44.entities.Assignment.filter({ created_by: userEmail }, "-due_date", 200),
+    enabled: !!userEmail,
   });
 
   const { data: courses = [] } = useQuery({
-    queryKey: ["courses"],
-    queryFn: () => base44.entities.Course.list("-created_date", 50),
+    queryKey: ["courses", userEmail],
+    queryFn: () => base44.entities.Course.filter({ created_by: userEmail }, "-created_date", 50),
+    enabled: !!userEmail,
   });
 
   const toggleMutation = useMutation({

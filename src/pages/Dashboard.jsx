@@ -20,18 +20,21 @@ export default function Dashboard() {
   }, []);
 
   const { data: courses = [] } = useQuery({
-    queryKey: ["courses"],
-    queryFn: () => base44.entities.Course.list("-created_date", 50),
+    queryKey: ["courses", user?.email],
+    queryFn: () => base44.entities.Course.filter({ created_by: user.email }, "-created_date", 50),
+    enabled: !!user?.email,
   });
 
   const { data: assignments = [] } = useQuery({
-    queryKey: ["assignments"],
-    queryFn: () => base44.entities.Assignment.list("-due_date", 50),
+    queryKey: ["assignments", user?.email],
+    queryFn: () => base44.entities.Assignment.filter({ created_by: user.email }, "-due_date", 50),
+    enabled: !!user?.email,
   });
 
   const { data: sessions = [] } = useQuery({
-    queryKey: ["focus-sessions"],
-    queryFn: () => base44.entities.FocusSession.list("-created_date", 20),
+    queryKey: ["focus-sessions", user?.email],
+    queryFn: () => base44.entities.FocusSession.filter({ created_by: user.email }, "-created_date", 20),
+    enabled: !!user?.email,
   });
 
   const todayStr = format(new Date(), "yyyy-MM-dd");

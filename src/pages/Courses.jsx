@@ -17,11 +17,15 @@ export default function Courses() {
   const [showAdd, setShowAdd] = useState(false);
   const [editCourse, setEditCourse] = useState(null); // { id, name }
   const [editName, setEditName] = useState("");
+  const [userEmail, setUserEmail] = useState(null);
   const queryClient = useQueryClient();
 
+  useState(() => { base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {}); });
+
   const { data: courses = [], isLoading } = useQuery({
-    queryKey: ["courses"],
-    queryFn: () => base44.entities.Course.list("-created_date", 50),
+    queryKey: ["courses", userEmail],
+    queryFn: () => base44.entities.Course.filter({ created_by: userEmail }, "-created_date", 50),
+    enabled: !!userEmail,
   });
 
   const createMutation = useMutation({

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
@@ -10,14 +11,19 @@ import SessionHistory from "@/components/insights/SessionHistory";
 import MyGardenSection from "@/components/insights/MyGardenSection";
 
 export default function Insights() {
+  const [userEmail, setUserEmail] = useState(null);
+  useState(() => { base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {}); });
+
   const { data: sessions = [] } = useQuery({
-    queryKey: ["focus-sessions"],
-    queryFn: () => base44.entities.FocusSession.list("-created_date", 200),
+    queryKey: ["focus-sessions", userEmail],
+    queryFn: () => base44.entities.FocusSession.filter({ created_by: userEmail }, "-created_date", 200),
+    enabled: !!userEmail,
   });
 
   const { data: courses = [] } = useQuery({
-    queryKey: ["courses"],
-    queryFn: () => base44.entities.Course.list("-created_date", 50),
+    queryKey: ["courses", userEmail],
+    queryFn: () => base44.entities.Course.filter({ created_by: userEmail }, "-created_date", 50),
+    enabled: !!userEmail,
   });
 
   // Focus score over time (last 14 days)
@@ -146,10 +152,10 @@ export default function Insights() {
       </div>
 
       {/* My Garden */}
-      <MyGardenSection />
+      <MyGardenSection userEmail={userEmail} />
 
       {/* Session History */}
-      <SessionHistory courses={courses} />
+      <SessionHistory courses={courses} userEmail={userEmail} />
 
       {/* AI Summary */}
       <Card className="p-6 rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 border-0">

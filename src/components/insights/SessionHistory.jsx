@@ -134,13 +134,14 @@ function LogModal({ open, onClose, courses, onSave, isSaving }) {
   );
 }
 
-export default function SessionHistory({ courses }) {
+export default function SessionHistory({ courses, userEmail }) {
   const [showLog, setShowLog] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: studySessions = [] } = useQuery({
-    queryKey: ["study-sessions"],
-    queryFn: () => base44.entities.StudySession.list("-created_date", 100),
+    queryKey: ["study-sessions", userEmail],
+    queryFn: () => base44.entities.StudySession.filter({ created_by: userEmail }, "-created_date", 100),
+    enabled: !!userEmail,
   });
 
   const createMutation = useMutation({
