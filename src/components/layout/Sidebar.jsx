@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, BookOpen, CalendarDays, Target,
-  Users, Brain, BarChart3, Timer, Flame, Map
+  Users, Brain, BarChart3, Timer, Flame, Map, Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ const navItems = [
   { icon: Users, label: "Community", path: "/community" },
   { icon: Brain, label: "Study Coach", path: "/coach" },
   { icon: BarChart3, label: "Insights", path: "/insights" },
+  { icon: Sparkles, label: "Reset Room", path: "/reset-room" },
 ];
 
 export default function Sidebar() {
