@@ -40,8 +40,12 @@ export default function PhotoUpload({ energyLevel, onAnalyzed, onBack }) {
     setError(null);
     setAnalyzing(true);
 
-    // Create a local object URL for display — this never expires
-    const localPreviewUrl = URL.createObjectURL(file);
+    // Convert to data URL for persistent display across component mounts
+    const localPreviewUrl = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
 
     // Animate steps
     let stepIdx = 0;
@@ -119,6 +123,7 @@ IMPORTANT:
     });
 
     clearInterval(stepInterval);
+    setAnalyzing(false);
     onAnalyzed(localPreviewUrl, { ...result, mode });
   };
 
