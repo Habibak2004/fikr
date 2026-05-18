@@ -14,6 +14,7 @@ const MODE_OPTIONS = [
   { id: "emergency", label: "5-Min Emergency", emoji: "🆘", desc: "Absolute minimum" },
   { id: "deep", label: "Deep Clean", emoji: "✨", desc: "Full restoration" },
   { id: "cant_start", label: "I Can't Start", emoji: "💙", desc: "Ultra-gentle" },
+  { id: "packing", label: "Packing Mode", emoji: "🧳", desc: "Trip or move prep" },
 ];
 
 export default function PhotoUpload({ energyLevel, onAnalyzed, onBack }) {
