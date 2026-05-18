@@ -40,6 +40,9 @@ export default function PhotoUpload({ energyLevel, onAnalyzed, onBack }) {
     setError(null);
     setAnalyzing(true);
 
+    // Create a local object URL for display — this never expires
+    const localPreviewUrl = URL.createObjectURL(file);
+
     // Animate steps
     let stepIdx = 0;
     const stepInterval = setInterval(() => {
@@ -116,7 +119,7 @@ IMPORTANT:
     });
 
     clearInterval(stepInterval);
-    onAnalyzed(file_url, { ...result, mode });
+    onAnalyzed(localPreviewUrl, { ...result, mode });
   };
 
   const handleFile = (file) => processFile(file);
