@@ -36,7 +36,7 @@ export default function AnalysisView({ photoUrl, analysisData, energyLevel, onSt
               transition={{ duration: 0.5 }}
               className="relative rounded-2xl overflow-hidden bg-[#e8e0d6]"
             >
-              <img src={photoUrl} alt="Your space" className="w-full object-cover max-h-72 block" />
+              <img src={photoUrl} alt="Your space" className="w-full object-contain block" />
               <div className="absolute top-3 left-3">
                 <span className="bg-white/90 backdrop-blur text-xs font-medium text-[#2c2416] px-3 py-1 rounded-full flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-green-500 inline-block" />
