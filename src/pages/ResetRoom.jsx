@@ -1,17 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EnergyCheck from "@/components/reset-room/EnergyCheck";
 import PhotoUpload from "@/components/reset-room/PhotoUpload";
 import AnalysisView from "@/components/reset-room/AnalysisView";
 import ActiveReset from "@/components/reset-room/ActiveReset";
 import CompletionScreen from "@/components/reset-room/CompletionScreen";
 
+const SESSION_KEY = "reset_room_session";
+
+function loadSession() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)) || {}; } catch { return {}; }
+}
+
+function saveSession(data) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch {}
+}
+
 // Flow: energy → upload → analysis → active → complete
 export default function ResetRoom() {
-  const [step, setStep] = useState("energy"); // energy | upload | analysis | active | complete
-  const [energyLevel, setEnergyLevel] = useState(null);
-  const [photoUrl, setPhotoUrl] = useState(null);
-  const [analysisData, setAnalysisData] = useState(null);
-  const [sessionStats, setSessionStats] = useState(null);
+  const saved = loadSession();
+  const [step, setStep] = useState(saved.step || "energy");
+  const [energyLevel, setEnergyLevel] = useState(saved.energyLevel || null);
+  const [photoUrl, setPhotoUrl] = useState(saved.photoUrl || null);
+  const [analysisData, setAnalysisData] = useState(saved.analysisData || null);
+  const [sessionStats, setSessionStats] = useState(saved.sessionStats || null);
+
+  useEffect(() => {
+    saveSession({ step, energyLevel, photoUrl, analysisData, sessionStats });
+  }, [step, energyLevel, photoUrl, analysisData, sessionStats]);
 
   const handleEnergySelect = (level) => {
     setEnergyLevel(level);
@@ -32,6 +47,7 @@ export default function ResetRoom() {
   };
 
   const handleRestart = () => {
+    sessionStorage.removeItem(SESSION_KEY);
     setStep("energy");
     setEnergyLevel(null);
     setPhotoUrl(null);
