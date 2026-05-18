@@ -40,11 +40,26 @@ export default function PhotoUpload({ energyLevel, onAnalyzed, onBack }) {
     setError(null);
     setAnalyzing(true);
 
-    // Convert to data URL for persistent display across component mounts
+    // Convert to a renderable JPEG data URL (handles HEIC and other formats)
     const localPreviewUrl = await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.readAsDataURL(file);
+      const img = new Image();
+      const blobUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext("2d").drawImage(img, 0, 0);
+        URL.revokeObjectURL(blobUrl);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = () => {
+        // Fallback: just use a FileReader data URL
+        URL.revokeObjectURL(blobUrl);
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      };
+      img.src = blobUrl;
     });
 
     // Animate steps
