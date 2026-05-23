@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  Target, Clock, Flame, BookOpen, ArrowRight,
+  Target, Clock, TrendingUp, BookOpen, ArrowRight,
   CheckCircle2, Calendar, Brain, Users, Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -73,7 +73,7 @@ export default function Dashboard() {
       {/* Top Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Target} label="Focus Score" value={`${focusPercent}%`} sub={`${todayMinutes}m / ${focusGoal}m goal`} color="bg-primary/10 text-primary" delay={0} />
-        <StatCard icon={Flame} label="Study Streak" value="7 days" sub="Personal best: 12 days" color="bg-accent/10 text-accent" delay={0.05} />
+        <StatCard icon={TrendingUp} label="Study Streak" value="7 days" sub="Personal best: 12 days" color="bg-accent/10 text-accent" delay={0.05} />
         <StatCard icon={BookOpen} label="Active Courses" value={courses.filter(c => c.status === "active").length} sub={`${courses.length} total enrolled`} color="bg-secondary/10 text-secondary" delay={0.1} />
         <StatCard icon={Clock} label="Exam Countdown" value={daysToExam != null ? `${daysToExam}d` : "—"} sub={nextExam ? nextExam.name : "No upcoming exams"} color="bg-destructive/10 text-destructive" delay={0.15} />
       </div>
