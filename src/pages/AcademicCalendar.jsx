@@ -280,7 +280,10 @@ export default function AcademicCalendar() {
 
             {Object.entries(
               milestones.reduce((acc, m) => {
-                const key = format(new Date(m.date + "T12:00:00"), "yyyy-MM");
+                if (!m.date || typeof m.date !== "string" || !m.date.match(/^\d{4}-\d{2}-\d{2}/)) return acc;
+                const d = new Date(m.date + "T12:00:00");
+                if (isNaN(d.getTime())) return acc;
+                const key = format(d, "yyyy-MM");
                 if (!acc[key]) acc[key] = [];
                 acc[key].push(m);
                 return acc;
