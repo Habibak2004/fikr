@@ -65,7 +65,7 @@ export default function Dashboard() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h1 className="text-3xl font-bold">
-          {greeting()}, {user?.full_name?.split(" ")[0] || "Student"} 👋
+          {greeting()}, {user?.full_name?.split(" ")[0] || "Student"}
         </h1>
         <p className="text-muted-foreground mt-1">Here's your study overview for today.</p>
       </motion.div>
