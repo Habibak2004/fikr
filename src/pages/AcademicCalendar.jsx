@@ -175,27 +175,42 @@ export default function AcademicCalendar() {
         <div className="overflow-x-auto -mx-6 px-6">
           <div className="flex gap-0 relative min-w-max">
             {/* Connecting line */}
-            <div className="absolute top-[52px] left-[40px] right-[40px] h-0.5 bg-border" />
+            <div className="absolute top-[52px] left-[56px] right-[56px] h-0.5 bg-border" />
 
-            {milestones.map((m, i) => {
-              const isActive = m.type === "active";
-              const isDone   = m.type === "done";
-              const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
+            {Object.entries(
+              milestones.reduce((acc, m) => {
+                const key = format(new Date(m.date + "T12:00:00"), "yyyy-MM");
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(m);
+                return acc;
+              }, {})
+            ).map(([monthKey, events]) => {
+              const monthLabel = format(new Date(monthKey + "-01"), "MMMM").toUpperCase();
+              const hasActive = events.some(e => e.type === "active");
               return (
-                <div key={i} className="flex flex-col items-center text-center w-36 flex-shrink-0">
-                  <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${isActive ? "text-primary" : "text-muted-foreground"}`}>
-                    {format(new Date(m.date), "MMMM").toUpperCase()}
+                <div key={monthKey} className="flex flex-col items-center text-center w-44 flex-shrink-0 px-2">
+                  <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${hasActive ? "text-primary" : "text-muted-foreground"}`}>
+                    {monthLabel}
                   </p>
-                  <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3
-                    ${isDone   ? "bg-primary border-primary" : ""}
-                    ${isActive ? "bg-white border-primary border-[3px]" : ""}
-                    ${isImported && !isDone && !isActive ? "bg-secondary/20 border-secondary" : ""}
-                    ${!isDone && !isActive && !isImported ? "bg-white border-border" : ""}
-                  `}>
-                    {isDone && <div className="h-2 w-2 rounded-full bg-white" />}
+                  {/* Dot on the timeline line */}
+                  <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
+                    {events.every(e => e.type === "done") && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
                   </div>
-                  <p className={`text-sm font-bold leading-tight ${isActive ? "text-primary" : isImported ? "text-secondary" : ""}`}>{m.label}</p>
-                  <p className={`text-xs mt-0.5 ${isDone ? "text-primary font-medium" : "text-muted-foreground"}`}>{m.sub}</p>
+                  {/* Events listed under the dot */}
+                  <div className="space-y-1.5 w-full">
+                    {events.map((m, i) => {
+                      const isActive   = m.type === "active";
+                      const isDone     = m.type === "done";
+                      const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
+                      return (
+                        <div key={i} className="text-left">
+                          <p className={`text-xs font-semibold leading-tight ${isActive ? "text-primary" : isImported ? "text-secondary" : isDone ? "text-foreground" : "text-muted-foreground"}`}>
+                            {format(new Date(m.date + "T12:00:00"), "MMM d")} — {m.label}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
