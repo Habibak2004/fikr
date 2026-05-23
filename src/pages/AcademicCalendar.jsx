@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
-import { Settings2, Sparkles, AlertTriangle, CalendarClock, Info, ChevronDown } from "lucide-react";
+import { Settings2, Sparkles, AlertTriangle, CalendarClock, Info, ChevronDown, Star, Trash2, Plus, X } from "lucide-react";
 import { format, differenceInDays, isAfter, differenceInWeeks } from "date-fns";
 import { Link } from "react-router-dom";
 import SemesterConfig from "@/components/calendar/SemesterConfig";
@@ -24,16 +24,19 @@ const DEFAULT_MILESTONES = [
   { date: "2026-05-22", label: "Grades Released",   sub: "May 22",     type: "upcoming" },
 ];
 
-const criticalDeadlines = [
-  { label: "Last Day to Drop (without W)", detail: "Tonight at 11:59 PM",        urgency: "URGENT",   icon: AlertTriangle, iconColor: "text-red-500",           iconBg: "bg-red-50",     badgeColor: "bg-red-100 text-red-600" },
-  { label: "Last Day to Add",              detail: "Monday, May 11 • 3 days left",urgency: "UPCOMING", icon: CalendarClock, iconColor: "text-primary",           iconBg: "bg-primary/10", badgeColor: "bg-primary/10 text-primary" },
-  { label: "Withdrawal Deadline",          detail: "Friday, May 15 • 7 days left",urgency: "PLANNING", icon: CalendarClock, iconColor: "text-muted-foreground",  iconBg: "bg-muted",      badgeColor: "bg-muted text-muted-foreground" },
+const DEFAULT_CRITICAL_DEADLINES = [
+  { label: "Last Day to Drop (without W)", detail: "Tonight at 11:59 PM",         urgency: "URGENT" },
+  { label: "Last Day to Add",              detail: "Monday, May 11 • 3 days left", urgency: "UPCOMING" },
+  { label: "Withdrawal Deadline",          detail: "Friday, May 15 • 7 days left", urgency: "PLANNING" },
 ];
 
 export default function AcademicCalendar() {
   const [semester, setSemester] = useState(DEFAULT_SEMESTER);
   const [importedEvents, setImportedEvents] = useState([]);
   const [showConfig, setShowConfig] = useState(false);
+  const [criticalDeadlines, setCriticalDeadlines] = useState(DEFAULT_CRITICAL_DEADLINES);
+  const [editingDeadlines, setEditingDeadlines] = useState(false);
+  const [newDeadline, setNewDeadline] = useState({ label: "", detail: "", urgency: "UPCOMING" });
 
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
@@ -140,23 +143,121 @@ export default function AcademicCalendar() {
         <div className="bg-white border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold">Critical Deadlines</h3>
-            <span className="text-muted-foreground text-lg">···</span>
+            <button
+              onClick={() => setEditingDeadlines(e => !e)}
+              className={`text-xs font-semibold px-3 py-1 rounded-lg transition-colors ${editingDeadlines ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
+            >
+              {editingDeadlines ? "Done" : "Edit"}
+            </button>
           </div>
-          <div className="space-y-3">
-            {criticalDeadlines.map((d, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-border/60">
-                <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${d.iconBg}`}>
-                  <d.icon className={`h-4 w-4 ${d.iconColor}`} />
+          <div className="space-y-2">
+            {criticalDeadlines.map((d, i) => {
+              const urgencyStyles = {
+                URGENT:   { badge: "bg-red-100 text-red-600",       icon: "text-red-500",          bg: "bg-red-50" },
+                UPCOMING: { badge: "bg-primary/10 text-primary",    icon: "text-primary",          bg: "bg-primary/10" },
+                PLANNING: { badge: "bg-muted text-muted-foreground", icon: "text-muted-foreground", bg: "bg-muted" },
+              }[d.urgency] || { badge: "bg-muted text-muted-foreground", icon: "text-muted-foreground", bg: "bg-muted" };
+
+              return (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-border/60">
+                  <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${urgencyStyles.bg}`}>
+                    <CalendarClock className={`h-4 w-4 ${urgencyStyles.icon}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {editingDeadlines ? (
+                      <>
+                        <input
+                          className="text-sm font-semibold w-full border-b border-border/60 outline-none bg-transparent mb-0.5"
+                          value={d.label}
+                          onChange={ev => {
+                            const updated = [...criticalDeadlines];
+                            updated[i] = { ...updated[i], label: ev.target.value };
+                            setCriticalDeadlines(updated);
+                          }}
+                        />
+                        <input
+                          className="text-xs text-muted-foreground w-full border-b border-border/40 outline-none bg-transparent"
+                          value={d.detail}
+                          onChange={ev => {
+                            const updated = [...criticalDeadlines];
+                            updated[i] = { ...updated[i], detail: ev.target.value };
+                            setCriticalDeadlines(updated);
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-semibold leading-tight">{d.label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{d.detail}</p>
+                      </>
+                    )}
+                  </div>
+                  {editingDeadlines ? (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <select
+                        value={d.urgency}
+                        onChange={ev => {
+                          const updated = [...criticalDeadlines];
+                          updated[i] = { ...updated[i], urgency: ev.target.value };
+                          setCriticalDeadlines(updated);
+                        }}
+                        className="text-[10px] font-bold rounded-md px-1.5 py-0.5 border outline-none"
+                      >
+                        <option value="URGENT">URGENT</option>
+                        <option value="UPCOMING">UPCOMING</option>
+                        <option value="PLANNING">PLANNING</option>
+                      </select>
+                      <button onClick={() => setCriticalDeadlines(criticalDeadlines.filter((_, idx) => idx !== i))}>
+                        <Trash2 className="h-4 w-4 text-red-400 hover:text-red-600" />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap flex-shrink-0 ${urgencyStyles.badge}`}>
+                      {d.urgency}
+                    </span>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold leading-tight">{d.label}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{d.detail}</p>
+              );
+            })}
+
+            {/* Add new deadline */}
+            {editingDeadlines && (
+              <div className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-primary/30 bg-primary/5">
+                <div className="flex-1 space-y-1">
+                  <input
+                    placeholder="Deadline label..."
+                    className="text-sm w-full border-b border-border/60 outline-none bg-transparent"
+                    value={newDeadline.label}
+                    onChange={ev => setNewDeadline(p => ({ ...p, label: ev.target.value }))}
+                  />
+                  <input
+                    placeholder="Detail (e.g. May 15 • 7 days left)"
+                    className="text-xs text-muted-foreground w-full border-b border-border/40 outline-none bg-transparent"
+                    value={newDeadline.detail}
+                    onChange={ev => setNewDeadline(p => ({ ...p, detail: ev.target.value }))}
+                  />
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md whitespace-nowrap ${d.badgeColor}`}>
-                  {d.urgency}
-                </span>
+                <select
+                  value={newDeadline.urgency}
+                  onChange={ev => setNewDeadline(p => ({ ...p, urgency: ev.target.value }))}
+                  className="text-[10px] font-bold rounded-md px-1.5 py-0.5 border outline-none flex-shrink-0"
+                >
+                  <option value="URGENT">URGENT</option>
+                  <option value="UPCOMING">UPCOMING</option>
+                  <option value="PLANNING">PLANNING</option>
+                </select>
+                <button
+                  onClick={() => {
+                    if (!newDeadline.label.trim()) return;
+                    setCriticalDeadlines(prev => [...prev, { ...newDeadline }]);
+                    setNewDeadline({ label: "", detail: "", urgency: "UPCOMING" });
+                  }}
+                  className="flex-shrink-0 h-7 w-7 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -203,17 +304,35 @@ export default function AcademicCalendar() {
                       const isDone     = m.type === "done";
                       const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
                       const isBreak    = /break|recess|holiday|no class|vacation/i.test(m.label);
+                      const isStarred  = criticalDeadlines.some(d => d.label === m.label);
                       return (
-                        <div key={i} className="text-left">
-                          <p className={`text-xs font-semibold leading-tight ${
-                            isBreak   ? "text-emerald-600" :
-                            isActive  ? "text-primary" :
+                        <div key={i} className="text-left flex items-start gap-1 group">
+                          <p className={`text-xs font-semibold leading-tight flex-1 ${
+                            isBreak    ? "text-emerald-600" :
+                            isActive   ? "text-primary" :
                             isImported ? "text-secondary" :
-                            isDone    ? "text-foreground" :
+                            isDone     ? "text-foreground" :
                             "text-muted-foreground"
                           }`}>
                             {format(new Date(m.date + "T12:00:00"), "MMM d")} — {m.label}
                           </p>
+                          <button
+                            title={isStarred ? "Remove from Critical Deadlines" : "Add to Critical Deadlines"}
+                            onClick={() => {
+                              if (isStarred) {
+                                setCriticalDeadlines(prev => prev.filter(d => d.label !== m.label));
+                              } else {
+                                setCriticalDeadlines(prev => [...prev, {
+                                  label: m.label,
+                                  detail: format(new Date(m.date + "T12:00:00"), "MMM d"),
+                                  urgency: "UPCOMING",
+                                }]);
+                              }
+                            }}
+                            className={`flex-shrink-0 transition-opacity ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
+                          >
+                            <Star className={`h-3 w-3 ${isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                          </button>
                         </div>
                       );
                     })}
