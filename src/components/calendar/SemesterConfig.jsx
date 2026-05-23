@@ -26,24 +26,43 @@ export default function SemesterConfig({ currentSemester, onSemesterChange, onCl
     setImportError(null);
     setImportedEvents([]);
 
+    // Try to fetch the ICS content directly
+    let icsContent = "";
+    try {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(calendarUrl)}`;
+      const res = await fetch(proxyUrl);
+      const json = await res.json();
+      icsContent = json.contents || "";
+    } catch {
+      icsContent = "";
+    }
+
+    const hasIcsData = icsContent.includes("BEGIN:VCALENDAR") || icsContent.includes("BEGIN:VEVENT");
+
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a calendar data extractor. Given the following iCal/ICS calendar URL or pasted calendar data, extract academic events and deadlines.
+      prompt: `You are an academic calendar parser. ${hasIcsData
+        ? `Parse this ICS/iCal data and extract all academic events, holidays, deadlines, and important dates.`
+        : `The URL could not be fetched directly. Based on the URL pattern, extract any clues about the school and generate realistic academic milestones.`
+      }
 
-Calendar URL: ${calendarUrl}
+${hasIcsData ? `ICS DATA:\n${icsContent.slice(0, 8000)}` : `Calendar URL: ${calendarUrl}`}
 
-Please note: You cannot actually fetch URLs, so if the user provided a URL, extract what you can from the URL pattern (like school name) and generate realistic placeholder academic milestones for a ${selected.label} semester starting ${selected.start} and ending ${selected.end}.
+Semester range: ${selected.start} to ${selected.end} (${selected.label}).
+Today: 2026-05-23.
 
-Extract or generate 6-10 key academic dates typical for a university semester. Return ONLY valid JSON:
-
+Return ONLY valid JSON with this structure:
 {
-  "school_name": "name extracted from URL or 'My School'",
+  "school_name": "school name",
   "events": [
     { "date": "YYYY-MM-DD", "label": "Event name", "sub": "Short detail", "type": "upcoming" }
   ]
 }
 
-Types: "done" for past dates, "active" for current week, "upcoming" for future.
-Current date: 2026-05-23.`,
+Rules:
+- Only include events within or near the semester range
+- type = "done" if date is before 2026-05-23, "upcoming" if after
+- Extract as many real dates as possible from the data
+- "sub" should be a brief 1-5 word detail (e.g. "No Classes", "Deadline", "Begins")`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -68,7 +87,7 @@ Current date: 2026-05-23.`,
     if (result?.events?.length) {
       setImportedEvents(result.events);
     } else {
-      setImportError("Couldn't parse calendar. Try pasting your school's .ics link.");
+      setImportError("Couldn't parse calendar. Make sure the link is a public .ics URL and try again.");
     }
   };
 
