@@ -291,7 +291,9 @@ export default function AcademicCalendar() {
                 return acc;
               }, {})
             ).sort(([a], [b]) => a.localeCompare(b)).map(([monthKey, events]) => {
-              const monthLabel = format(new Date(monthKey + "-01"), "MMMM").toUpperCase();
+              const MONTH_NAMES = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+              const monthIndex = parseInt(monthKey.split("-")[1], 10) - 1;
+              const monthLabel = MONTH_NAMES[monthIndex];
               const hasActive = events.some(e => e.type === "active");
               return (
                 <div key={monthKey} className="flex flex-col items-center text-center w-44 flex-shrink-0 px-2">
