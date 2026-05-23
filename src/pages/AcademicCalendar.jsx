@@ -202,9 +202,16 @@ export default function AcademicCalendar() {
                       const isActive   = m.type === "active";
                       const isDone     = m.type === "done";
                       const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
+                      const isBreak    = /break|recess|holiday|no class|vacation/i.test(m.label);
                       return (
                         <div key={i} className="text-left">
-                          <p className={`text-xs font-semibold leading-tight ${isActive ? "text-primary" : isImported ? "text-secondary" : isDone ? "text-foreground" : "text-muted-foreground"}`}>
+                          <p className={`text-xs font-semibold leading-tight ${
+                            isBreak   ? "text-emerald-600" :
+                            isActive  ? "text-primary" :
+                            isImported ? "text-secondary" :
+                            isDone    ? "text-foreground" :
+                            "text-muted-foreground"
+                          }`}>
                             {format(new Date(m.date + "T12:00:00"), "MMM d")} — {m.label}
                           </p>
                         </div>
