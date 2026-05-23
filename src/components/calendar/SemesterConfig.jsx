@@ -26,43 +26,49 @@ export default function SemesterConfig({ currentSemester, onSemesterChange, onCl
     setImportError(null);
     setImportedEvents([]);
 
-    // Try to fetch the ICS content directly
-    let icsContent = "";
+    // Fetch the page content (works for both ICS files and web pages)
+    let pageContent = "";
     try {
       const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(calendarUrl)}`;
       const res = await fetch(proxyUrl);
       const json = await res.json();
-      icsContent = json.contents || "";
+      pageContent = json.contents || "";
     } catch {
-      icsContent = "";
+      pageContent = "";
     }
 
-    const hasIcsData = icsContent.includes("BEGIN:VCALENDAR") || icsContent.includes("BEGIN:VEVENT");
+    // Strip HTML tags to get readable text for web pages
+    const isHtml = pageContent.includes("<html") || pageContent.includes("<!DOCTYPE");
+    const isIcs = pageContent.includes("BEGIN:VCALENDAR");
+    let cleanContent = pageContent;
+    if (isHtml) {
+      cleanContent = pageContent.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 8000);
+    } else if (isIcs) {
+      cleanContent = pageContent.slice(0, 8000);
+    }
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an academic calendar parser. ${hasIcsData
-        ? `Parse this ICS/iCal data and extract all academic events, holidays, deadlines, and important dates.`
-        : `The URL could not be fetched directly. Based on the URL pattern, extract any clues about the school and generate realistic academic milestones.`
-      }
+      prompt: `You are an academic calendar parser. Extract all academic dates, deadlines, holidays, and important events from the following content.
 
-${hasIcsData ? `ICS DATA:\n${icsContent.slice(0, 8000)}` : `Calendar URL: ${calendarUrl}`}
+${cleanContent ? `CONTENT FROM ${calendarUrl}:\n${cleanContent}` : `URL: ${calendarUrl}\n(Content could not be fetched — generate realistic milestones based on the URL.)`}
 
 Semester range: ${selected.start} to ${selected.end} (${selected.label}).
 Today: 2026-05-23.
 
-Return ONLY valid JSON with this structure:
+Return ONLY valid JSON:
 {
-  "school_name": "school name",
+  "school_name": "school name if identifiable, else 'My School'",
   "events": [
     { "date": "YYYY-MM-DD", "label": "Event name", "sub": "Short detail", "type": "upcoming" }
   ]
 }
 
 Rules:
-- Only include events within or near the semester range
-- type = "done" if date is before 2026-05-23, "upcoming" if after
-- Extract as many real dates as possible from the data
-- "sub" should be a brief 1-5 word detail (e.g. "No Classes", "Deadline", "Begins")`,
+- Extract every date mentioned that falls within or near the semester range
+- Convert any date format found (e.g. "January 19" or "1/19") to YYYY-MM-DD using year ${selected.start.slice(0,4)}
+- type = "done" if before 2026-05-23, else "upcoming"
+- "sub" = brief 1-5 word detail (e.g. "No Classes", "Deadline", "Begins")
+- Return at least 5 events if any dates are found`,
       response_json_schema: {
         type: "object",
         properties: {
