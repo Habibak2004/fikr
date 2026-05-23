@@ -26,49 +26,25 @@ export default function SemesterConfig({ currentSemester, onSemesterChange, onCl
     setImportError(null);
     setImportedEvents([]);
 
-    // Fetch the page content (works for both ICS files and web pages)
-    let pageContent = "";
-    try {
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(calendarUrl)}`;
-      const res = await fetch(proxyUrl);
-      const json = await res.json();
-      pageContent = json.contents || "";
-    } catch {
-      pageContent = "";
-    }
-
-    // Strip HTML tags to get readable text for web pages
-    const isHtml = pageContent.includes("<html") || pageContent.includes("<!DOCTYPE");
-    const isIcs = pageContent.includes("BEGIN:VCALENDAR");
-    let cleanContent = pageContent;
-    if (isHtml) {
-      cleanContent = pageContent.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 8000);
-    } else if (isIcs) {
-      cleanContent = pageContent.slice(0, 8000);
-    }
-
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an academic calendar parser. Extract all academic dates, deadlines, holidays, and important events from the following content.
+      prompt: `Visit this academic calendar page and extract ALL dates, deadlines, holidays, and important events for the ${selected.label} semester (${selected.start} to ${selected.end}).
 
-${cleanContent ? `CONTENT FROM ${calendarUrl}:\n${cleanContent}` : `URL: ${calendarUrl}\n(Content could not be fetched — generate realistic milestones based on the URL.)`}
-
-Semester range: ${selected.start} to ${selected.end} (${selected.label}).
-Today: 2026-05-23.
+URL: ${calendarUrl}
 
 Return ONLY valid JSON:
 {
-  "school_name": "school name if identifiable, else 'My School'",
+  "school_name": "school name",
   "events": [
     { "date": "YYYY-MM-DD", "label": "Event name", "sub": "Short detail", "type": "upcoming" }
   ]
 }
 
 Rules:
-- Extract every date mentioned that falls within or near the semester range
-- Convert any date format found (e.g. "January 19" or "1/19") to YYYY-MM-DD using year ${selected.start.slice(0,4)}
+- Only include events that fall within ${selected.start} to ${selected.end}
 - type = "done" if before 2026-05-23, else "upcoming"
 - "sub" = brief 1-5 word detail (e.g. "No Classes", "Deadline", "Begins")
-- Return at least 5 events if any dates are found`,
+- Include ALL events found for the semester — aim for 10+ events`,
+      add_context_from_internet: true,
       response_json_schema: {
         type: "object",
         properties: {
