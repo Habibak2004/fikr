@@ -49,10 +49,22 @@ export default function AcademicCalendar() {
   const semesterProgress = Math.min(100, Math.round((elapsedDays / totalDays) * 100));
   const weeksRemaining  = Math.max(0, differenceInWeeks(semesterEnd, now));
 
-  // Merge default milestones with imported events, sorted by date
   const milestones = useMemo(() => {
-    const base = DEFAULT_MILESTONES.filter(m => m.date >= semester.start && m.date <= semester.end);
-    const combined = [...base, ...importedEvents];
+    const isSpring2026 = semester.label === "Spring 2026";
+    let combined;
+    if (importedEvents.length > 0) {
+      // Always use imported events when available
+      combined = [...importedEvents];
+    } else if (isSpring2026) {
+      // Default semester: show hardcoded milestones
+      combined = [...DEFAULT_MILESTONES];
+    } else {
+      // Other semesters with no import: show just start/end
+      combined = [
+        { date: semester.start, label: "Semester Start", sub: format(new Date(semester.start + "T12:00:00"), "MMM d"), type: "upcoming" },
+        { date: semester.end,   label: "Semester End",   sub: format(new Date(semester.end   + "T12:00:00"), "MMM d"), type: "upcoming" },
+      ];
+    }
     combined.sort((a, b) => new Date(a.date) - new Date(b.date));
     return combined;
   }, [semester, importedEvents]);
