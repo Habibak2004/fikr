@@ -280,12 +280,14 @@ export default function AcademicCalendar() {
 
             {Object.entries(
               milestones.reduce((acc, m) => {
-                if (!m.date || typeof m.date !== "string" || !m.date.match(/^\d{4}-\d{2}-\d{2}/)) return acc;
-                const d = new Date(m.date + "T12:00:00");
-                if (isNaN(d.getTime())) return acc;
-                const key = format(d, "yyyy-MM");
+                if (!m.date || typeof m.date !== "string") return acc;
+                // Extract just the YYYY-MM-DD part regardless of what follows
+                const datePart = m.date.slice(0, 10);
+                if (!datePart.match(/^\d{4}-\d{2}-\d{2}$/)) return acc;
+                const [year, month, day] = datePart.split("-").map(Number);
+                const key = `${year}-${String(month).padStart(2, "0")}`;
                 if (!acc[key]) acc[key] = [];
-                acc[key].push(m);
+                acc[key].push({ ...m, date: datePart });
                 return acc;
               }, {})
             ).sort(([a], [b]) => a.localeCompare(b)).map(([monthKey, events]) => {
