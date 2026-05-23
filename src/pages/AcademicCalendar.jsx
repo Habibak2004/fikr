@@ -1,49 +1,69 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Sparkles, AlertTriangle, CalendarClock, Info } from "lucide-react";
-import { format, differenceInDays, isAfter, isBefore, differenceInWeeks } from "date-fns";
+import { AnimatePresence } from "framer-motion";
+import { Settings2, Sparkles, AlertTriangle, CalendarClock, Info, ChevronDown } from "lucide-react";
+import { format, differenceInDays, isAfter, differenceInWeeks } from "date-fns";
 import { Link } from "react-router-dom";
+import SemesterConfig from "@/components/calendar/SemesterConfig";
 
-const SEMESTER_START = new Date("2026-01-19");
-const SEMESTER_END   = new Date("2026-05-15");
-const TOTAL_DAYS     = differenceInDays(SEMESTER_END, SEMESTER_START);
-const now            = new Date();
-const ELAPSED_DAYS   = Math.max(0, differenceInDays(now, SEMESTER_START));
-const SEMESTER_PROGRESS = Math.min(100, Math.round((ELAPSED_DAYS / TOTAL_DAYS) * 100));
-const WEEKS_REMAINING = Math.max(0, differenceInWeeks(SEMESTER_END, now));
+const DEFAULT_SEMESTER = { label: "Spring 2026", start: "2026-01-19", end: "2026-05-15" };
 
-const milestones = [
-  { date: "2026-01-19", label: "Semester Start",   sub: "Jan 19",     type: "done" },
-  { date: "2026-02-06", label: "Add/Drop Ends",    sub: "Feb 6",      type: "done" },
-  { date: "2026-02-16", label: "Presidents Day",   sub: "No Classes", type: "done" },
-  { date: "2026-03-09", label: "Midterm Week",     sub: "Mar 9–13",   type: "active" },
-  { date: "2026-03-16", label: "Spring Break",     sub: "Mar 16–20",  type: "upcoming" },
-  { date: "2026-04-06", label: "Registration",     sub: "Opens",      type: "upcoming" },
-  { date: "2026-04-20", label: "Withdraw Deadline",sub: "Apr 20",     type: "upcoming" },
-  { date: "2026-05-04", label: "Last Day Classes", sub: "May 4",      type: "upcoming" },
-  { date: "2026-05-08", label: "Final Exams",      sub: "May 8–15",   type: "upcoming" },
-  { date: "2026-05-22", label: "Grades Released",  sub: "May 22",     type: "upcoming" },
-  { date: "2026-06-01", label: "Summer Session",   sub: "Begins",     type: "upcoming" },
-  { date: "2026-08-24", label: "Fall Semester",    sub: "Begins",     type: "upcoming" },
+const DEFAULT_MILESTONES = [
+  { date: "2026-01-19", label: "Semester Start",    sub: "Jan 19",     type: "done" },
+  { date: "2026-02-06", label: "Add/Drop Ends",     sub: "Feb 6",      type: "done" },
+  { date: "2026-02-16", label: "Presidents Day",    sub: "No Classes", type: "done" },
+  { date: "2026-03-09", label: "Midterm Week",      sub: "Mar 9–13",   type: "active" },
+  { date: "2026-03-16", label: "Spring Break",      sub: "Mar 16–20",  type: "upcoming" },
+  { date: "2026-04-06", label: "Registration",      sub: "Opens",      type: "upcoming" },
+  { date: "2026-04-20", label: "Withdraw Deadline", sub: "Apr 20",     type: "upcoming" },
+  { date: "2026-05-04", label: "Last Day Classes",  sub: "May 4",      type: "upcoming" },
+  { date: "2026-05-08", label: "Final Exams",       sub: "May 8–15",   type: "upcoming" },
+  { date: "2026-05-22", label: "Grades Released",   sub: "May 22",     type: "upcoming" },
 ];
 
 const criticalDeadlines = [
-  { label: "Last Day to Drop (without W)", detail: "Tonight at 11:59 PM", urgency: "URGENT",   icon: AlertTriangle, iconColor: "text-red-500",  iconBg: "bg-red-50",   badgeColor: "bg-red-100 text-red-600" },
-  { label: "Last Day to Add",              detail: "Monday, May 11 • 3 days left", urgency: "UPCOMING", icon: CalendarClock, iconColor: "text-primary",  iconBg: "bg-primary/10", badgeColor: "bg-primary/10 text-primary" },
-  { label: "Withdrawal Deadline",          detail: "Friday, May 15 • 7 days left", urgency: "PLANNING", icon: CalendarClock, iconColor: "text-muted-foreground", iconBg: "bg-muted", badgeColor: "bg-muted text-muted-foreground" },
+  { label: "Last Day to Drop (without W)", detail: "Tonight at 11:59 PM",        urgency: "URGENT",   icon: AlertTriangle, iconColor: "text-red-500",           iconBg: "bg-red-50",     badgeColor: "bg-red-100 text-red-600" },
+  { label: "Last Day to Add",              detail: "Monday, May 11 • 3 days left",urgency: "UPCOMING", icon: CalendarClock, iconColor: "text-primary",           iconBg: "bg-primary/10", badgeColor: "bg-primary/10 text-primary" },
+  { label: "Withdrawal Deadline",          detail: "Friday, May 15 • 7 days left",urgency: "PLANNING", icon: CalendarClock, iconColor: "text-muted-foreground",  iconBg: "bg-muted",      badgeColor: "bg-muted text-muted-foreground" },
 ];
 
-// Next upcoming milestone
-const nextMilestone = milestones.find(m => isAfter(new Date(m.date), now)) || milestones[milestones.length - 1];
-const daysUntilNext = differenceInDays(new Date(nextMilestone.date), now);
-
 export default function AcademicCalendar() {
+  const [semester, setSemester] = useState(DEFAULT_SEMESTER);
+  const [importedEvents, setImportedEvents] = useState([]);
+  const [showConfig, setShowConfig] = useState(false);
+
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
     queryFn: () => base44.entities.Assignment.list("-due_date", 200),
   });
+
+  const now = new Date();
+
+  const semesterStart = new Date(semester.start);
+  const semesterEnd   = new Date(semester.end);
+  const totalDays     = differenceInDays(semesterEnd, semesterStart);
+  const elapsedDays   = Math.max(0, differenceInDays(now, semesterStart));
+  const semesterProgress = Math.min(100, Math.round((elapsedDays / totalDays) * 100));
+  const weeksRemaining  = Math.max(0, differenceInWeeks(semesterEnd, now));
+
+  // Merge default milestones with imported events, sorted by date
+  const milestones = useMemo(() => {
+    const base = DEFAULT_MILESTONES.filter(m => m.date >= semester.start && m.date <= semester.end);
+    const combined = [...base, ...importedEvents];
+    combined.sort((a, b) => new Date(a.date) - new Date(b.date));
+    return combined;
+  }, [semester, importedEvents]);
+
+  const nextMilestone = milestones.find(m => isAfter(new Date(m.date), now)) || milestones[milestones.length - 1];
+  const daysUntilNext = nextMilestone ? differenceInDays(new Date(nextMilestone.date), now) : 0;
+
+  const handleSemesterChange = (newSemester, events = []) => {
+    setSemester(newSemester);
+    setImportedEvents(events);
+  };
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
@@ -53,11 +73,17 @@ export default function AcademicCalendar() {
         <div>
           <h1 className="text-3xl font-extrabold">Academic Calendar & Deadlines</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Spring Semester 2026 • {WEEKS_REMAINING} Weeks Remaining
+            {semester.label} • {weeksRemaining} Weeks Remaining
           </p>
         </div>
-        <Button variant="outline" className="rounded-xl gap-2 text-primary border-primary/30">
-          <RefreshCw className="h-4 w-4" /> Sync Calendar
+        <Button
+          variant="outline"
+          className="rounded-xl gap-2 text-primary border-primary/30"
+          onClick={() => setShowConfig(true)}
+        >
+          <Settings2 className="h-4 w-4" />
+          <span className="hidden sm:inline">{semester.label}</span>
+          <ChevronDown className="h-3.5 w-3.5" />
         </Button>
       </div>
 
@@ -69,12 +95,18 @@ export default function AcademicCalendar() {
           <span className="inline-block text-[10px] font-bold tracking-widest uppercase bg-primary/10 text-primary px-2.5 py-1 rounded-full mb-4">
             Next Milestone
           </span>
-          <h2 className="text-4xl font-extrabold leading-tight mb-1">
-            {daysUntilNext} Days Until
-          </h2>
-          <h2 className="text-4xl font-extrabold text-primary leading-tight mb-6">
-            {nextMilestone.label}
-          </h2>
+          {nextMilestone ? (
+            <>
+              <h2 className="text-4xl font-extrabold leading-tight mb-1">
+                {daysUntilNext} Days Until
+              </h2>
+              <h2 className="text-4xl font-extrabold text-primary leading-tight mb-6">
+                {nextMilestone.label}
+              </h2>
+            </>
+          ) : (
+            <h2 className="text-2xl font-extrabold text-muted-foreground mb-6">No upcoming milestones</h2>
+          )}
 
           {/* Decorative ring */}
           <div className="absolute right-4 top-1/2 -translate-y-1/2 h-36 w-36 rounded-full border-[12px] border-primary/10 opacity-60" />
@@ -82,12 +114,12 @@ export default function AcademicCalendar() {
           <div className="mt-2">
             <div className="flex items-center justify-between text-sm mb-1.5">
               <span className="font-medium text-muted-foreground">Semester Progress</span>
-              <span className="font-bold text-primary">{SEMESTER_PROGRESS}%</span>
+              <span className="font-bold text-primary">{semesterProgress}%</span>
             </div>
-            <Progress value={SEMESTER_PROGRESS} className="h-2.5 rounded-full" />
+            <Progress value={semesterProgress} className="h-2.5 rounded-full" />
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <Info className="h-3 w-3" />
-              Spring Break ends Mar 16 • Final exams conclude May 15
+              {semester.start} → {semester.end}
             </p>
           </div>
         </div>
@@ -120,35 +152,42 @@ export default function AcademicCalendar() {
       {/* Semester Timeline */}
       <div className="bg-white border rounded-2xl p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold">Semester Timeline</h3>
-            </div>
+          <div>
+            <h3 className="text-lg font-bold">Semester Timeline</h3>
+            {importedEvents.length > 0 && (
+              <p className="text-xs text-primary mt-0.5">{importedEvents.length} imported school events included</p>
+            )}
+          </div>
+        </div>
 
         <div className="overflow-x-auto -mx-6 px-6">
-        <div className="flex gap-0 relative min-w-max">
-          {/* Connecting line */}
-          <div className="absolute top-[52px] left-[40px] right-[40px] h-0.5 bg-border" />
+          <div className="flex gap-0 relative min-w-max">
+            {/* Connecting line */}
+            <div className="absolute top-[52px] left-[40px] right-[40px] h-0.5 bg-border" />
 
-          {milestones.map((m, i) => {
-            const isActive = m.type === "active";
-            const isDone   = m.type === "done";
-            return (
-              <div key={i} className="flex flex-col items-center text-center w-36 flex-shrink-0">
-                <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${isActive ? "text-primary" : "text-muted-foreground"}`}>
-                  {format(new Date(m.date), "MMMM").toUpperCase()}
-                </p>
-                <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3
-                  ${isDone   ? "bg-primary border-primary" : ""}
-                  ${isActive ? "bg-white border-primary border-[3px]" : ""}
-                  ${!isDone && !isActive ? "bg-white border-border" : ""}
-                `}>
-                  {isDone && <div className="h-2 w-2 rounded-full bg-white" />}
+            {milestones.map((m, i) => {
+              const isActive = m.type === "active";
+              const isDone   = m.type === "done";
+              const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
+              return (
+                <div key={i} className="flex flex-col items-center text-center w-36 flex-shrink-0">
+                  <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                    {format(new Date(m.date), "MMMM").toUpperCase()}
+                  </p>
+                  <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3
+                    ${isDone   ? "bg-primary border-primary" : ""}
+                    ${isActive ? "bg-white border-primary border-[3px]" : ""}
+                    ${isImported && !isDone && !isActive ? "bg-secondary/20 border-secondary" : ""}
+                    ${!isDone && !isActive && !isImported ? "bg-white border-border" : ""}
+                  `}>
+                    {isDone && <div className="h-2 w-2 rounded-full bg-white" />}
+                  </div>
+                  <p className={`text-sm font-bold leading-tight ${isActive ? "text-primary" : isImported ? "text-secondary" : ""}`}>{m.label}</p>
+                  <p className={`text-xs mt-0.5 ${isDone ? "text-primary font-medium" : "text-muted-foreground"}`}>{m.sub}</p>
                 </div>
-                <p className={`text-sm font-bold leading-tight ${isActive ? "text-primary" : ""}`}>{m.label}</p>
-                <p className={`text-xs mt-0.5 ${isDone ? "text-primary font-medium" : "text-muted-foreground"}`}>{m.sub}</p>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -188,6 +227,17 @@ export default function AcademicCalendar() {
           </div>
         </div>
       </div>
+
+      {/* Semester Config Modal */}
+      <AnimatePresence>
+        {showConfig && (
+          <SemesterConfig
+            currentSemester={semester}
+            onSemesterChange={handleSemesterChange}
+            onClose={() => setShowConfig(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
