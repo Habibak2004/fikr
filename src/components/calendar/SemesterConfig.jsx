@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Link2, Loader2, ChevronDown, Check } from "lucide-react";
+import { X, Link2, Loader2, ChevronDown, Check, Trash2 } from "lucide-react";
 
 const PRESET_SEMESTERS = [
   { label: "Spring 2026", start: "2026-01-19", end: "2026-05-15" },
@@ -160,17 +160,41 @@ Rules:
           {importError && <p className="text-xs text-red-500 mt-2">{importError}</p>}
         </div>
 
-        {/* Imported Events Preview */}
+        {/* Imported Events Preview — editable */}
         {importedEvents.length > 0 && (
-          <div className="mb-5 border rounded-xl p-3 bg-primary/5 max-h-48 overflow-y-auto">
+          <div className="mb-5 border rounded-xl p-3 bg-primary/5 max-h-56 overflow-y-auto">
             <p className="text-xs font-semibold text-primary mb-2">
-              {importedEvents.length} events imported — will be added to your timeline
+              {importedEvents.length} events imported — edit or remove as needed
             </p>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {importedEvents.map((e, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground w-20 shrink-0">{e.date}</span>
-                  <span className="font-medium">{e.label}</span>
+                <div key={i} className="flex items-center gap-1.5">
+                  <input
+                    type="date"
+                    value={e.date}
+                    onChange={(ev) => {
+                      const updated = [...importedEvents];
+                      updated[i] = { ...updated[i], date: ev.target.value };
+                      setImportedEvents(updated);
+                    }}
+                    className="text-xs border rounded-md px-1.5 py-1 bg-white w-32 shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={e.label}
+                    onChange={(ev) => {
+                      const updated = [...importedEvents];
+                      updated[i] = { ...updated[i], label: ev.target.value };
+                      setImportedEvents(updated);
+                    }}
+                    className="text-xs border rounded-md px-1.5 py-1 bg-white flex-1 min-w-0"
+                  />
+                  <button
+                    onClick={() => setImportedEvents(importedEvents.filter((_, idx) => idx !== i))}
+                    className="text-muted-foreground hover:text-red-500 shrink-0"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               ))}
             </div>
