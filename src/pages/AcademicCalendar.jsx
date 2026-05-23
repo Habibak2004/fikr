@@ -285,7 +285,7 @@ export default function AcademicCalendar() {
                 acc[key].push(m);
                 return acc;
               }, {})
-            ).map(([monthKey, events]) => {
+            ).sort(([a], [b]) => a.localeCompare(b)).map(([monthKey, events]) => {
               const monthLabel = format(new Date(monthKey + "-01"), "MMMM").toUpperCase();
               const hasActive = events.some(e => e.type === "active");
               return (
