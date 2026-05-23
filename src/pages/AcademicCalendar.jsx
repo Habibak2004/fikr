@@ -68,7 +68,7 @@ export default function AcademicCalendar() {
         { date: semester.end,   label: "Semester End",   sub: format(new Date(semester.end   + "T12:00:00"), "MMM d"), type: "upcoming" },
       ];
     }
-    combined.sort((a, b) => new Date(a.date) - new Date(b.date));
+    combined.sort((a, b) => a.date.slice(0, 10).localeCompare(b.date.slice(0, 10)));
     return combined;
   }, [semester, importedEvents]);
 
@@ -285,7 +285,7 @@ export default function AcademicCalendar() {
                 const datePart = m.date.slice(0, 10);
                 if (!datePart.match(/^\d{4}-\d{2}-\d{2}$/)) return acc;
                 const [year, month, day] = datePart.split("-").map(Number);
-                const key = `${year}-${String(month).padStart(2, "0")}`;
+                const key = `${String(year).padStart(4,"0")}-${String(month).padStart(2, "0")}`;
                 if (!acc[key]) acc[key] = [];
                 acc[key].push({ ...m, date: datePart });
                 return acc;
@@ -319,7 +319,7 @@ export default function AcademicCalendar() {
                             isDone     ? "text-foreground" :
                             "text-muted-foreground"
                           }`}>
-                            {format(new Date(m.date + "T12:00:00"), "MMM d")} — {m.label}
+                            {format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")} — {m.label}
                           </p>
                           <button
                             title={isStarred ? "Remove from Critical Deadlines" : "Add to Critical Deadlines"}
@@ -329,7 +329,7 @@ export default function AcademicCalendar() {
                               } else {
                                 setCriticalDeadlines(prev => [...prev, {
                                   label: m.label,
-                                  detail: format(new Date(m.date + "T12:00:00"), "MMM d"),
+                                  detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"),
                                   urgency: "UPCOMING",
                                 }]);
                               }
