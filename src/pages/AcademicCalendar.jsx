@@ -222,40 +222,67 @@ export default function AcademicCalendar() {
 
             {/* Add new deadline */}
             {editingDeadlines && (
-              <div className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-primary/30 bg-primary/5">
-                <div className="flex-1 space-y-1">
-                  <input
-                    placeholder="Deadline label..."
-                    className="text-sm w-full border-b border-border/60 outline-none bg-transparent"
-                    value={newDeadline.label}
-                    onChange={ev => setNewDeadline(p => ({ ...p, label: ev.target.value }))}
-                  />
-                  <input
-                    placeholder="Detail (e.g. May 15 • 7 days left)"
-                    className="text-xs text-muted-foreground w-full border-b border-border/40 outline-none bg-transparent"
-                    value={newDeadline.detail}
-                    onChange={ev => setNewDeadline(p => ({ ...p, detail: ev.target.value }))}
-                  />
+              <div className="space-y-2">
+                {/* Pick from timeline */}
+                {milestones.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Add from timeline</p>
+                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                      {milestones.filter(m => !criticalDeadlines.some(d => d.label === m.label)).map((m, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setCriticalDeadlines(prev => [...prev, {
+                              label: m.label,
+                              detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"),
+                              urgency: "UPCOMING",
+                            }]);
+                          }}
+                          className="text-[11px] font-medium px-2.5 py-1 rounded-lg border border-border/60 bg-white hover:bg-primary/10 hover:border-primary/40 hover:text-primary transition-colors"
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual entry */}
+                <div className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-primary/30 bg-primary/5">
+                  <div className="flex-1 space-y-1">
+                    <input
+                      placeholder="Custom deadline label..."
+                      className="text-sm w-full border-b border-border/60 outline-none bg-transparent"
+                      value={newDeadline.label}
+                      onChange={ev => setNewDeadline(p => ({ ...p, label: ev.target.value }))}
+                    />
+                    <input
+                      placeholder="Detail (e.g. May 15 • 7 days left)"
+                      className="text-xs text-muted-foreground w-full border-b border-border/40 outline-none bg-transparent"
+                      value={newDeadline.detail}
+                      onChange={ev => setNewDeadline(p => ({ ...p, detail: ev.target.value }))}
+                    />
+                  </div>
+                  <select
+                    value={newDeadline.urgency}
+                    onChange={ev => setNewDeadline(p => ({ ...p, urgency: ev.target.value }))}
+                    className="text-[10px] font-bold rounded-md px-1.5 py-0.5 border outline-none flex-shrink-0"
+                  >
+                    <option value="URGENT">URGENT</option>
+                    <option value="UPCOMING">UPCOMING</option>
+                    <option value="PLANNING">PLANNING</option>
+                  </select>
+                  <button
+                    onClick={() => {
+                      if (!newDeadline.label.trim()) return;
+                      setCriticalDeadlines(prev => [...prev, { ...newDeadline }]);
+                      setNewDeadline({ label: "", detail: "", urgency: "UPCOMING" });
+                    }}
+                    className="flex-shrink-0 h-7 w-7 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/90"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
                 </div>
-                <select
-                  value={newDeadline.urgency}
-                  onChange={ev => setNewDeadline(p => ({ ...p, urgency: ev.target.value }))}
-                  className="text-[10px] font-bold rounded-md px-1.5 py-0.5 border outline-none flex-shrink-0"
-                >
-                  <option value="URGENT">URGENT</option>
-                  <option value="UPCOMING">UPCOMING</option>
-                  <option value="PLANNING">PLANNING</option>
-                </select>
-                <button
-                  onClick={() => {
-                    if (!newDeadline.label.trim()) return;
-                    setCriticalDeadlines(prev => [...prev, { ...newDeadline }]);
-                    setNewDeadline({ label: "", detail: "", urgency: "UPCOMING" });
-                  }}
-                  className="flex-shrink-0 h-7 w-7 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/90"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
               </div>
             )}
           </div>
