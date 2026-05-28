@@ -113,6 +113,9 @@ export default function Heatmap() {
                 >
                   <span className="text-[10px] font-bold">{w.weekNum}</span>
                   <span className="text-[9px] text-muted-foreground">{w.count}</span>
+                  <span className="text-[8px] text-muted-foreground/60 mt-0.5">
+                    {w.startDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                  </span>
                 </motion.div>
               ))}
             </div>
