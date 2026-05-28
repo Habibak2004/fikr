@@ -134,7 +134,11 @@ export default function Planner() {
 
       {/* AI Command Bar */}
       <div className="mb-5">
-        <AICommandBar assignments={assignments} onModeChange={handleModeChange} />
+        <AICommandBar
+          assignments={assignments}
+          onModeChange={handleModeChange}
+          onAddTasks={(tasks) => tasks.forEach(t => createMutation.mutate({ name: t.name, due_date: t.due_date || "", priority: t.priority || "medium", type: "homework" }))}
+        />
       </div>
 
       {/* Main 2-col layout */}
