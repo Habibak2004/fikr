@@ -173,7 +173,7 @@ export default function AcademicCalendar() {
             <Progress value={semesterProgress} className="h-2.5 rounded-full" />
             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <Info className="h-3 w-3" />
-              {semester.start} → {semester.end}
+              {format(new Date(semester.start), "MMM d, yyyy")} → {format(new Date(semester.end), "MMM d, yyyy")}
             </p>
           </div>
         </div>
