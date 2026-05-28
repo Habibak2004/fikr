@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Zap, Leaf, ChevronDown, ChevronUp, RefreshCw, Brain, Play, CheckCircle2, ArrowRight, AlertTriangle, Clock } from "lucide-react";
+import { Sparkles, Zap, Leaf, ChevronDown, ChevronUp, RefreshCw, Brain, Play, CheckCircle2, ArrowRight, AlertTriangle, Clock, Pencil } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
 import { buildTodayPlan, estimateCognitiveLoad, getInsightLabel } from "@/lib/priorityEngine";
 
@@ -33,7 +33,7 @@ function EnergySelector({ value, onChange }) {
   );
 }
 
-function MajorTaskCard({ task, onStartFocus, onToggle, rank }) {
+function MajorTaskCard({ task, onStartFocus, onToggle, onEdit, rank }) {
   const cogLoad = estimateCognitiveLoad(task);
   const days = task.due_date ? differenceInDays(new Date(task.due_date), new Date()) : null;
 
@@ -119,6 +119,14 @@ function MajorTaskCard({ task, onStartFocus, onToggle, rank }) {
         >
           <CheckCircle2 className="h-3 w-3" /> Done
         </button>
+        {onEdit && (
+          <button
+            onClick={() => onEdit(task)}
+            className="ml-auto text-xs font-medium text-muted-foreground hover:text-primary px-2 py-1.5 rounded-xl hover:bg-muted transition-colors flex items-center gap-1"
+          >
+            <Pencil className="h-3 w-3" /> Edit
+          </button>
+        )}
       </div>
     </motion.div>
   );
@@ -212,7 +220,7 @@ function DeprioritizedList({ tasks, onToggle, onStartFocus }) {
   );
 }
 
-export default function TodayEngine({ assignments, onStartFocus, onToggle }) {
+export default function TodayEngine({ assignments, onStartFocus, onToggle, onEdit }) {
   const [energyLevel, setEnergyLevel] = useState(() => {
     const saved = localStorage.getItem("fikr_energy_level");
     return saved ? Number(saved) : 5;

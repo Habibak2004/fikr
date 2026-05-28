@@ -218,6 +218,7 @@ export default function Planner() {
                 assignments={assignments}
                 onStartFocus={handleStartFocus}
                 onToggle={handleToggle}
+                onEdit={(task) => setEditingTask(task)}
               />
             )}
             {taskView === "list" && (
