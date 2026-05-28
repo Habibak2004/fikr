@@ -40,11 +40,28 @@ export default function AcademicCalendar() {
     try { const e = localStorage.getItem("fikr_imported_events"); return e ? JSON.parse(e) : []; } catch { return []; }
   });
   const [showConfig, setShowConfig] = useState(false);
-  const [criticalDeadlines, setCriticalDeadlines] = useState(DEFAULT_CRITICAL_DEADLINES);
+  const [criticalDeadlines, setCriticalDeadlines] = useState(() => {
+    try { const d = localStorage.getItem("fikr_critical_deadlines"); return d ? JSON.parse(d) : DEFAULT_CRITICAL_DEADLINES; } catch { return DEFAULT_CRITICAL_DEADLINES; }
+  });
+  const [customMilestones, setCustomMilestones] = useState(() => {
+    try { const m = localStorage.getItem("fikr_custom_milestones"); return m ? JSON.parse(m) : []; } catch { return []; }
+  });
   const [editingDeadlines, setEditingDeadlines] = useState(false);
+  const [editingTimeline, setEditingTimeline] = useState(false);
   const [newDeadline, setNewDeadline] = useState({ label: "", detail: "", urgency: "UPCOMING", date: "" });
+  const [newMilestone, setNewMilestone] = useState({ date: "", label: "", sub: "", type: "upcoming" });
   const [calendarView, setCalendarView] = useState("timeline"); // "timeline" | "weekly" | "monthly"
   const [calendarDate, setCalendarDate] = useState(new Date());
+
+  const saveCriticalDeadlines = (updated) => {
+    setCriticalDeadlines(updated);
+    try { localStorage.setItem("fikr_critical_deadlines", JSON.stringify(updated)); } catch {}
+  };
+
+  const saveCustomMilestones = (updated) => {
+    setCustomMilestones(updated);
+    try { localStorage.setItem("fikr_custom_milestones", JSON.stringify(updated)); } catch {}
+  };
 
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
@@ -64,21 +81,20 @@ export default function AcademicCalendar() {
     const isSpring2026 = semester.label === "Spring 2026";
     let combined;
     if (importedEvents.length > 0) {
-      // Always use imported events when available
       combined = [...importedEvents];
     } else if (isSpring2026) {
-      // Default semester: show hardcoded milestones
       combined = [...DEFAULT_MILESTONES];
     } else {
-      // Other semesters with no import: show just start/end
       combined = [
         { date: semester.start, label: "Semester Start", sub: format(new Date(semester.start + "T12:00:00"), "MMM d"), type: "upcoming" },
         { date: semester.end,   label: "Semester End",   sub: format(new Date(semester.end   + "T12:00:00"), "MMM d"), type: "upcoming" },
       ];
     }
+    // Merge custom milestones
+    combined = [...combined, ...customMilestones];
     combined.sort((a, b) => a.date.slice(0, 10).localeCompare(b.date.slice(0, 10)));
     return combined;
-  }, [semester, importedEvents]);
+  }, [semester, importedEvents, customMilestones]);
 
   const nextMilestone = milestones.find(m => isAfter(new Date(m.date), now)) || milestones[milestones.length - 1];
   const daysUntilNext = nextMilestone ? differenceInDays(new Date(nextMilestone.date), now) : 0;
@@ -184,7 +200,7 @@ export default function AcademicCalendar() {
                           onChange={ev => {
                             const updated = [...criticalDeadlines];
                             updated[i] = { ...updated[i], label: ev.target.value };
-                            setCriticalDeadlines(updated);
+                            saveCriticalDeadlines(updated);
                           }}
                         />
                         <div className="flex items-center gap-2">
@@ -195,7 +211,7 @@ export default function AcademicCalendar() {
                             onChange={ev => {
                               const updated = [...criticalDeadlines];
                               updated[i] = { ...updated[i], date: ev.target.value };
-                              setCriticalDeadlines(updated);
+                              saveCriticalDeadlines(updated);
                             }}
                           />
                           <input
@@ -205,7 +221,7 @@ export default function AcademicCalendar() {
                             onChange={ev => {
                               const updated = [...criticalDeadlines];
                               updated[i] = { ...updated[i], detail: ev.target.value };
-                              setCriticalDeadlines(updated);
+                              saveCriticalDeadlines(updated);
                             }}
                           />
                         </div>
@@ -227,7 +243,7 @@ export default function AcademicCalendar() {
                         onChange={ev => {
                           const updated = [...criticalDeadlines];
                           updated[i] = { ...updated[i], urgency: ev.target.value };
-                          setCriticalDeadlines(updated);
+                          saveCriticalDeadlines(updated);
                         }}
                         className="text-[10px] font-bold rounded-md px-1.5 py-0.5 border outline-none"
                       >
@@ -235,7 +251,7 @@ export default function AcademicCalendar() {
                         <option value="UPCOMING">UPCOMING</option>
                         <option value="PLANNING">PLANNING</option>
                       </select>
-                      <button onClick={() => setCriticalDeadlines(criticalDeadlines.filter((_, idx) => idx !== i))}>
+                      <button onClick={() => saveCriticalDeadlines(criticalDeadlines.filter((_, idx) => idx !== i))}>
                         <Trash2 className="h-4 w-4 text-red-400 hover:text-red-600" />
                       </button>
                     </div>
@@ -260,7 +276,7 @@ export default function AcademicCalendar() {
                         <button
                           key={i}
                           onClick={() => {
-                            setCriticalDeadlines(prev => [...prev, {
+                            saveCriticalDeadlines([...criticalDeadlines, {
                               label: m.label,
                               date: m.date.slice(0, 10),
                               detail: "",
@@ -312,7 +328,7 @@ export default function AcademicCalendar() {
                   <button
                     onClick={() => {
                       if (!newDeadline.label.trim()) return;
-                      setCriticalDeadlines(prev => [...prev, { ...newDeadline }]);
+                      saveCriticalDeadlines([...criticalDeadlines, { ...newDeadline }]);
                       setNewDeadline({ label: "", detail: "", urgency: "UPCOMING", date: "" });
                     }}
                     className="flex-shrink-0 h-7 w-7 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/90"
@@ -337,6 +353,15 @@ export default function AcademicCalendar() {
               <p className="text-xs text-primary mt-0.5">{importedEvents.length} imported school events included</p>
             )}
           </div>
+          <div className="flex items-center gap-2">
+          {calendarView === "timeline" && (
+            <button
+              onClick={() => setEditingTimeline(e => !e)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${editingTimeline ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
+            >
+              {editingTimeline ? "Done" : "Edit Timeline"}
+            </button>
+          )}
           <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
             {[
               { id: "timeline", icon: LayoutList, label: "Timeline" },
@@ -354,6 +379,7 @@ export default function AcademicCalendar() {
                 <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
+          </div>
           </div>
         </div>
 
@@ -379,6 +405,57 @@ export default function AcademicCalendar() {
 
         {calendarView === "timeline" && (
         <div>
+        {editingTimeline && (
+          <div className="mb-5 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
+            <div className="flex flex-wrap gap-2 items-end">
+              <div>
+                <p className="text-[10px] text-muted-foreground mb-1">Date</p>
+                <input type="date" value={newMilestone.date} onChange={e => setNewMilestone(p => ({ ...p, date: e.target.value }))}
+                  className="text-xs border rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-1 focus:ring-primary/30 w-36" />
+              </div>
+              <div className="flex-1 min-w-40">
+                <p className="text-[10px] text-muted-foreground mb-1">Label</p>
+                <input placeholder="Event name..." value={newMilestone.label} onChange={e => setNewMilestone(p => ({ ...p, label: e.target.value }))}
+                  className="text-xs border rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-1 focus:ring-primary/30 w-full" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground mb-1">Type</p>
+                <select value={newMilestone.type} onChange={e => setNewMilestone(p => ({ ...p, type: e.target.value }))}
+                  className="text-xs border rounded-lg px-2 py-1.5 bg-white outline-none">
+                  <option value="upcoming">Upcoming</option>
+                  <option value="active">Active</option>
+                  <option value="done">Done</option>
+                </select>
+              </div>
+              <button
+                onClick={() => {
+                  if (!newMilestone.date || !newMilestone.label.trim()) return;
+                  saveCustomMilestones([...customMilestones, { ...newMilestone, sub: newMilestone.date, _custom: true }]);
+                  setNewMilestone({ date: "", label: "", sub: "", type: "upcoming" });
+                }}
+                className="h-8 px-3 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary/90 flex items-center gap-1"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add
+              </button>
+            </div>
+            {customMilestones.length > 0 && (
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Your custom events</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {customMilestones.map((m, i) => (
+                    <div key={i} className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg border border-border/60 bg-white">
+                      <span>{format(new Date(m.date + "T12:00:00"), "MMM d")} — {m.label}</span>
+                      <button onClick={() => saveCustomMilestones(customMilestones.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600 ml-1">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <div className="overflow-x-auto -mx-6 px-6">
           <div className="flex gap-0 relative min-w-max">
             {/* Connecting line */}
@@ -432,15 +509,16 @@ export default function AcademicCalendar() {
                           <button
                             title={isStarred ? "Remove from Critical Deadlines" : "Add to Critical Deadlines"}
                             onClick={() => {
-                              if (isStarred) {
-                                setCriticalDeadlines(prev => prev.filter(d => d.label !== m.label));
-                              } else {
-                                setCriticalDeadlines(prev => [...prev, {
-                                  label: m.label,
-                                  detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"),
-                                  urgency: "UPCOMING",
-                                }]);
-                              }
+                             if (isStarred) {
+                               saveCriticalDeadlines(criticalDeadlines.filter(d => d.label !== m.label));
+                             } else {
+                               saveCriticalDeadlines([...criticalDeadlines, {
+                                 label: m.label,
+                                 date: m.date.slice(0, 10),
+                                 detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"),
+                                 urgency: "UPCOMING",
+                               }]);
+                             }
                             }}
                             className={`flex-shrink-0 transition-opacity ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
                           >
