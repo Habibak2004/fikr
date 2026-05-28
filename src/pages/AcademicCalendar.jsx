@@ -31,8 +31,12 @@ const DEFAULT_CRITICAL_DEADLINES = [
 ];
 
 export default function AcademicCalendar() {
-  const [semester, setSemester] = useState(DEFAULT_SEMESTER);
-  const [importedEvents, setImportedEvents] = useState([]);
+  const [semester, setSemester] = useState(() => {
+    try { const s = localStorage.getItem("fikr_semester"); return s ? JSON.parse(s) : DEFAULT_SEMESTER; } catch { return DEFAULT_SEMESTER; }
+  });
+  const [importedEvents, setImportedEvents] = useState(() => {
+    try { const e = localStorage.getItem("fikr_imported_events"); return e ? JSON.parse(e) : []; } catch { return []; }
+  });
   const [showConfig, setShowConfig] = useState(false);
   const [criticalDeadlines, setCriticalDeadlines] = useState(DEFAULT_CRITICAL_DEADLINES);
   const [editingDeadlines, setEditingDeadlines] = useState(false);
@@ -78,6 +82,10 @@ export default function AcademicCalendar() {
   const handleSemesterChange = (newSemester, events = []) => {
     setSemester(newSemester);
     setImportedEvents(events);
+    try {
+      localStorage.setItem("fikr_semester", JSON.stringify(newSemester));
+      localStorage.setItem("fikr_imported_events", JSON.stringify(events));
+    } catch {}
   };
 
   return (
