@@ -137,7 +137,7 @@ export default function Planner() {
         <AICommandBar
           assignments={assignments}
           onModeChange={handleModeChange}
-          onAddTasks={(tasks) => tasks.forEach(t => createMutation.mutate({ name: t.name, due_date: t.due_date || "", priority: t.priority || "medium", type: "homework" }))}
+          onAddTasks={(tasks) => tasks.forEach(t => createMutation.mutate({ name: t.name, due_date: t.due_date || "", priority: t.priority || "medium", type: "homework", course_id: "" }))}
         />
       </div>
 
@@ -182,7 +182,7 @@ export default function Planner() {
               pausedTask={pausedTask}
               onStartFocus={handleStartFocus}
               onToggle={handleToggle}
-              onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework" })}
+              onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework", course_id: "" })}
             />
           </div>
         </div>
