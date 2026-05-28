@@ -12,6 +12,7 @@ import { isWithinInterval } from "date-fns";
 
 export default function Heatmap() {
   const [selectedSemesterId, setSelectedSemesterId] = useState("");
+  const [selectedWeek, setSelectedWeek] = useState(null);
 
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
@@ -111,7 +112,8 @@ export default function Heatmap() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: w.weekNum * 0.03 }}
-                  className={`aspect-square rounded-xl ${getIntensityColor(w.count)} flex flex-col items-center justify-center cursor-default`}
+                  onClick={() => setSelectedWeek(selectedWeek?.weekNum === w.weekNum ? null : w)}
+                  className={`aspect-square rounded-xl ${getIntensityColor(w.count)} flex flex-col items-center justify-center cursor-pointer transition-all ${selectedWeek?.weekNum === w.weekNum ? "ring-2 ring-primary ring-offset-2" : "hover:scale-105"}`}
                   title={`Week ${w.weekNum}: ${w.count} assignments`}
                 >
                   {(() => {
@@ -137,6 +139,44 @@ export default function Heatmap() {
               ))}
               <span className="text-xs text-muted-foreground">More</span>
             </div>
+
+            {selectedWeek && (() => {
+              const weekAssignments = semesterAssignments.filter(a => {
+                if (!a.due_date) return false;
+                const d = new Date(a.due_date);
+                return d >= selectedWeek.startDate && d <= selectedWeek.endDate;
+              });
+              return (
+                <motion.div
+                  key={selectedWeek.weekNum}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 border rounded-xl p-4"
+                >
+                  <p className="font-semibold text-sm mb-3">
+                    Week {selectedWeek.weekNum} — {selectedWeek.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} to {selectedWeek.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </p>
+                  {weekAssignments.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No assignments due this week.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {weekAssignments.map(a => (
+                        <li key={a.id} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            {a.course_color && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.course_color }} />}
+                            <span className="font-medium">{a.name}</span>
+                            {a.course_name && <span className="text-muted-foreground text-xs">· {a.course_name}</span>}
+                          </div>
+                          <span className="text-muted-foreground text-xs">
+                            {new Date(a.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </motion.div>
+              );
+            })()}
           </>
         )}
       </Card>
