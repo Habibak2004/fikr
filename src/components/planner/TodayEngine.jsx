@@ -202,9 +202,9 @@ export default function TodayEngine({ assignments, onStartFocus, onToggle }) {
   const [refreshing, setRefreshing] = useState(false);
   const [lastBuilt, setLastBuilt] = useState(null);
 
-  const buildPlan = () => {
+  const recalculate = (energy) => {
     setRefreshing(true);
-    const result = buildTodayPlan(assignments, energyLevel);
+    const result = buildTodayPlan(assignments, energy);
     setPlan(result);
     setLastBuilt(new Date());
     setTimeout(() => setRefreshing(false), 400);
@@ -212,7 +212,7 @@ export default function TodayEngine({ assignments, onStartFocus, onToggle }) {
 
   useEffect(() => {
     localStorage.setItem("fikr_energy_level", energyLevel);
-    buildPlan();
+    recalculate(energyLevel);
   }, [energyLevel, assignments.length]);
 
   if (!plan) return null;
@@ -248,7 +248,7 @@ export default function TodayEngine({ assignments, onStartFocus, onToggle }) {
           </p>
         </div>
         <button
-          onClick={buildPlan}
+          onClick={() => recalculate(energyLevel)}
           disabled={refreshing}
           title="Recalculate priorities"
           className="h-7 w-7 rounded-lg hover:bg-muted flex items-center justify-center transition-colors flex-shrink-0 mt-0.5"
