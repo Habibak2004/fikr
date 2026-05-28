@@ -43,6 +43,36 @@ function InlineDraft({ draft, onClose }) {
   const [subject, setSubject] = useState(draft.subject || "");
   const [body, setBody] = useState(draft.body || "");
   const [to, setTo] = useState(draft.to || "");
+  const [extraContext, setExtraContext] = useState("");
+  const [regenerating, setRegenerating] = useState(false);
+  const [showContextInput, setShowContextInput] = useState(false);
+
+  const regenerate = async () => {
+    if (!extraContext.trim()) return;
+    setRegenerating(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Rewrite this email draft for a college student with the additional context provided.
+
+Original subject: "${subject}"
+Original body: "${body}"
+Recipient: "${to || draft.department}"
+Additional context from the student: "${extraContext}"
+
+Incorporate the new context naturally. Keep it concise (under 6 sentences), warm, and professional.
+Return JSON: { "subject": "...", "body": "..." }`,
+      response_json_schema: {
+        type: "object",
+        properties: { subject: { type: "string" }, body: { type: "string" } },
+      },
+    });
+    if (result) {
+      setSubject(result.subject);
+      setBody(result.body);
+      setExtraContext("");
+      setShowContextInput(false);
+    }
+    setRegenerating(false);
+  };
 
   return (
     <motion.div
@@ -60,6 +90,7 @@ function InlineDraft({ draft, onClose }) {
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
+
       <div>
         <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">To</p>
         <input
@@ -86,6 +117,42 @@ function InlineDraft({ draft, onClose }) {
           className="w-full text-xs border border-border/60 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 resize-none leading-relaxed"
         />
       </div>
+
+      {/* Add context section */}
+      {showContextInput ? (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 space-y-2">
+          <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide">Add context to refine draft</p>
+          <textarea
+            autoFocus
+            value={extraContext}
+            onChange={e => setExtraContext(e.target.value)}
+            placeholder="e.g. My student ID is 12345, deadline is June 1st, I've already emailed once with no reply, I need to mention my specific room assignment..."
+            rows={3}
+            className="w-full text-xs border border-blue-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 resize-none leading-relaxed"
+          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={regenerate}
+              disabled={!extraContext.trim() || regenerating}
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 px-2.5 py-1.5 rounded-lg transition-colors"
+            >
+              {regenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+              {regenerating ? "Regenerating..." : "Regenerate draft"}
+            </button>
+            <button onClick={() => { setShowContextInput(false); setExtraContext(""); }} className="text-xs text-muted-foreground hover:text-foreground">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowContextInput(true)}
+          className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+        >
+          <Sparkles className="h-3 w-3" /> Add context & regenerate
+        </button>
+      )}
+
       <a
         href={`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}
         className="flex items-center gap-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors w-fit"
