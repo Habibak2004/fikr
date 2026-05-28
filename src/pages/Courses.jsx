@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Plus, BookOpen, Flame, Brain, ArrowRight, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { format } from "date-fns";
 import AddCourseModal from "@/components/courses/AddCourseModal";
 
 export default function Courses() {
@@ -22,7 +23,7 @@ export default function Courses() {
   const [userEmail, setUserEmail] = useState(null);
   const queryClient = useQueryClient();
 
-  useState(() => { base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {}); });
+  useEffect(() => { base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {}); }, []);
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ["courses", userEmail],
@@ -48,6 +49,33 @@ export default function Courses() {
     mutationFn: ({ id, data }) => base44.entities.Course.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["courses"] }); setEditCourse(null); },
   });
+
+  const { data: focusSessions = [] } = useQuery({
+    queryKey: ["focus-sessions", userEmail],
+    queryFn: () => base44.entities.FocusSession.filter({ created_by: userEmail }, "-created_date", 200),
+    enabled: !!userEmail,
+  });
+
+  const { data: studySessions = [] } = useQuery({
+    queryKey: ["study-sessions", userEmail],
+    queryFn: () => base44.entities.StudySession.filter({ created_by: userEmail }, "-created_date", 200),
+    enabled: !!userEmail,
+  });
+
+  const studyStreak = (() => {
+    const sessionDates = new Set([
+      ...focusSessions.map(s => s.date),
+      ...studySessions.map(s => s.date),
+    ].filter(Boolean));
+    let streak = 0;
+    const check = new Date();
+    if (!sessionDates.has(format(check, "yyyy-MM-dd"))) check.setDate(check.getDate() - 1);
+    while (sessionDates.has(format(check, "yyyy-MM-dd"))) {
+      streak++;
+      check.setDate(check.getDate() - 1);
+    }
+    return streak;
+  })();
 
   const activeCourses = courses.filter(c => c.status === "active");
   const avgProgress = activeCourses.length ? Math.round(activeCourses.reduce((s, c) => s + (c.progress || 0), 0) / activeCourses.length) : 0;
@@ -170,7 +198,7 @@ export default function Courses() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Study Streak</p>
-              <p className="text-lg font-bold">7 days</p>
+              <p className="text-lg font-bold">{studyStreak} day{studyStreak !== 1 ? "s" : ""}</p>
             </div>
           </Card>
           <Card className="p-5 rounded-2xl flex items-center gap-4">
