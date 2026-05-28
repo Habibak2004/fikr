@@ -11,15 +11,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, BookOpen, Flame, Brain, ArrowRight, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Plus, BookOpen, Flame, Brain, ArrowRight, MoreVertical, Pencil, Trash2, NotebookPen } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import AddCourseModal from "@/components/courses/AddCourseModal";
+import CourseReflectionModal from "@/components/courses/CourseReflectionModal";
 
 export default function Courses() {
   const [showAdd, setShowAdd] = useState(false);
   const [editCourse, setEditCourse] = useState(null);
   const [editFields, setEditFields] = useState({});
+  const [reflectCourse, setReflectCourse] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
   const queryClient = useQueryClient();
 
@@ -166,6 +168,9 @@ export default function Courses() {
                     <DropdownMenuItem onClick={() => { setEditCourse(course); setEditFields({ name: course.name, code: course.code || "", professor: course.professor || "", semester: course.semester || "", semester_start: course.semester_start || "", semester_end: course.semester_end || "", status: course.status || "active" }); }}>
                       <Pencil className="h-4 w-4 mr-2" /> Rename
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setReflectCourse(course)}>
+                      <NotebookPen className="h-4 w-4 mr-2" /> Reflect on this class
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
                       onClick={() => deleteMutation.mutate(course.id)}
@@ -218,6 +223,7 @@ export default function Courses() {
       )}
 
       <AddCourseModal open={showAdd} onClose={() => setShowAdd(false)} onSave={(data) => createMutation.mutate(data)} />
+      <CourseReflectionModal open={!!reflectCourse} onClose={() => setReflectCourse(null)} course={reflectCourse} />
 
       <Dialog open={!!editCourse} onOpenChange={() => setEditCourse(null)}>
         <DialogContent className="rounded-2xl max-w-md">
