@@ -16,6 +16,7 @@ import QuickWins from "@/components/planner/QuickWins";
 import AICommandBar from "@/components/planner/AICommandBar";
 import TaskTimeline from "@/components/planner/TaskTimeline";
 import LifeRadar from "@/components/planner/LifeRadar";
+import IdeaPad from "@/components/planner/IdeaPad";
 
 export default function Planner() {
   const [showAdd, setShowAdd] = useState(false);
@@ -190,6 +191,9 @@ export default function Planner() {
             <h2 className="font-bold text-sm">Life Radar</h2>
           </div>
           <LifeRadar assignments={assignments} />
+          <div className="mt-5 pt-5 border-t border-border/40">
+            <IdeaPad />
+          </div>
         </div>
       </div>
 
