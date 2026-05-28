@@ -176,15 +176,30 @@ Return JSON: { "subject": "...", "body": "..." }`,
       <p className="font-semibold text-[15px] mb-3">{a.name}</p>
 
       {draft ? (
-        <div className="mb-3 bg-muted/40 rounded-xl p-3 space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground">Subject: <span className="text-foreground">{draft.subject}</span></p>
-          <p className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">{draft.body}</p>
-          <div className="flex gap-2 mt-2">
-            <a href={`mailto:?subject=${encodeURIComponent(draft.subject)}&body=${encodeURIComponent(draft.body)}`}
-              className="text-xs font-semibold text-primary hover:underline">
-              Open in Gmail →
-            </a>
+        <div className="mb-3 bg-muted/40 rounded-xl p-3 space-y-2">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1">Subject</p>
+            <input
+              value={draft.subject}
+              onChange={e => setDraft(d => ({ ...d, subject: e.target.value }))}
+              className="w-full text-xs text-foreground border border-border/60 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            />
           </div>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground mb-1">Body</p>
+            <textarea
+              value={draft.body}
+              onChange={e => setDraft(d => ({ ...d, body: e.target.value }))}
+              rows={5}
+              className="w-full text-xs text-foreground border border-border/60 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-none leading-relaxed"
+            />
+          </div>
+          <a
+            href={`mailto:?subject=${encodeURIComponent(draft.subject)}&body=${encodeURIComponent(draft.body)}`}
+            className="text-xs font-semibold text-primary hover:underline"
+          >
+            Open in Gmail →
+          </a>
         </div>
       ) : null}
 
