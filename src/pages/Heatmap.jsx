@@ -62,7 +62,7 @@ export default function Heatmap() {
   })();
 
   const maxCount = Math.max(...semesterWeeks.map(w => w.count), 1);
-  const busiestWeek = semesterWeeks.reduce((max, w) => w.count > max.count ? w : max, semesterWeeks[0]);
+  const busiestWeek = semesterWeeks.length > 0 ? semesterWeeks.reduce((max, w) => w.count > max.count ? w : max, semesterWeeks[0]) : { weekNum: 0, count: 0 };
 
   const getIntensityColor = (count) => {
     if (count === 0) return "bg-primary/5";
@@ -97,74 +97,86 @@ export default function Heatmap() {
       {/* Heatmap Grid */}
       <Card className="p-6 rounded-2xl">
         <h3 className="font-semibold mb-4">{activeSemester || "Current Semester"}</h3>
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-          {semesterWeeks.map((w) => (
-            <motion.div
-              key={w.week}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: w.weekNum * 0.03 }}
-              className={`aspect-square rounded-xl ${getIntensityColor(w.count)} flex flex-col items-center justify-center cursor-default`}
-              title={`Week ${w.weekNum}: ${w.count} items`}
-            >
-              <span className="text-[10px] font-bold">{w.weekNum}</span>
-              <span className="text-[9px] text-muted-foreground">{w.count}</span>
-            </motion.div>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 mt-4">
-          <span className="text-xs text-muted-foreground">Less</span>
-          {["bg-primary/5", "bg-primary/15", "bg-primary/30", "bg-primary/50", "bg-primary/80"].map((c, i) => (
-            <div key={i} className={`h-4 w-4 rounded ${c}`} />
-          ))}
-          <span className="text-xs text-muted-foreground">More</span>
-        </div>
+        {semesterWeeks.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">No assignments found for this semester</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+              {semesterWeeks.map((w) => (
+                <motion.div
+                  key={w.week}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: w.weekNum * 0.03 }}
+                  className={`aspect-square rounded-xl ${getIntensityColor(w.count)} flex flex-col items-center justify-center cursor-default`}
+                  title={`Week ${w.weekNum}: ${w.count} items`}
+                >
+                  <span className="text-[10px] font-bold">{w.weekNum}</span>
+                  <span className="text-[9px] text-muted-foreground">{w.count}</span>
+                </motion.div>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 mt-4">
+              <span className="text-xs text-muted-foreground">Less</span>
+              {["bg-primary/5", "bg-primary/15", "bg-primary/30", "bg-primary/50", "bg-primary/80"].map((c, i) => (
+                <div key={i} className={`h-4 w-4 rounded ${c}`} />
+              ))}
+              <span className="text-xs text-muted-foreground">More</span>
+            </div>
+          </>
+        )}
       </Card>
 
       {/* Bar Chart */}
       <Card className="p-6 rounded-2xl">
         <h3 className="font-semibold mb-4">Workload by Week</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={barData}>
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {barData.map((entry, i) => (
-                  <Cell key={i} fill={entry.value === busiestWeek.count ? "hsl(var(--destructive))" : "hsl(var(--primary))"} fillOpacity={0.8} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {semesterWeeks.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">No data to display</p>
+        ) : (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData}>
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {barData.map((entry, i) => (
+                    <Cell key={i} fill={entry.value === busiestWeek.count ? "hsl(var(--destructive))" : "hsl(var(--primary))"} fillOpacity={0.8} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Busiest Week */}
-        <Card className="p-6 rounded-2xl">
-          <div className="flex items-center gap-2 mb-3">
-            <Flame className="h-5 w-5 text-destructive" />
-            <h3 className="font-semibold">Busiest Week</h3>
-          </div>
-          <p className="text-3xl font-bold">Week {busiestWeek.weekNum}</p>
-          <p className="text-sm text-muted-foreground mt-1">{busiestWeek.count} assignments due</p>
-          <Badge className="mt-2 bg-destructive/10 text-destructive text-xs">Plan ahead — start early!</Badge>
-        </Card>
+      {semesterWeeks.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Busiest Week */}
+          <Card className="p-6 rounded-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <Flame className="h-5 w-5 text-destructive" />
+              <h3 className="font-semibold">Busiest Week</h3>
+            </div>
+            <p className="text-3xl font-bold">Week {busiestWeek.weekNum}</p>
+            <p className="text-sm text-muted-foreground mt-1">{busiestWeek.count} assignments due</p>
+            <Badge className="mt-2 bg-destructive/10 text-destructive text-xs">Plan ahead — start early!</Badge>
+          </Card>
 
-        {/* AI Forecast */}
-        <Card className="p-6 rounded-2xl">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold">AI Forecast</h3>
-          </div>
-          <p className="text-sm text-muted-foreground mb-3">Based on your current workload pattern:</p>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center gap-2"><Badge className="bg-amber-100 text-amber-700 text-[10px]">Warning</Badge> Week {busiestWeek.weekNum} may cause burnout</li>
-            <li className="flex items-center gap-2"><Badge className="bg-green-100 text-green-700 text-[10px]">Tip</Badge> Spread Week {busiestWeek.weekNum} work to prior week</li>
-          </ul>
-        </Card>
-      </div>
+          {/* AI Forecast */}
+          <Card className="p-6 rounded-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">AI Forecast</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">Based on your current workload pattern:</p>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center gap-2"><Badge className="bg-amber-100 text-amber-700 text-[10px]">Warning</Badge> Week {busiestWeek.weekNum} may cause burnout</li>
+              <li className="flex items-center gap-2"><Badge className="bg-green-100 text-green-700 text-[10px]">Tip</Badge> Spread Week {busiestWeek.weekNum} work to prior week</li>
+            </ul>
+          </Card>
+        </div>
+      )}
 
       {/* Optimal Study Windows */}
       <Card className="p-6 rounded-2xl">
