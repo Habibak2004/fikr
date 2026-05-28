@@ -5,6 +5,7 @@ import { format, differenceInDays } from "date-fns";
 import { base44 } from "@/api/base44Client";
 import BlockerPanel from "@/components/planner/BlockerPanel";
 import AssignmentAttachments from "@/components/planner/AssignmentAttachments";
+import StartByBadge from "@/components/planner/StartByBadge";
 
 const RESISTANCE_LABELS = {
   low: { label: "EASY START", color: "bg-emerald-100 text-emerald-700" },
@@ -44,7 +45,7 @@ function NodeDot({ type, active }) {
   );
 }
 
-function AcademicCard({ a, onStart, onToggle, onUpdate, school }) {
+function AcademicCard({ a, onStart, onToggle, onUpdate, school, allAssignments }) {
   const [expanded, setExpanded] = useState(false);
   const [miniSteps, setMiniSteps] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -157,6 +158,7 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
         </button>
       </div>
 
+      <StartByBadge assignment={a} otherAssignments={allAssignments} onUpdate={onUpdate} />
       <AssignmentAttachments assignment={a} onUpdate={onUpdate} />
       <BlockerPanel task={a} school={school} />
     </motion.div>
@@ -312,7 +314,7 @@ function QuickAddRow({ onAdd }) {
   );
 }
 
-export default function TaskTimeline({ assignments = [], courses = [], pausedTask, onStartFocus, onToggle, onUpdate, onQuickAdd }) {
+export default function TaskTimeline({ assignments = [], courses = [], pausedTask, onStartFocus, onToggle, onUpdate, onQuickAdd, allAssignments = [] }) {
   // Derive school name from localStorage (user can set it once in ContactRoutingPanel)
   const schoolName = localStorage.getItem("fikr_school_name") || null;
 
@@ -369,7 +371,7 @@ export default function TaskTimeline({ assignments = [], courses = [], pausedTas
               <div className="flex-1 pt-0.5">
                 {isComm
                   ? <CommCard a={a} onToggle={onToggle} school={schoolName} />
-                  : <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} onUpdate={onUpdate} school={schoolName} />
+                  : <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} onUpdate={onUpdate} school={schoolName} allAssignments={allAssignments} />
                 }
               </div>
             </div>

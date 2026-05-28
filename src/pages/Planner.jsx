@@ -219,6 +219,7 @@ export default function Planner() {
                 onToggle={handleToggle}
                 onUpdate={(id, data) => updateMutation.mutate({ id, data })}
                 onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework", course_id: "" })}
+                allAssignments={assignments}
               />
             )}
             {taskView === "weekly" && (

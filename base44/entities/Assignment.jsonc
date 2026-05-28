@@ -109,6 +109,10 @@
     "link_intelligence": {
       "type": "object",
       "description": "AI-parsed breakdown from admin link analysis"
+    },
+    "start_by_analysis": {
+      "type": "object",
+      "description": "AI-generated Start By analysis with realistic start date, dependencies, and urgency zone"
     }
   },
   "required": [
