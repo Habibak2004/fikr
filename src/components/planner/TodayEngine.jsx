@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Zap, Leaf, ChevronDown, ChevronUp, RefreshCw, Brain, Play, CheckCircle2, ArrowRight, AlertTriangle, Clock, Pencil } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
-import { buildTodayPlan, estimateCognitiveLoad, getInsightLabel } from "@/lib/priorityEngine";
+import { buildAdaptivePlan, buildUserState, estimateCognitiveLoad } from "@/lib/advancedPriorityEngine";
 import { base44 } from "@/api/base44Client";
 
 const ENERGY_LABELS = ["", "Drained", "Low", "Tired", "Below avg", "Okay", "Good", "Energized", "Sharp", "Peak", "🔥 Flow"];
@@ -232,99 +232,65 @@ export default function TodayEngine({ assignments, onStartFocus, onToggle, onEdi
   const [aiReasoning, setAiReasoning] = useState(null);
 
   useEffect(() => {
-    const generateAIPlan = async () => {
+    const generateAdaptivePlan = async () => {
       setRefreshing(true);
       const pending = assignments.filter(a => !a.completed);
       
       if (pending.length === 0) {
-        setPlan({ majors: [], quickWins: [], restorative: null, allScored: [] });
+        setPlan({ majors: [], quickWins: [], restorative: null, allScored: [], cognitiveLoadBalance: "optimal" });
+        setAiReasoning(null);
         setRefreshing(false);
         return;
       }
 
       try {
-        // Use LLM to actually rank and prioritize tasks
-        const taskData = pending.map(t => ({
-          id: t.id,
-          name: t.name,
-          due_date: t.due_date,
-          cognitive_load: estimateCognitiveLoad(t),
-          critical_path: t.critical_path || false,
-          type: t.type,
-          priority: t.priority,
-          weight: t.weight || 0,
-        }));
-
+        // Build user state model
+        const userState = buildUserState(energyLevel, assignments);
+        
+        // Use advanced engine for behavioral-aware planning
+        const adaptivePlan = buildAdaptivePlan(assignments, userState);
+        
+        // Generate AI reasoning
+        const taskSummary = pending.slice(0, 6).map(t => 
+          `- "${t.name}" (${t.due_date ? `due ${new Date(t.due_date).toLocaleDateString()}` : 'no deadline'}, ${t.critical_path ? 'critical' : 'standard'})`
+        ).join('\n');
+        
         const aiResult = await base44.integrations.Core.InvokeLLM({
-          prompt: `You're an expert academic productivity coach. Rank these tasks for a college student based on their energy level, deadlines, and consequences.
+          prompt: `You're an expert academic productivity coach. Based on these tasks and the user's current state, provide a brief, warm prioritization insight.
 
-User's energy level: ${energyLevel}/10 (1=drained, 10=peak focus)
+User State:
+- Energy: ${energyLevel}/10
+- Cognitive Capacity: ${userState.cognitiveCapacity}/10
+- Burnout Risk: ${userState.burnoutRisk >= 7 ? 'High' : userState.burnoutRisk >= 4 ? 'Moderate' : 'Low'}
+- Current Overload: ${userState.currentOverloadScore >= 6 ? 'High' : 'Manageable'}
+- Time of Day: ${userState.isPeakHours ? 'Peak focus hours (morning)' : 'Standard hours'}
 
 Tasks:
-${JSON.stringify(taskData, null, 2)}
+${taskSummary}
 
-Return a JSON response with:
-1. "majors": Array of top 3 task IDs to focus on first (most important/high-impact)
-2. "quickWins": Array of 1-2 task IDs that are easy wins (low cognitive load, can build momentum)
-3. "reasoning": Brief 1-2 sentence explanation of your prioritization strategy
-4. "restorative": Suggestion for a restorative activity if cognitive load is high
+Cognitive Load Balance: ${adaptivePlan.cognitiveLoadBalance}
 
-Guidelines:
-- If energy is low (1-4): prioritize low cognitive load tasks first
-- If energy is high (8-10): tackle high-impact, high cognitive load tasks
-- Critical path tasks (block future progress) should be top priority
-- Consider deadlines heavily - overdue and due-today tasks are urgent
-- Balance between important work and momentum-building quick wins
-
-Return ONLY valid JSON in this format:
-{
-  "majors": ["task_id_1", "task_id_2"],
-  "quickWins": ["task_id_3"],
-  "reasoning": "string",
-  "restorative": "string or null"
-}`,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              majors: { type: "array", items: { type: "string" } },
-              quickWins: { type: "array", items: { type: "string" } },
-              reasoning: { type: "string" },
-              restorative: { type: ["string", "null"] },
-            },
-            required: ["majors", "quickWins", "reasoning"],
-          },
+Provide a 1-2 sentence insight about how to approach these tasks given their energy and state. Be encouraging and specific.`,
         });
-
-        // Map AI-selected IDs back to task objects
-        const taskMap = new Map(pending.map(t => [t.id, t]));
-        const majors = (aiResult.majors || []).map(id => taskMap.get(id)).filter(Boolean);
-        const quickWins = (aiResult.quickWins || []).map(id => taskMap.get(id)).filter(Boolean);
         
-        // Build allScored for deprioritized list
-        const prioritizedIds = new Set([...(aiResult.majors || []), ...(aiResult.quickWins || [])]);
-        const deprioritized = pending
-          .filter(t => !prioritizedIds.has(t.id))
-          .map(t => ({ task: t, score: 0, cogLoad: estimateCognitiveLoad(t) }));
-        
-        setPlan({
-          majors,
-          quickWins,
-          restorative: aiResult.restorative,
-          allScored: [...majors.map(t => ({ task: t, score: 100 })), ...quickWins.map(t => ({ task: t, score: 80 })), ...deprioritized],
-        });
-        setAiReasoning(aiResult.reasoning);
+        setPlan(adaptivePlan);
+        setAiReasoning(aiResult);
       } catch (e) {
-        console.error('AI prioritization failed:', e);
-        // Fallback to heuristic-based planning
-        const result = buildTodayPlan(assignments, energyLevel);
-        setPlan(result);
+        console.error('Adaptive planning failed:', e);
+        // Fallback: simple plan
+        setPlan({
+          majors: pending.slice(0, 3),
+          quickWins: pending.filter(t => estimateCognitiveLoad(t) <= 4).slice(0, 2),
+          restorative: "Take a moment to breathe and start with one small step.",
+          allScored: pending.map(t => ({ task: t, score: 50 })),
+        });
       }
       
       setLastBuilt(new Date());
       setTimeout(() => setRefreshing(false), 400);
     };
     
-    generateAIPlan();
+    generateAdaptivePlan();
   }, [energyLevel, assignments.length]);
 
   if (!plan) return null;
@@ -362,8 +328,9 @@ Return ONLY valid JSON in this format:
         <button
           onClick={() => {
             setRefreshing(true);
-            const result = buildTodayPlan(assignments, energyLevel);
-            setPlan(result);
+            const userState = buildUserState(energyLevel, assignments);
+            const adaptivePlan = buildAdaptivePlan(assignments, userState);
+            setPlan(adaptivePlan);
             setLastBuilt(new Date());
             setTimeout(() => setRefreshing(false), 400);
           }}

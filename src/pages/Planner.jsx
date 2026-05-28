@@ -20,6 +20,7 @@ import TaskTimeline from "@/components/planner/TaskTimeline";
 import LifeRadar from "@/components/planner/LifeRadar";
 import IdeaPad from "@/components/planner/IdeaPad";
 import TodayEngine from "@/components/planner/TodayEngine";
+import InsightsPanel from "@/components/planner/InsightsPanel";
 
 export default function Planner() {
   const [showAdd, setShowAdd] = useState(false);
@@ -255,18 +256,22 @@ export default function Planner() {
           </div>
         </div>
 
-        {/* RIGHT: Life Radar */}
-        <div className="bg-white border border-border/60 rounded-2xl p-5 h-fit lg:sticky lg:top-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center">
-              <span className="text-[11px]">📡</span>
+        {/* RIGHT: Life Radar + Insights */}
+        <div className="space-y-6 lg:sticky lg:top-6">
+          <div className="bg-white border border-border/60 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center">
+                <span className="text-[11px]">📡</span>
+              </div>
+              <h2 className="font-bold text-sm">Life Radar</h2>
             </div>
-            <h2 className="font-bold text-sm">Life Radar</h2>
+            <LifeRadar assignments={assignments} />
+            <div className="mt-5 pt-5 border-t border-border/40">
+              <IdeaPad />
+            </div>
           </div>
-          <LifeRadar assignments={assignments} />
-          <div className="mt-5 pt-5 border-t border-border/40">
-            <IdeaPad />
-          </div>
+
+          <InsightsPanel assignments={assignments} energyLevel={5} />
         </div>
       </div>
 
