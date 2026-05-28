@@ -105,6 +105,10 @@
           }
         }
       }
+    },
+    "link_intelligence": {
+      "type": "object",
+      "description": "AI-parsed breakdown from admin link analysis"
     }
   },
   "required": [
