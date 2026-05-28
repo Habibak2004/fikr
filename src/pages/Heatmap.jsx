@@ -163,7 +163,7 @@ export default function Heatmap() {
                       {weekAssignments.map(a => (
                         <li key={a.id} className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
-                            {a.course_color && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.course_color }} />}
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: a.course_color || "hsl(var(--primary))" }} />
                             <span className="font-medium">{a.name}</span>
                             {a.course_name && <span className="text-muted-foreground text-xs">· {a.course_name}</span>}
                           </div>
