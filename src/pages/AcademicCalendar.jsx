@@ -52,7 +52,11 @@ export default function AcademicCalendar() {
   });
   const [showConfig, setShowConfig] = useState(false);
   const [criticalDeadlines, setCriticalDeadlines] = useState(() => {
-    try { const d = localStorage.getItem("fikr_critical_deadlines"); return d ? JSON.parse(d) : DEFAULT_CRITICAL_DEADLINES; } catch { return DEFAULT_CRITICAL_DEADLINES; }
+    try {
+      const d = localStorage.getItem("fikr_critical_deadlines");
+      if (d !== null) return JSON.parse(d); // null means never saved; use defaults
+      return DEFAULT_CRITICAL_DEADLINES;
+    } catch { return DEFAULT_CRITICAL_DEADLINES; }
   });
   const [customMilestones, setCustomMilestones] = useState(() => {
     try { const m = localStorage.getItem("fikr_custom_milestones"); return m ? JSON.parse(m) : []; } catch { return []; }
@@ -66,7 +70,7 @@ export default function AcademicCalendar() {
 
   const saveCriticalDeadlines = (updated) => {
     setCriticalDeadlines(updated);
-    try { localStorage.setItem("fikr_critical_deadlines", JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem("fikr_critical_deadlines", JSON.stringify(updated ?? [])); } catch {}
   };
 
   const saveCustomMilestones = (updated) => {
