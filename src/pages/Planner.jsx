@@ -178,6 +178,7 @@ export default function Planner() {
               pausedTask={pausedTask}
               onStartFocus={handleStartFocus}
               onToggle={handleToggle}
+              onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework" })}
             />
           </div>
         </div>

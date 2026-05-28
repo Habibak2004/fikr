@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Mail, Leaf, BookOpen, ChevronDown, ChevronUp, Sparkles, Clock, Zap, RotateCcw } from "lucide-react";
+import { Play, Pause, Mail, Leaf, BookOpen, ChevronDown, ChevronUp, Sparkles, RotateCcw, Plus } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { base44 } from "@/api/base44Client";
 
@@ -242,7 +242,33 @@ function PausedCard({ a, onResume }) {
   );
 }
 
-export default function TaskTimeline({ assignments = [], pausedTask, onStartFocus, onToggle }) {
+function QuickAddRow({ onAdd }) {
+  const [value, setValue] = useState("");
+
+  const submit = () => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    onAdd(trimmed);
+    setValue("");
+  };
+
+  return (
+    <div className="flex gap-3 items-center mt-2">
+      <div className="h-9 w-9 rounded-full border-2 border-dashed border-border flex items-center justify-center flex-shrink-0">
+        <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+      </div>
+      <input
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => e.key === "Enter" && submit()}
+        placeholder="Quick add a task... (press Enter)"
+        className="flex-1 text-sm py-2 px-3 rounded-xl border border-dashed border-border/70 bg-white/60 outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 placeholder:text-muted-foreground/50 transition-all"
+      />
+    </div>
+  );
+}
+
+export default function TaskTimeline({ assignments = [], pausedTask, onStartFocus, onToggle, onQuickAdd }) {
   const isCommTask = (a) => /email|follow|professor|housing|financial|internship|contact/i.test(a.name) || a.type === "other";
 
   const pending = assignments.filter(a => !a.completed);
@@ -254,10 +280,12 @@ export default function TaskTimeline({ assignments = [], pausedTask, onStartFocu
 
   if (sorted.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p className="text-2xl mb-2">🌿</p>
-        <p className="font-medium">No pending tasks. You're clear.</p>
-        <p className="text-sm mt-1">Add something when you're ready.</p>
+      <div>
+        <div className="text-center py-10 text-muted-foreground">
+          <p className="text-2xl mb-2">🌿</p>
+          <p className="font-medium">No pending tasks. You're clear.</p>
+        </div>
+        {onQuickAdd && <QuickAddRow onAdd={onQuickAdd} />}
       </div>
     );
   }
@@ -301,6 +329,7 @@ export default function TaskTimeline({ assignments = [], pausedTask, onStartFocu
           );
         })}
       </div>
+      {onQuickAdd && <QuickAddRow onAdd={onQuickAdd} />}
     </div>
   );
 }
