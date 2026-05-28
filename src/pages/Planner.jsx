@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Bell, ChevronRight, LayoutList, CalendarDays, Calendar } from "lucide-react";
+import { Plus, Bell, ChevronRight, LayoutList, CalendarDays, Calendar, Sparkles } from "lucide-react";
 import { isBefore } from "date-fns";
 import WeeklyView from "@/components/calendar/WeeklyView";
 import MonthlyView from "@/components/calendar/MonthlyView";
@@ -19,6 +19,7 @@ import AICommandBar from "@/components/planner/AICommandBar";
 import TaskTimeline from "@/components/planner/TaskTimeline";
 import LifeRadar from "@/components/planner/LifeRadar";
 import IdeaPad from "@/components/planner/IdeaPad";
+import TodayEngine from "@/components/planner/TodayEngine";
 
 export default function Planner() {
   const [showAdd, setShowAdd] = useState(false);
@@ -26,7 +27,7 @@ export default function Planner() {
   const [userEmail, setUserEmail] = useState(null);
   const [catchupMode, setCatchupMode] = useState(false);
   const [pausedTask, setPausedTask] = useState(null);
-  const [taskView, setTaskView] = useState("list"); // "list" | "weekly" | "monthly"
+  const [taskView, setTaskView] = useState("today"); // "today" | "list" | "weekly" | "monthly"
   const [calendarDate, setCalendarDate] = useState(new Date());
   const queryClient = useQueryClient();
 
@@ -183,7 +184,7 @@ export default function Planner() {
           <div className="bg-white/60 rounded-2xl p-5 border border-border/40">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-base">
-                {taskView === "list" ? "Your Day" : taskView === "weekly" ? "This Week" : "This Month"}
+                {taskView === "today" ? "Today's Priorities" : taskView === "list" ? "All Tasks" : taskView === "weekly" ? "This Week" : "This Month"}
               </h2>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
@@ -191,7 +192,8 @@ export default function Planner() {
                 </span>
                 <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
                   {[
-                    { id: "list",    icon: LayoutList,  label: "List" },
+                    { id: "today",   icon: Sparkles,    label: "Today" },
+                    { id: "list",    icon: LayoutList,  label: "All" },
                     { id: "weekly",  icon: CalendarDays, label: "Week" },
                     { id: "monthly", icon: Calendar,     label: "Month" },
                   ].map(({ id, icon: Icon, label }) => (
@@ -211,6 +213,13 @@ export default function Planner() {
               </div>
             </div>
 
+            {taskView === "today" && (
+              <TodayEngine
+                assignments={assignments}
+                onStartFocus={handleStartFocus}
+                onToggle={handleToggle}
+              />
+            )}
             {taskView === "list" && (
               <TaskTimeline
                 assignments={assignments}
