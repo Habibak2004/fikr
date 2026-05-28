@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Play, Pause, Mail, Leaf, BookOpen, ChevronDown, ChevronUp, Sparkles, RotateCcw, Plus } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { base44 } from "@/api/base44Client";
+import BlockerPanel from "@/components/planner/BlockerPanel";
 
 const RESISTANCE_LABELS = {
   low: { label: "EASY START", color: "bg-emerald-100 text-emerald-700" },
@@ -132,6 +133,8 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
           Mark done
         </button>
       </div>
+
+      <BlockerPanel task={a} />
     </motion.div>
   );
 }
@@ -228,6 +231,8 @@ Return JSON: { "subject": "...", "body": "..." }`,
           Mark done
         </button>
       </div>
+
+      <BlockerPanel task={a} />
     </motion.div>
   );
 }
