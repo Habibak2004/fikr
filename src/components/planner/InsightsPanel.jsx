@@ -89,8 +89,10 @@ function TaskSequence({ sequence }) {
         <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Suggested Order</p>
       </div>
       <div className="space-y-1.5">
-        {sequence.slice(0, 5).map((task, i) => {
-          const cogLoad = task.cognitive_load || 5;
+        {sequence.slice(0, 5).map((item, i) => {
+          // Handle both raw tasks and scored items
+          const task = item.task || item;
+          const cogLoad = task.cognitive_load || item.cognitiveLoad || 5;
           const loadColor = cogLoad >= 7 ? "text-red-500" : cogLoad >= 5 ? "text-amber-500" : "text-emerald-500";
           
           return (
@@ -182,12 +184,37 @@ function BlockerAnalysis({ assignments }) {
   );
 }
 
-export default function InsightsPanel({ assignments, energyLevel }) {
+export default function InsightsPanel({ assignments = [], energyLevel = 5 }) {
   const [expanded, setExpanded] = useState(false);
-  const userState = buildUserState(energyLevel, assignments);
-  const burnoutRisk = predictBurnoutRisk(assignments, 3);
-  const focusWindows = suggestFocusWindows(assignments, userState);
-  const sequence = sequenceTasks(assignments, userState);
+  
+  // Guard clause for empty assignments
+  if (!assignments || assignments.length === 0) {
+    return (
+      <div className="bg-white border border-border/60 rounded-2xl p-4">
+        <div className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Brain className="h-4 w-4 text-primary" />
+          </div>
+          <h3 className="font-bold text-sm">AI Insights</h3>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">Add tasks to see insights</p>
+      </div>
+    );
+  }
+  
+  // Safe computation with error handling
+  let userState, burnoutRisk, focusWindows, sequence;
+  try {
+    userState = buildUserState(energyLevel, assignments);
+    burnoutRisk = predictBurnoutRisk(assignments, 3);
+    focusWindows = suggestFocusWindows(assignments, userState);
+    sequence = sequenceTasks(assignments, userState);
+  } catch (e) {
+    console.error('InsightsPanel: Failed to compute insights', e);
+    burnoutRisk = 0;
+    focusWindows = [];
+    sequence = [];
+  }
 
   return (
     <div className="bg-white border border-border/60 rounded-2xl p-4">

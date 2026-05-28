@@ -106,9 +106,9 @@ export default function LinkIntelligencePanel({ assignment, url, onUpdate, onGen
       ) : result && (
         <div className="rounded-xl border border-border/60 bg-white overflow-hidden">
           {/* Header */}
-          <button
+          <div
             onClick={() => setExpanded(e => !e)}
-            className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/30 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/30 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
@@ -124,13 +124,13 @@ export default function LinkIntelligencePanel({ assignment, url, onUpdate, onGen
               <button
                 onClick={(e) => { e.stopPropagation(); parseLink(); }}
                 title="Re-analyze"
-                className="text-muted-foreground hover:text-primary transition-colors"
+                className="text-muted-foreground hover:text-primary transition-colors p-1 rounded hover:bg-muted"
               >
                 <RefreshCw className="h-3 w-3" />
               </button>
               {expanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
             </div>
-          </button>
+          </div>
 
           <AnimatePresence>
             {expanded && (
