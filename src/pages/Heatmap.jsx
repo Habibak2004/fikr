@@ -43,21 +43,8 @@ export default function Heatmap() {
   const semesterWeeks = (() => {
     if (!activeSemester) return [];
     
-    const semesterStart = startOfWeek(new Date(activeSemester.start_date));
-    const semesterEnd = endOfWeek(new Date(activeSemester.end_date));
-    
-    let minDate, maxDate;
-    
-    if (semesterStart && semesterEnd) {
-      minDate = startOfWeek(new Date(semesterStart));
-      maxDate = endOfWeek(new Date(semesterEnd));
-    } else {
-      const dates = semesterAssignments.map(a => new Date(a.due_date)).filter(d => !isNaN(d));
-      if (dates.length === 0) return [];
-      minDate = startOfWeek(new Date(Math.min(...dates)));
-      maxDate = endOfWeek(new Date(Math.max(...dates)));
-    }
-    
+    const minDate = startOfWeek(new Date(activeSemester.start_date));
+    const maxDate = endOfWeek(new Date(activeSemester.end_date));
     const totalWeeks = differenceInWeeks(maxDate, minDate) + 1;
     
     return Array.from({ length: totalWeeks }, (_, i) => {
