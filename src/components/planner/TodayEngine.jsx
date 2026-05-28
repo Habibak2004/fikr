@@ -18,7 +18,11 @@ function EnergySelector({ value, onChange }) {
         min={1}
         max={10}
         value={value}
-        onChange={e => onChange(Number(e.target.value))}
+        onChange={e => {
+          const newVal = Number(e.target.value);
+          localStorage.setItem("fikr_energy_level", String(newVal));
+          onChange(newVal);
+        }}
         className="w-full accent-primary h-1.5 rounded-full cursor-pointer"
       />
       <div className="flex justify-between text-[9px] text-muted-foreground/60 font-medium">
@@ -202,17 +206,12 @@ export default function TodayEngine({ assignments, onStartFocus, onToggle }) {
   const [refreshing, setRefreshing] = useState(false);
   const [lastBuilt, setLastBuilt] = useState(null);
 
-  const recalculate = (energy) => {
+  useEffect(() => {
     setRefreshing(true);
-    const result = buildTodayPlan(assignments, energy);
+    const result = buildTodayPlan(assignments, energyLevel);
     setPlan(result);
     setLastBuilt(new Date());
     setTimeout(() => setRefreshing(false), 400);
-  };
-
-  useEffect(() => {
-    localStorage.setItem("fikr_energy_level", energyLevel);
-    recalculate(energyLevel);
   }, [energyLevel, assignments.length]);
 
   if (!plan) return null;
@@ -248,7 +247,13 @@ export default function TodayEngine({ assignments, onStartFocus, onToggle }) {
           </p>
         </div>
         <button
-          onClick={() => recalculate(energyLevel)}
+          onClick={() => {
+            setRefreshing(true);
+            const result = buildTodayPlan(assignments, energyLevel);
+            setPlan(result);
+            setLastBuilt(new Date());
+            setTimeout(() => setRefreshing(false), 400);
+          }}
           disabled={refreshing}
           title="Recalculate priorities"
           className="h-7 w-7 rounded-lg hover:bg-muted flex items-center justify-center transition-colors flex-shrink-0 mt-0.5"
