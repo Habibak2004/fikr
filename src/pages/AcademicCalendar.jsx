@@ -40,7 +40,7 @@ export default function AcademicCalendar() {
   const [showConfig, setShowConfig] = useState(false);
   const [criticalDeadlines, setCriticalDeadlines] = useState(DEFAULT_CRITICAL_DEADLINES);
   const [editingDeadlines, setEditingDeadlines] = useState(false);
-  const [newDeadline, setNewDeadline] = useState({ label: "", detail: "", urgency: "UPCOMING" });
+  const [newDeadline, setNewDeadline] = useState({ label: "", detail: "", urgency: "UPCOMING", date: "" });
 
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
@@ -183,20 +183,36 @@ export default function AcademicCalendar() {
                             setCriticalDeadlines(updated);
                           }}
                         />
-                        <input
-                          className="text-xs text-muted-foreground w-full border-b border-border/40 outline-none bg-transparent"
-                          value={d.detail}
-                          onChange={ev => {
-                            const updated = [...criticalDeadlines];
-                            updated[i] = { ...updated[i], detail: ev.target.value };
-                            setCriticalDeadlines(updated);
-                          }}
-                        />
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="date"
+                            className="text-xs border rounded-md px-1.5 py-0.5 bg-white outline-none w-32 shrink-0"
+                            value={d.date || ""}
+                            onChange={ev => {
+                              const updated = [...criticalDeadlines];
+                              updated[i] = { ...updated[i], date: ev.target.value };
+                              setCriticalDeadlines(updated);
+                            }}
+                          />
+                          <input
+                            className="text-xs text-muted-foreground flex-1 border-b border-border/40 outline-none bg-transparent"
+                            value={d.detail}
+                            placeholder="Detail..."
+                            onChange={ev => {
+                              const updated = [...criticalDeadlines];
+                              updated[i] = { ...updated[i], detail: ev.target.value };
+                              setCriticalDeadlines(updated);
+                            }}
+                          />
+                        </div>
                       </>
                     ) : (
                       <>
                         <p className="text-sm font-semibold leading-tight">{d.label}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{d.detail}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {d.date && <span className="font-medium text-foreground">{format(new Date(d.date + "T12:00:00"), "MMM d")} · </span>}
+                          {d.detail}
+                        </p>
                       </>
                     )}
                   </div>
@@ -242,7 +258,8 @@ export default function AcademicCalendar() {
                           onClick={() => {
                             setCriticalDeadlines(prev => [...prev, {
                               label: m.label,
-                              detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"),
+                              date: m.date.slice(0, 10),
+                              detail: "",
                               urgency: "UPCOMING",
                             }]);
                           }}
@@ -257,19 +274,27 @@ export default function AcademicCalendar() {
 
                 {/* Manual entry */}
                 <div className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-primary/30 bg-primary/5">
-                  <div className="flex-1 space-y-1">
+                  <div className="flex-1 space-y-1.5">
                     <input
                       placeholder="Custom deadline label..."
                       className="text-sm w-full border-b border-border/60 outline-none bg-transparent"
                       value={newDeadline.label}
                       onChange={ev => setNewDeadline(p => ({ ...p, label: ev.target.value }))}
                     />
-                    <input
-                      placeholder="Detail (e.g. May 15 • 7 days left)"
-                      className="text-xs text-muted-foreground w-full border-b border-border/40 outline-none bg-transparent"
-                      value={newDeadline.detail}
-                      onChange={ev => setNewDeadline(p => ({ ...p, detail: ev.target.value }))}
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        className="text-xs border rounded-md px-1.5 py-0.5 bg-white outline-none w-32 shrink-0"
+                        value={newDeadline.date}
+                        onChange={ev => setNewDeadline(p => ({ ...p, date: ev.target.value }))}
+                      />
+                      <input
+                        placeholder="Detail (optional)"
+                        className="text-xs text-muted-foreground flex-1 border-b border-border/40 outline-none bg-transparent"
+                        value={newDeadline.detail}
+                        onChange={ev => setNewDeadline(p => ({ ...p, detail: ev.target.value }))}
+                      />
+                    </div>
                   </div>
                   <select
                     value={newDeadline.urgency}
@@ -284,7 +309,7 @@ export default function AcademicCalendar() {
                     onClick={() => {
                       if (!newDeadline.label.trim()) return;
                       setCriticalDeadlines(prev => [...prev, { ...newDeadline }]);
-                      setNewDeadline({ label: "", detail: "", urgency: "UPCOMING" });
+                      setNewDeadline({ label: "", detail: "", urgency: "UPCOMING", date: "" });
                     }}
                     className="flex-shrink-0 h-7 w-7 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/90"
                   >
