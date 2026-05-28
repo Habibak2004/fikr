@@ -14,16 +14,23 @@ export default function StudyCoach() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState(null);
   const bottomRef = useRef(null);
 
+  useEffect(() => {
+    base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {});
+  }, []);
+
   const { data: courses = [] } = useQuery({
-    queryKey: ["courses"],
-    queryFn: () => base44.entities.Course.list("-created_date", 50),
+    queryKey: ["courses", userEmail],
+    queryFn: () => base44.entities.Course.filter({ created_by: userEmail }, "-created_date", 50),
+    enabled: !!userEmail,
   });
 
   const { data: assignments = [] } = useQuery({
-    queryKey: ["assignments"],
-    queryFn: () => base44.entities.Assignment.list("-due_date", 50),
+    queryKey: ["assignments", userEmail],
+    queryFn: () => base44.entities.Assignment.filter({ created_by: userEmail }, "-due_date", 50),
+    enabled: !!userEmail,
   });
 
   useEffect(() => {
