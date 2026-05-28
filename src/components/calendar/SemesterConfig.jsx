@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Link2, Loader2, ChevronDown, Check, Trash2, Plus } from "lucide-react";
+import { format } from "date-fns";
 
 export default function SemesterConfig({ currentSemester, onSemesterChange, onClose }) {
   const queryClient = useQueryClient();
@@ -129,7 +130,9 @@ Rules:
               {selected ? (
                 <div className="flex flex-col items-start">
                   <span className="font-medium">{selected.name}</span>
-                  <span className="text-xs text-muted-foreground">{selected.start_date} → {selected.end_date}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(selected.start_date), "MMM d, yyyy")} → {format(new Date(selected.end_date), "MMM d, yyyy")}
+                  </span>
                 </div>
               ) : "Select a semester"}
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -149,7 +152,9 @@ Rules:
                       className="w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-muted/30 transition-colors"
                     >
                       <span>{s.name}</span>
-                      <span className="text-xs text-muted-foreground">{s.start_date} → {s.end_date}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(s.start_date), "MMM d, yyyy")} → {format(new Date(s.end_date), "MMM d, yyyy")}
+                      </span>
                       {selected?.id === s.id && <Check className="h-3.5 w-3.5 text-primary ml-2" />}
                     </button>
                   ))}
