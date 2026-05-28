@@ -25,20 +25,29 @@ const typeConfig = {
 
 export default function Community() {
   const [showNew, setShowNew] = useState(false);
-  const [filterCourse, setFilterCourse] = useState("all");
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => { base44.auth.me().then(setUser).catch(() => {}); }, []);
 
-  const { data: posts = [] } = useQuery({
-    queryKey: ["community-posts"],
-    queryFn: () => base44.entities.CommunityPost.list("-created_date", 100),
-  });
-
   const { data: courses = [] } = useQuery({
     queryKey: ["courses"],
-    queryFn: () => base44.entities.Course.list("-created_date", 50),
+    queryFn: () => base44.entities.Course.filter({ created_by: user?.email }, "-created_date", 50),
+    enabled: !!user,
+  });
+
+  // Auto-select first course if none selected
+  useEffect(() => {
+    if (courses.length > 0 && !selectedCourse) {
+      setSelectedCourse(courses[0].id);
+    }
+  }, [courses.length]);
+
+  const { data: posts = [] } = useQuery({
+    queryKey: ["community-posts", selectedCourse],
+    queryFn: () => base44.entities.CommunityPost.filter({ course_id: selectedCourse }, "-created_date", 100),
+    enabled: !!selectedCourse,
   });
 
   const voteMutation = useMutation({
@@ -51,45 +60,56 @@ export default function Community() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["community-posts"] }); setShowNew(false); },
   });
 
-  const filtered = filterCourse === "all" ? posts : posts.filter(p => p.course_id === filterCourse);
-
   const topContributors = [...new Map(posts.map(p => [p.author_email, { name: p.author_name, count: posts.filter(pp => pp.author_email === p.author_email).length }])).entries()]
     .sort((a, b) => b[1].count - a[1].count).slice(0, 5);
 
-  const trending = [...new Set(posts.flatMap(p => p.tags || []))].slice(0, 8);
+  const trending = selectedCourse ? [...new Set(posts.flatMap(p => p.tags || []))].slice(0, 8) : [];
 
   return (
     <div className="p-6 lg:p-8 max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold">Community</h1>
-          <p className="text-muted-foreground mt-1">Learn together, grow together</p>
+          <p className="text-muted-foreground mt-1">Course discussions and peer support</p>
         </div>
         <div className="flex gap-3">
-          <Select value={filterCourse} onValueChange={setFilterCourse}>
-            <SelectTrigger className="w-36 rounded-xl"><SelectValue placeholder="All Courses" /></SelectTrigger>
+          <Select value={selectedCourse || ""} onValueChange={setSelectedCourse}>
+            <SelectTrigger className="w-48 rounded-xl"><SelectValue placeholder="Select a course" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Courses</SelectItem>
-              {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}
+              {courses.map(c => <SelectItem key={c.id} value={c.id}>{c.code} - {c.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button onClick={() => setShowNew(true)} className="rounded-xl bg-primary hover:bg-primary/90">
+          <Button onClick={() => setShowNew(true)} disabled={!selectedCourse} className="rounded-xl bg-primary hover:bg-primary/90 disabled:opacity-50">
             <Plus className="h-4 w-4 mr-2" /> New Post
           </Button>
         </div>
       </div>
 
+      {courses.length === 0 && (
+        <Card className="p-8 rounded-2xl text-center mb-6">
+          <BookMarked className="h-10 w-10 mx-auto text-muted-foreground/30 mb-4" />
+          <h3 className="font-medium">No courses yet</h3>
+          <p className="text-sm text-muted-foreground mt-1">Add a course to start participating in community discussions</p>
+        </Card>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Feed */}
         <div className="flex-1 space-y-4">
-          {filtered.length === 0 ? (
+          {!selectedCourse ? (
+            <Card className="p-12 rounded-2xl text-center">
+              <BookMarked className="h-10 w-10 mx-auto text-muted-foreground/30 mb-4" />
+              <h3 className="font-medium">Select a course</h3>
+              <p className="text-sm text-muted-foreground mt-1">Choose a course from the dropdown to view discussions</p>
+            </Card>
+          ) : posts.length === 0 ? (
             <Card className="p-12 rounded-2xl text-center">
               <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/30 mb-4" />
-              <h3 className="font-medium">No posts yet</h3>
-              <p className="text-sm text-muted-foreground mt-1">Start a discussion!</p>
+              <h3 className="font-medium">No posts in this course yet</h3>
+              <p className="text-sm text-muted-foreground mt-1">Be the first to start a discussion!</p>
             </Card>
           ) : (
-            filtered.map((post, i) => {
+            posts.map((post, i) => {
               const config = typeConfig[post.type] || typeConfig.note;
               const TypeIcon = config.icon;
               return (
@@ -178,25 +198,26 @@ export default function Community() {
         </div>
       </div>
 
-      <NewPostModal open={showNew} onClose={() => setShowNew(false)} courses={courses} user={user} onSave={d => createMutation.mutate(d)} />
+      <NewPostModal open={showNew} onClose={() => setShowNew(false)} courses={courses} user={user} selectedCourse={selectedCourse} onSave={d => createMutation.mutate(d)} />
     </div>
   );
 }
 
-function NewPostModal({ open, onClose, courses, user, onSave }) {
-  const [form, setForm] = useState({ title: "", content: "", type: "question", course_id: "", tags: "" });
+function NewPostModal({ open, onClose, courses, user, selectedCourse, onSave }) {
+  const [form, setForm] = useState({ title: "", content: "", type: "question", tags: "" });
 
   const handleSave = () => {
-    if (!form.title || !form.content) return;
-    const course = courses.find(c => c.id === form.course_id);
+    if (!form.title || !form.content || !selectedCourse) return;
+    const course = courses.find(c => c.id === selectedCourse);
     onSave({
       ...form,
+      course_id: selectedCourse,
       course_name: course?.name || "",
       author_name: user?.full_name || "Anonymous",
       author_email: user?.email || "",
       tags: form.tags ? form.tags.split(",").map(t => t.trim()) : [],
     });
-    setForm({ title: "", content: "", type: "question", course_id: "", tags: "" });
+    setForm({ title: "", content: "", type: "question", tags: "" });
   };
 
   return (
@@ -204,24 +225,19 @@ function NewPostModal({ open, onClose, courses, user, onSave }) {
       <DialogContent className="sm:max-w-lg rounded-2xl">
         <DialogHeader><DialogTitle>New Post</DialogTitle></DialogHeader>
         <div className="space-y-4 mt-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Type</Label>
-              <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v }))}>
-                <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(typeConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Course</Label>
-              <Select value={form.course_id} onValueChange={v => setForm(p => ({ ...p, course_id: v }))}>
-                <SelectTrigger className="rounded-xl mt-1"><SelectValue placeholder="Optional" /></SelectTrigger>
-                <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.id}>{c.code}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </div>
+          <div className="mb-3 p-3 bg-primary/5 rounded-xl border border-primary/20">
+          <p className="text-xs text-primary font-medium">Posting to: {courses.find(c => c.id === selectedCourse)?.name || "Select a course"}</p>
+        </div>
+
+        <div>
+          <Label>Type</Label>
+          <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v }))}>
+            <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(typeConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
           <div><Label>Title</Label><Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="rounded-xl mt-1" /></div>
           <div><Label>Content</Label><Textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} className="rounded-xl mt-1 min-h-[120px]" /></div>
           <div><Label>Tags (comma separated)</Label><Input value={form.tags} onChange={e => setForm(p => ({ ...p, tags: e.target.value }))} placeholder="e.g. midterm, study-tips" className="rounded-xl mt-1" /></div>
