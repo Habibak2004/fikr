@@ -35,7 +35,13 @@ export default function Dashboard() {
 
   const { data: sessions = [] } = useQuery({
     queryKey: ["focus-sessions", user?.email],
-    queryFn: () => base44.entities.FocusSession.filter({ created_by: user.email }, "-created_date", 20),
+    queryFn: () => base44.entities.FocusSession.filter({ created_by: user.email }, "-created_date", 200),
+    enabled: !!user?.email,
+  });
+
+  const { data: studySessions = [] } = useQuery({
+    queryKey: ["study-sessions", user?.email],
+    queryFn: () => base44.entities.StudySession.filter({ created_by: user.email }, "-created_date", 200),
     enabled: !!user?.email,
   });
 
@@ -44,9 +50,12 @@ export default function Dashboard() {
   const focusGoal = 120;
   const focusPercent = Math.min(100, Math.round((todayMinutes / focusGoal) * 100));
 
-  // Calculate real study streak from FocusSession dates
+  // Calculate real study streak from FocusSession + StudySession dates
   const studyStreak = (() => {
-    const sessionDates = new Set(sessions.map(s => s.date).filter(Boolean));
+    const sessionDates = new Set([
+      ...sessions.map(s => s.date),
+      ...studySessions.map(s => s.date),
+    ].filter(Boolean));
     let streak = 0;
     let check = new Date();
     // If no session today, start checking from yesterday
