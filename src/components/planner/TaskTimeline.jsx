@@ -4,6 +4,7 @@ import { Play, Pause, Mail, Leaf, BookOpen, ChevronDown, ChevronUp, Sparkles, Ro
 import { format, differenceInDays } from "date-fns";
 import { base44 } from "@/api/base44Client";
 import BlockerPanel from "@/components/planner/BlockerPanel";
+import AssignmentAttachments from "@/components/planner/AssignmentAttachments";
 
 const RESISTANCE_LABELS = {
   low: { label: "EASY START", color: "bg-emerald-100 text-emerald-700" },
@@ -156,6 +157,7 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
         </button>
       </div>
 
+      <AssignmentAttachments assignment={a} onUpdate={onUpdate} />
       <BlockerPanel task={a} school={school} />
     </motion.div>
   );

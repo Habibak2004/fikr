@@ -75,6 +75,36 @@
     "completed": {
       "type": "boolean",
       "default": false
+    },
+    "documents": {
+      "type": "array",
+      "description": "Required documents for this assignment",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "description": "Useful links for this assignment",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "required": [
