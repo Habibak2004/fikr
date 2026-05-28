@@ -169,19 +169,19 @@ export function computePriorityScore(task, allTasks, energyLevel = 5) {
   // Energy adjustment: low energy = boost easy tasks, penalize heavy ones
   // This is the PRIMARY driver of task re-ranking based on energy
   let energyMod = 0;
-  const energyFactor = (energyLevel - 5) / 5; // -0.8 at level 1, 0 at level 5, +1 at level 10
   
-  // Low energy strongly penalizes high-load tasks, boosts low-load
-  // High energy boosts high-load tasks (deep work opportunity)
-  energyMod = (1 - energyFactor) * (5 - cogLoad) * 2;
-  
-  // Additional boost/penalty at extremes
+  // Logarithmic energy scaling: extreme penalty/boost at low/high energy
   if (energyLevel <= 2) {
-    energyMod += cogLoad <= 3 ? 15 : cogLoad >= 7 ? -15 : 0;
+    // Drained: heavily penalize high-load, boost low-load
+    energyMod = cogLoad <= 3 ? 30 : cogLoad >= 7 ? -35 : cogLoad >= 5 ? -20 : 10;
+  } else if (energyLevel <= 4) {
+    // Low energy: moderate penalty/boost
+    energyMod = (5 - cogLoad) * 3.5;
+  } else if (energyLevel >= 8) {
+    // High energy: prioritize deep work
+    energyMod = (cogLoad - 3) * 2;
   }
-  if (energyLevel >= 9) {
-    energyMod += cogLoad >= 6 ? 12 : -6;
-  }
+  // Else: energyLevel 5-7, minimal adjustment (energyMod stays 0)
 
   const rawScore =
     urgency * 1.0 +
