@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday, addWeeks, subWeeks } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7am - 8pm
 
@@ -29,7 +29,42 @@ function getEventsForDay(date, assignments, milestones, criticalDeadlines) {
   return items;
 }
 
+function DayModal({ day, items, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{format(day, "EEEE")}</p>
+            <p className="text-xl font-extrabold">{format(day, "MMMM d")}</p>
+          </div>
+          <button onClick={onClose} className="h-8 w-8 rounded-lg hover:bg-muted flex items-center justify-center">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">No tasks this day.</p>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item, i) => (
+              <div key={i} className={`rounded-xl border px-3 py-2.5 ${item.color}`}>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className={`h-2 w-2 rounded-full flex-shrink-0 ${item.dot}`} />
+                  <span className="font-semibold text-sm">{item.label}</span>
+                </div>
+                {item.sub && <p className="text-xs opacity-70 pl-4">{item.sub}</p>}
+                <p className="text-xs opacity-60 pl-4 mt-0.5">{item.time}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function WeeklyView({ currentDate, onDateChange, assignments, milestones, criticalDeadlines }) {
+  const [selectedDay, setSelectedDay] = useState(null);
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -42,8 +77,13 @@ export default function WeeklyView({ currentDate, onDateChange, assignments, mil
     [currentDate, assignments, milestones, criticalDeadlines]
   );
 
+  const selectedDayData = selectedDay ? dayEvents.find(d => isSameDay(d.date, selectedDay)) : null;
+
   return (
     <div className="bg-white border rounded-2xl overflow-hidden">
+      {selectedDay && selectedDayData && (
+        <DayModal day={selectedDay} items={selectedDayData.items} onClose={() => setSelectedDay(null)} />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b">
         <h3 className="font-bold text-base">
@@ -76,7 +116,7 @@ export default function WeeklyView({ currentDate, onDateChange, assignments, mil
         {dayEvents.map(({ date, items }) => {
           const today = isToday(date);
           return (
-            <div key={date.toISOString()} className="min-h-[160px] p-2 flex flex-col gap-1">
+            <div key={date.toISOString()} className="min-h-[160px] p-2 flex flex-col gap-1 cursor-pointer hover:bg-muted/20 transition-colors" onClick={() => setSelectedDay(date)}>
               {/* Day header */}
               <div className={`flex flex-col items-center mb-2`}>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
