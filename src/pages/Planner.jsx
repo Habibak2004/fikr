@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Bell, ChevronRight, LayoutList, CalendarDays, Calendar, Sparkles } from "lucide-react";
+import { Plus, Bell, ChevronRight, LayoutList, CalendarDays, Calendar, Sparkles, Trash2 } from "lucide-react";
 import { isBefore } from "date-fns";
 import WeeklyView from "@/components/calendar/WeeklyView";
 import MonthlyView from "@/components/calendar/MonthlyView";
@@ -60,6 +60,11 @@ export default function Planner() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Assignment.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assignments"] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Assignment.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assignments"] }),
   });
 
@@ -280,13 +285,14 @@ export default function Planner() {
           courses={courses}
           onClose={() => setEditingTask(null)}
           onSave={(id, data) => { updateMutation.mutate({ id, data }); setEditingTask(null); }}
+          onDelete={(id) => { deleteMutation.mutate(id); setEditingTask(null); }}
         />
       )}
     </div>
   );
 }
 
-function EditAssignmentModal({ task, onClose, courses, onSave }) {
+function EditAssignmentModal({ task, onClose, courses, onSave, onDelete }) {
   const [form, setForm] = useState({
     name: task.name || "",
     course_id: task.course_id || "",
@@ -351,7 +357,16 @@ function EditAssignmentModal({ task, onClose, courses, onSave }) {
             />
             <Label htmlFor="edit_critical_path" className="text-sm font-medium">Critical path (blocks future progress)</Label>
           </div>
-          <Button onClick={handleSave} className="w-full rounded-xl bg-primary hover:bg-primary/90">Save Changes</Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={() => { if (confirm("Delete this task?")) onDelete(task.id); }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <Button onClick={handleSave} className="flex-1 rounded-xl bg-primary hover:bg-primary/90">Save Changes</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
