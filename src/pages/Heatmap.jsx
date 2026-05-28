@@ -34,15 +34,24 @@ export default function Heatmap() {
     return !selectedSemester || course?.semester === selectedSemester;
   });
 
-  // Calculate semester weeks dynamically
+  // Calculate semester weeks based on semester_start/semester_end or fallback to assignments
   const semesterWeeks = (() => {
-    if (semesterAssignments.length === 0) return [];
+    const coursesInSemester = courses.filter(c => c.semester === activeSemester);
+    const semesterStart = coursesInSemester.find(c => c.semester_start)?.semester_start;
+    const semesterEnd = coursesInSemester.find(c => c.semester_end)?.semester_end;
     
-    const dates = semesterAssignments.map(a => new Date(a.due_date)).filter(d => !isNaN(d));
-    if (dates.length === 0) return [];
+    let minDate, maxDate;
     
-    const minDate = startOfWeek(new Date(Math.min(...dates)));
-    const maxDate = endOfWeek(new Date(Math.max(...dates)));
+    if (semesterStart && semesterEnd) {
+      minDate = startOfWeek(new Date(semesterStart));
+      maxDate = endOfWeek(new Date(semesterEnd));
+    } else {
+      const dates = semesterAssignments.map(a => new Date(a.due_date)).filter(d => !isNaN(d));
+      if (dates.length === 0) return [];
+      minDate = startOfWeek(new Date(Math.min(...dates)));
+      maxDate = endOfWeek(new Date(Math.max(...dates)));
+    }
+    
     const totalWeeks = differenceInWeeks(maxDate, minDate) + 1;
     
     return Array.from({ length: Math.min(totalWeeks, 16) }, (_, i) => {
@@ -57,7 +66,7 @@ export default function Heatmap() {
         return isWithinInterval(d, { start: weekStart, end: weekEnd });
       }).length;
       
-      return { week: `W${weekNum}`, count, weekNum, startDate: weekStart };
+      return { week: `W${weekNum}`, count, weekNum, startDate: weekStart, endDate: weekEnd };
     });
   })();
 
@@ -109,12 +118,12 @@ export default function Heatmap() {
                   animate={{ scale: 1 }}
                   transition={{ delay: w.weekNum * 0.03 }}
                   className={`aspect-square rounded-xl ${getIntensityColor(w.count)} flex flex-col items-center justify-center cursor-default`}
-                  title={`Week ${w.weekNum}: ${w.count} items`}
+                  title={`Week ${w.weekNum}: ${w.count} assignments`}
                 >
                   <span className="text-[10px] font-bold">{w.weekNum}</span>
                   <span className="text-[9px] text-muted-foreground">{w.count}</span>
                   <span className="text-[8px] text-muted-foreground/60 mt-0.5">
-                    {w.startDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                    {w.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                 </motion.div>
               ))}

@@ -135,7 +135,7 @@ export default function Courses() {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => { setEditCourse(course); setEditFields({ name: course.name, code: course.code || "", professor: course.professor || "", semester: course.semester || "", status: course.status || "active" }); }}>
+                    <DropdownMenuItem onClick={() => { setEditCourse(course); setEditFields({ name: course.name, code: course.code || "", professor: course.professor || "", semester: course.semester || "", semester_start: course.semester_start || "", semester_end: course.semester_end || "", status: course.status || "active" }); }}>
                       <Pencil className="h-4 w-4 mr-2" /> Rename
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -222,6 +222,16 @@ export default function Courses() {
                     <SelectItem value="dropped">Dropped</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Semester Start</Label>
+                <Input type="date" value={editFields.semester_start || ""} onChange={e => setEditFields(f => ({ ...f, semester_start: e.target.value }))} className="rounded-xl" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Semester End</Label>
+                <Input type="date" value={editFields.semester_end || ""} onChange={e => setEditFields(f => ({ ...f, semester_end: e.target.value }))} className="rounded-xl" />
               </div>
             </div>
           </div>

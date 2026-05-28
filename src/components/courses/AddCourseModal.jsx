@@ -9,7 +9,7 @@ const COLORS = ["#0061a4", "#4648d4", "#904d00", "#16a34a", "#dc2626", "#7c3aed"
 const ICONS = ["📚", "🧪", "💻", "📐", "🎨", "📊", "🌍", "⚖️", "🔬", "📖"];
 
 export default function AddCourseModal({ open, onClose, onSave }) {
-  const [form, setForm] = useState({ name: "", code: "", professor: "", semester: "Fall 2026", color: COLORS[0], icon: "📚" });
+  const [form, setForm] = useState({ name: "", code: "", professor: "", semester: "Fall 2026", semester_start: "", semester_end: "", color: COLORS[0], icon: "📚" });
 
   const handleSave = () => {
     if (!form.name || !form.code) return;
@@ -46,6 +46,16 @@ export default function AddCourseModal({ open, onClose, onSave }) {
                 <SelectItem value="Summer 2026">Summer 2026</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Semester Start</Label>
+              <Input type="date" value={form.semester_start || ""} onChange={e => setForm(p => ({ ...p, semester_start: e.target.value }))} className="rounded-xl mt-1" />
+            </div>
+            <div>
+              <Label>Semester End</Label>
+              <Input type="date" value={form.semester_end || ""} onChange={e => setForm(p => ({ ...p, semester_end: e.target.value }))} className="rounded-xl mt-1" />
+            </div>
           </div>
           <div>
             <Label>Color</Label>
