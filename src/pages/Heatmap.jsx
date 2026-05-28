@@ -1,35 +1,68 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Flame, Moon, Sun, Coffee } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { motion } from "framer-motion";
+import { differenceInWeeks, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 
 export default function Heatmap() {
+  const [selectedSemester, setSelectedSemester] = useState("");
+
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
     queryFn: () => base44.entities.Assignment.list("-due_date", 200),
   });
 
-  // Generate 16 weeks of intensity data
-  const weeks = Array.from({ length: 16 }, (_, i) => {
-    const weekNum = i + 1;
-    const count = assignments.filter(a => {
-      if (!a.due_date) return false;
-      const d = new Date(a.due_date);
-      const weekStart = new Date("2026-01-19");
-      weekStart.setDate(weekStart.getDate() + i * 7);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 7);
-      return d >= weekStart && d < weekEnd;
-    }).length;
-    return { week: `W${weekNum}`, count, weekNum };
+  const { data: courses = [] } = useQuery({
+    queryKey: ["courses"],
+    queryFn: () => base44.entities.Course.list("-created_date", 50),
   });
 
-  const maxCount = Math.max(...weeks.map(w => w.count), 1);
-  const busiestWeek = weeks.reduce((max, w) => w.count > max.count ? w : max, weeks[0]);
+  // Extract unique semesters from courses
+  const semesters = [...new Set(courses.map(c => c.semester).filter(Boolean))];
+  const activeSemester = selectedSemester || semesters[0];
+
+  // Filter assignments by selected semester (matching course semester)
+  const semesterAssignments = assignments.filter(a => {
+    if (!a.due_date) return false;
+    const course = courses.find(c => c.id === a.course_id);
+    return !selectedSemester || course?.semester === selectedSemester;
+  });
+
+  // Calculate semester weeks dynamically
+  const semesterWeeks = (() => {
+    if (semesterAssignments.length === 0) return [];
+    
+    const dates = semesterAssignments.map(a => new Date(a.due_date)).filter(d => !isNaN(d));
+    if (dates.length === 0) return [];
+    
+    const minDate = startOfWeek(new Date(Math.min(...dates)));
+    const maxDate = endOfWeek(new Date(Math.max(...dates)));
+    const totalWeeks = differenceInWeeks(maxDate, minDate) + 1;
+    
+    return Array.from({ length: Math.min(totalWeeks, 16) }, (_, i) => {
+      const weekNum = i + 1;
+      const weekStart = new Date(minDate);
+      weekStart.setDate(weekStart.getDate() + i * 7);
+      const weekEnd = endOfWeek(weekStart);
+      
+      const count = semesterAssignments.filter(a => {
+        if (!a.due_date) return false;
+        const d = new Date(a.due_date);
+        return isWithinInterval(d, { start: weekStart, end: weekEnd });
+      }).length;
+      
+      return { week: `W${weekNum}`, count, weekNum, startDate: weekStart };
+    });
+  })();
+
+  const maxCount = Math.max(...semesterWeeks.map(w => w.count), 1);
+  const busiestWeek = semesterWeeks.reduce((max, w) => w.count > max.count ? w : max, semesterWeeks[0]);
 
   const getIntensityColor = (count) => {
     if (count === 0) return "bg-primary/5";
@@ -40,20 +73,32 @@ export default function Heatmap() {
     return "bg-primary/80";
   };
 
-  const barData = weeks.map(w => ({ name: w.week, value: w.count }));
+  const barData = semesterWeeks.map(w => ({ name: w.week, value: w.count }));
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Workload Heatmap</h1>
-        <p className="text-muted-foreground mt-1">Visualize your semester intensity</p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Workload Heatmap</h1>
+          <p className="text-muted-foreground mt-1">Visualize your semester intensity</p>
+        </div>
+        {semesters.length > 0 && (
+          <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+            <SelectTrigger className="w-48 rounded-xl">
+              <SelectValue placeholder="Select semester" />
+            </SelectTrigger>
+            <SelectContent>
+              {semesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Heatmap Grid */}
       <Card className="p-6 rounded-2xl">
-        <h3 className="font-semibold mb-4">16-Week Intensity</h3>
+        <h3 className="font-semibold mb-4">{activeSemester || "Current Semester"}</h3>
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-          {weeks.map((w) => (
+          {semesterWeeks.map((w) => (
             <motion.div
               key={w.week}
               initial={{ scale: 0 }}
