@@ -179,8 +179,8 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
       </div>
 
       <StartByBadge assignment={a} otherAssignments={allAssignments} onUpdate={onUpdate} />
-      <AssignmentAttachments assignment={a} onUpdate={onUpdate} />
-      <BlockerPanel task={a} school={school} />
+      {onUpdate && <AssignmentAttachments assignment={a} onUpdate={onUpdate} />}
+      {school && <BlockerPanel task={a} school={school} />}
     </motion.div>
   );
 }

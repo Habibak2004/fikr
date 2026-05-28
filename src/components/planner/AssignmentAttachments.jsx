@@ -1,10 +1,25 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Paperclip, Link2, Plus, X, Upload, ExternalLink, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import LinkIntelligencePanel from "@/components/planner/LinkIntelligencePanel";
 
 const ADMIN_KEYWORDS = /housing|intern|apply|application|financial.?aid|scholarship|onboard|enrollment|registrar|admission|bursar|fafsa|fellowship|grant|portal|form|deadline|submit|office|department|student.?service/i;
+
+// Simple error boundary
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
 
 function isAdminLink(url, taskName = "") {
   return ADMIN_KEYWORDS.test(url) || ADMIN_KEYWORDS.test(taskName);
@@ -21,10 +36,16 @@ export default function AssignmentAttachments({ assignment, onUpdate }) {
   const [newDocName, setNewDocName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState(null);
   const [aiLink, setAiLink] = useState(() => {
-    // Pre-select the first link if intelligence already exists
-    const links = assignment.links || [];
-    return links.find(l => isAnalyzable(l.url, assignment.name)) || null;
+    try {
+      // Pre-select the first link if intelligence already exists
+      const links = assignment.links || [];
+      return links.find(l => isAnalyzable(l.url, assignment.name)) || null;
+    } catch (e) {
+      console.error('Error initializing aiLink:', e);
+      return null;
+    }
   });
 
   const links = assignment.links || [];
@@ -82,15 +103,25 @@ export default function AssignmentAttachments({ assignment, onUpdate }) {
   const totalCount = links.length + documents.length;
   const hasIntelligence = !!assignment.link_intelligence;
 
+  if (error) {
+    return (
+      <div className="mt-2 text-xs text-red-600">
+        Error loading attachments. Please refresh.
+      </div>
+    );
+  }
+
   return (
     <div className="mt-2 space-y-2">
       {/* AI Intelligence panel — shown for admin links */}
       {aiLink && (
-        <LinkIntelligencePanel
-          assignment={assignment}
-          url={aiLink.url}
-          onUpdate={onUpdate}
-        />
+        <ErrorBoundary>
+          <LinkIntelligencePanel
+            assignment={assignment}
+            url={aiLink.url}
+            onUpdate={onUpdate}
+          />
+        </ErrorBoundary>
       )}
 
       {/* Attachments toggle */}
