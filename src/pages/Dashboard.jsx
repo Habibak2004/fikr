@@ -44,6 +44,22 @@ export default function Dashboard() {
   const focusGoal = 120;
   const focusPercent = Math.min(100, Math.round((todayMinutes / focusGoal) * 100));
 
+  // Calculate real study streak from FocusSession dates
+  const studyStreak = (() => {
+    const sessionDates = new Set(sessions.map(s => s.date).filter(Boolean));
+    let streak = 0;
+    let check = new Date();
+    // If no session today, start checking from yesterday
+    if (!sessionDates.has(format(check, "yyyy-MM-dd"))) {
+      check.setDate(check.getDate() - 1);
+    }
+    while (sessionDates.has(format(check, "yyyy-MM-dd"))) {
+      streak++;
+      check.setDate(check.getDate() - 1);
+    }
+    return streak;
+  })();
+
   const upcoming = assignments
     .filter(a => !a.completed && a.due_date && isAfter(new Date(a.due_date), new Date()))
     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
@@ -82,7 +98,7 @@ export default function Dashboard() {
       {/* Top Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Target} label="Focus Score" value={`${focusPercent}%`} sub={`${todayMinutes}m / ${focusGoal}m goal`} color="bg-primary/10 text-primary" delay={0} />
-        <StatCard icon={TrendingUp} label="Study Streak" value="7 days" sub="Personal best: 12 days" color="bg-accent/10 text-accent" delay={0.05} />
+        <StatCard icon={TrendingUp} label="Study Streak" value={`${studyStreak} day${studyStreak !== 1 ? "s" : ""}`} sub={studyStreak > 0 ? "Keep it up!" : "Start a session today!"} color="bg-accent/10 text-accent" delay={0.05} />
         <StatCard icon={BookOpen} label="Active Courses" value={courses.filter(c => c.status === "active").length} sub={`${courses.length} total enrolled`} color="bg-secondary/10 text-secondary" delay={0.1} />
         <StatCard icon={Clock} label="Exam Countdown" value={daysToExam != null ? `${daysToExam}d` : "—"} sub={nextExam ? nextExam.name : "No upcoming exams"} color="bg-destructive/10 text-destructive" delay={0.15} />
       </div>
