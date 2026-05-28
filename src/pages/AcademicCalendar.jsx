@@ -4,10 +4,12 @@ import { base44 } from "@/api/base44Client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
-import { Settings2, Sparkles, AlertTriangle, CalendarClock, Info, ChevronDown, Star, Trash2, Plus, X } from "lucide-react";
+import { Settings2, Sparkles, CalendarClock, Info, ChevronDown, Star, Trash2, Plus, LayoutList, CalendarDays, Calendar } from "lucide-react";
 import { format, differenceInDays, isAfter, differenceInWeeks } from "date-fns";
 import { Link } from "react-router-dom";
 import SemesterConfig from "@/components/calendar/SemesterConfig";
+import WeeklyView from "@/components/calendar/WeeklyView";
+import MonthlyView from "@/components/calendar/MonthlyView";
 
 const DEFAULT_SEMESTER = { label: "Spring 2026", start: "2026-01-19", end: "2026-05-15" };
 
@@ -41,6 +43,8 @@ export default function AcademicCalendar() {
   const [criticalDeadlines, setCriticalDeadlines] = useState(DEFAULT_CRITICAL_DEADLINES);
   const [editingDeadlines, setEditingDeadlines] = useState(false);
   const [newDeadline, setNewDeadline] = useState({ label: "", detail: "", urgency: "UPCOMING", date: "" });
+  const [calendarView, setCalendarView] = useState("timeline"); // "timeline" | "weekly" | "monthly"
+  const [calendarDate, setCalendarDate] = useState(new Date());
 
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
@@ -322,17 +326,59 @@ export default function AcademicCalendar() {
         </div>
       </div>
 
-      {/* Semester Timeline */}
+      {/* Calendar Views */}
       <div className="bg-white border rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-lg font-bold">Semester Timeline</h3>
-            {importedEvents.length > 0 && (
+            <h3 className="text-lg font-bold">
+              {calendarView === "timeline" ? "Semester Timeline" : calendarView === "weekly" ? "Weekly View" : "Monthly View"}
+            </h3>
+            {importedEvents.length > 0 && calendarView === "timeline" && (
               <p className="text-xs text-primary mt-0.5">{importedEvents.length} imported school events included</p>
             )}
           </div>
+          <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
+            {[
+              { id: "timeline", icon: LayoutList, label: "Timeline" },
+              { id: "weekly",   icon: CalendarDays, label: "Week" },
+              { id: "monthly",  icon: Calendar, label: "Month" },
+            ].map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                onClick={() => setCalendarView(id)}
+                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                  calendarView === id ? "bg-white shadow text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
+        {calendarView === "weekly" && (
+          <WeeklyView
+            currentDate={calendarDate}
+            onDateChange={setCalendarDate}
+            assignments={assignments}
+            milestones={milestones}
+            criticalDeadlines={criticalDeadlines}
+          />
+        )}
+
+        {calendarView === "monthly" && (
+          <MonthlyView
+            currentDate={calendarDate}
+            onDateChange={setCalendarDate}
+            assignments={assignments}
+            milestones={milestones}
+            criticalDeadlines={criticalDeadlines}
+          />
+        )}
+
+        {calendarView === "timeline" && (
+        <div>
         <div className="overflow-x-auto -mx-6 px-6">
           <div className="flex gap-0 relative min-w-max">
             {/* Connecting line */}
@@ -409,6 +455,8 @@ export default function AcademicCalendar() {
             })}
           </div>
         </div>
+        </div>
+        )}
       </div>
 
       {/* Bottom Cards */}
