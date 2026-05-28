@@ -4,10 +4,15 @@ import { Paperclip, Link2, Plus, X, Upload, ExternalLink, Loader2 } from "lucide
 import { AnimatePresence, motion } from "framer-motion";
 import LinkIntelligencePanel from "@/components/planner/LinkIntelligencePanel";
 
-const ADMIN_KEYWORDS = /housing|intern|application|financial.?aid|scholarship|onboard|enrollment|registrar|admission|bursar|fafsa|fellowship|grant|portal|form|deadline|submit|office|department|student.?service/i;
+const ADMIN_KEYWORDS = /housing|intern|apply|application|financial.?aid|scholarship|onboard|enrollment|registrar|admission|bursar|fafsa|fellowship|grant|portal|form|deadline|submit|office|department|student.?service/i;
 
 function isAdminLink(url, taskName = "") {
   return ADMIN_KEYWORDS.test(url) || ADMIN_KEYWORDS.test(taskName);
+}
+
+// Any link is potentially analyzable — show the button always
+function isAnalyzable(_url, _taskName) {
+  return true;
 }
 
 export default function AssignmentAttachments({ assignment, onUpdate }) {
@@ -17,9 +22,9 @@ export default function AssignmentAttachments({ assignment, onUpdate }) {
   const [uploading, setUploading] = useState(false);
   const [open, setOpen] = useState(false);
   const [aiLink, setAiLink] = useState(() => {
-    // Pre-select the first admin-type link if intelligence already exists
+    // Pre-select the first link if intelligence already exists
     const links = assignment.links || [];
-    return links.find(l => isAdminLink(l.url, assignment.name)) || null;
+    return links.find(l => isAnalyzable(l.url, assignment.name)) || null;
   });
 
   const links = assignment.links || [];
@@ -34,8 +39,8 @@ export default function AssignmentAttachments({ assignment, onUpdate }) {
     const url = newLink.url.trim().startsWith("http") ? newLink.url.trim() : `https://${newLink.url.trim()}`;
     const newEntry = { label, url };
     saveLinks([...links, newEntry]);
-    // Auto-select for AI analysis if it looks admin-related
-    if (isAdminLink(url, assignment.name) && !aiLink) {
+    // Auto-select for AI analysis
+    if (isAnalyzable(url, assignment.name) && !aiLink) {
       setAiLink(newEntry);
     }
     setNewLink({ label: "", url: "" });
@@ -138,7 +143,7 @@ export default function AssignmentAttachments({ assignment, onUpdate }) {
                         {l.label}
                         <ExternalLink className="h-2.5 w-2.5 flex-shrink-0 opacity-60" />
                       </a>
-                      {isAdminLink(l.url, assignment.name) && aiLink?.url !== l.url && (
+                      {isAnalyzable(l.url, assignment.name) && aiLink?.url !== l.url && (
                         <button
                           onClick={() => setAiLink(l)}
                           className="text-[9px] font-bold text-primary/70 hover:text-primary px-1.5 py-0.5 rounded-md border border-primary/20 hover:border-primary/40 transition-colors flex-shrink-0"
@@ -173,7 +178,7 @@ export default function AssignmentAttachments({ assignment, onUpdate }) {
                       <Plus className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  {newLink.url && isAdminLink(newLink.url, assignment.name) && (
+                  {newLink.url && isAnalyzable(newLink.url, assignment.name) && (
                     <p className="text-[10px] text-primary/70 flex items-center gap-1">
                       ✦ Admin link detected — AI will analyze this automatically
                     </p>
