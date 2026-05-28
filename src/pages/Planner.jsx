@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Bell, ChevronRight } from "lucide-react";
-import { isBefore, isAfter, addDays } from "date-fns";
+import { Plus, Bell, ChevronRight, LayoutList, CalendarDays, Calendar } from "lucide-react";
+import { isBefore } from "date-fns";
+import WeeklyView from "@/components/calendar/WeeklyView";
+import MonthlyView from "@/components/calendar/MonthlyView";
 import { Link } from "react-router-dom";
 
 import AIGuidanceBanner from "@/components/planner/AIGuidanceBanner";
@@ -23,6 +25,8 @@ export default function Planner() {
   const [userEmail, setUserEmail] = useState(null);
   const [catchupMode, setCatchupMode] = useState(false);
   const [pausedTask, setPausedTask] = useState(null);
+  const [taskView, setTaskView] = useState("list"); // "list" | "weekly" | "monthly"
+  const [calendarDate, setCalendarDate] = useState(new Date());
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -172,19 +176,63 @@ export default function Planner() {
           {/* Task Timeline */}
           <div className="bg-white/60 rounded-2xl p-5 border border-border/40">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-base">Your Day</h2>
-              <span className="text-xs text-muted-foreground">
-                {assignments.filter(a => !a.completed).length} remaining
-              </span>
+              <h2 className="font-bold text-base">
+                {taskView === "list" ? "Your Day" : taskView === "weekly" ? "This Week" : "This Month"}
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {assignments.filter(a => !a.completed).length} remaining
+                </span>
+                <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
+                  {[
+                    { id: "list",    icon: LayoutList,  label: "List" },
+                    { id: "weekly",  icon: CalendarDays, label: "Week" },
+                    { id: "monthly", icon: Calendar,     label: "Month" },
+                  ].map(({ id, icon: Icon, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => setTaskView(id)}
+                      title={label}
+                      className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md transition-all ${
+                        taskView === id ? "bg-white shadow text-primary" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-            <TaskTimeline
-              assignments={assignments}
-              courses={courses}
-              pausedTask={pausedTask}
-              onStartFocus={handleStartFocus}
-              onToggle={handleToggle}
-              onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework", course_id: "" })}
-            />
+
+            {taskView === "list" && (
+              <TaskTimeline
+                assignments={assignments}
+                courses={courses}
+                pausedTask={pausedTask}
+                onStartFocus={handleStartFocus}
+                onToggle={handleToggle}
+                onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework", course_id: "" })}
+              />
+            )}
+            {taskView === "weekly" && (
+              <WeeklyView
+                currentDate={calendarDate}
+                onDateChange={setCalendarDate}
+                assignments={assignments}
+                milestones={[]}
+                criticalDeadlines={[]}
+              />
+            )}
+            {taskView === "monthly" && (
+              <MonthlyView
+                currentDate={calendarDate}
+                onDateChange={setCalendarDate}
+                assignments={assignments}
+                milestones={[]}
+                criticalDeadlines={[]}
+              />
+            )}
           </div>
         </div>
 
