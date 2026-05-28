@@ -76,7 +76,7 @@ export default function Sidebar() {
       <div className="p-4 space-y-3">
         <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
           <p className="text-xs font-semibold text-foreground">Study Streak</p>
-          <p className="text-2xl font-bold text-primary mt-1">🔥 7 days</p>
+          <p className="text-2xl font-bold text-primary mt-1">7 days</p>
           <p className="text-[11px] text-muted-foreground mt-1">Keep it going!</p>
         </div>
 
