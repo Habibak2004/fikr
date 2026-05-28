@@ -28,13 +28,27 @@ export default function LinkIntelligencePanel({ assignment, url, onUpdate, onGen
   const [parsing, setParsing] = useState(false);
   const [result, setResult] = useState(assignment.link_intelligence || null);
   const [expanded, setExpanded] = useState(!!result);
-  const [completedSteps, setCompletedSteps] = useState(
-    () => (result?.required_steps || []).map((_, i) => result?.completed_steps?.[i] || false)
-  );
-  const [completedDocs, setCompletedDocs] = useState(
-    () => (result?.required_documents || []).map(d => d.completed || false)
-  );
   const [activeSection, setActiveSection] = useState("steps");
+  
+  // Safe initialization with error handling
+  const [completedSteps, setCompletedSteps] = useState(() => {
+    try {
+      const steps = result?.required_steps || [];
+      const completed = result?.completed_steps || [];
+      return steps.map((_, i) => completed[i] || false);
+    } catch {
+      return [];
+    }
+  });
+  
+  const [completedDocs, setCompletedDocs] = useState(() => {
+    try {
+      const docs = result?.required_documents || [];
+      return docs.map(d => d?.completed || false);
+    } catch {
+      return [];
+    }
+  });
 
   const parseLink = async () => {
     setParsing(true);

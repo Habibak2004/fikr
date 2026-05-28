@@ -37,16 +37,23 @@ export default function AssignmentAttachments({ assignment, onUpdate }) {
   const [uploading, setUploading] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Safe initialization
   const [aiLink, setAiLink] = useState(() => {
     try {
-      // Pre-select the first link if intelligence already exists
-      const links = assignment.links || [];
-      return links.find(l => isAnalyzable(l.url, assignment.name)) || null;
+      const links = assignment?.links || [];
+      if (!Array.isArray(links)) return null;
+      return links.find(l => l?.url && isAnalyzable(l.url, assignment?.name)) || null;
     } catch (e) {
       console.error('Error initializing aiLink:', e);
       return null;
     }
   });
+  
+  // Early return on error
+  if (error) {
+    return null;
+  }
 
   const links = assignment.links || [];
   const documents = assignment.documents || [];
@@ -114,7 +121,7 @@ export default function AssignmentAttachments({ assignment, onUpdate }) {
   return (
     <div className="mt-2 space-y-2">
       {/* AI Intelligence panel — shown for admin links */}
-      {aiLink && (
+      {aiLink && assignment?.id && onUpdate && (
         <ErrorBoundary>
           <LinkIntelligencePanel
             assignment={assignment}
