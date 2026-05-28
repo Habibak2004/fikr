@@ -20,7 +20,7 @@ import TaskTimeline from "@/components/planner/TaskTimeline";
 import LifeRadar from "@/components/planner/LifeRadar";
 import IdeaPad from "@/components/planner/IdeaPad";
 import TodayEngine from "@/components/planner/TodayEngine";
-import InsightsPanel from "@/components/planner/InsightsPanel";
+// import InsightsPanel from "@/components/planner/InsightsPanel"; // Temporarily disabled
 
 export default function Planner() {
   const [showAdd, setShowAdd] = useState(false);
@@ -256,8 +256,8 @@ export default function Planner() {
           </div>
         </div>
 
-        {/* RIGHT: Life Radar + Insights */}
-        <div className="space-y-6 lg:sticky lg:top-6">
+        {/* RIGHT: Life Radar */}
+        <div className="lg:sticky lg:top-6">
           <div className="bg-white border border-border/60 rounded-2xl p-5">
             <div className="flex items-center gap-2 mb-4">
               <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center">
@@ -270,8 +270,6 @@ export default function Planner() {
               <IdeaPad />
             </div>
           </div>
-
-          <InsightsPanel assignments={assignments} energyLevel={5} />
         </div>
       </div>
 
