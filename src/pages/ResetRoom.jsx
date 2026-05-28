@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import EnergyCheck from "@/components/reset-room/EnergyCheck";
+import UnpackingMode from "@/components/reset-room/UnpackingMode";
 import PhotoUpload from "@/components/reset-room/PhotoUpload";
 import AnalysisView from "@/components/reset-room/AnalysisView";
 import ActiveReset from "@/components/reset-room/ActiveReset";
@@ -15,21 +16,27 @@ function saveSession(data) {
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch {}
 }
 
-// Flow: energy → upload → analysis → active → complete
+// Flow: energy → unpack → upload → analysis → active → complete
 export default function ResetRoom() {
   const saved = loadSession();
   const [step, setStep] = useState(saved.step || "energy");
   const [energyLevel, setEnergyLevel] = useState(saved.energyLevel || null);
+  const [unpackedItems, setUnpackedItems] = useState(saved.unpackedItems || []);
   const [photoUrl, setPhotoUrl] = useState(saved.photoUrl || null);
   const [analysisData, setAnalysisData] = useState(saved.analysisData || null);
   const [sessionStats, setSessionStats] = useState(saved.sessionStats || null);
 
   useEffect(() => {
-    saveSession({ step, energyLevel, photoUrl, analysisData, sessionStats });
-  }, [step, energyLevel, photoUrl, analysisData, sessionStats]);
+    saveSession({ step, energyLevel, unpackedItems, photoUrl, analysisData, sessionStats });
+  }, [step, energyLevel, unpackedItems, photoUrl, analysisData, sessionStats]);
 
   const handleEnergySelect = (level) => {
     setEnergyLevel(level);
+    setStep("unpack");
+  };
+
+  const handleUnpackDone = (items) => {
+    setUnpackedItems(items);
     setStep("upload");
   };
 
@@ -50,6 +57,7 @@ export default function ResetRoom() {
     sessionStorage.removeItem(SESSION_KEY);
     setStep("energy");
     setEnergyLevel(null);
+    setUnpackedItems([]);
     setPhotoUrl(null);
     setAnalysisData(null);
     setSessionStats(null);
@@ -58,8 +66,15 @@ export default function ResetRoom() {
   return (
     <div className="min-h-screen bg-[#f7f5f2]">
       {step === "energy" && <EnergyCheck onSelect={handleEnergySelect} />}
+      {step === "unpack" && (
+        <UnpackingMode
+          energyLevel={energyLevel}
+          onDone={handleUnpackDone}
+          onSkip={() => setStep("upload")}
+        />
+      )}
       {step === "upload" && (
-        <PhotoUpload energyLevel={energyLevel} onAnalyzed={handlePhotoAnalyzed} onBack={() => setStep("energy")} />
+        <PhotoUpload energyLevel={energyLevel} onAnalyzed={handlePhotoAnalyzed} onBack={() => setStep("unpack")} />
       )}
       {step === "analysis" && (
         <AnalysisView
