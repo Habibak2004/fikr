@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Target, Brain, Zap, Users, BookOpen, BarChart3, ArrowRight, Star, Sparkles } from "lucide-react";
+import { Target, Brain, Zap, Users, BookOpen, BarChart3, ArrowRight, Star, Sparkles, Play, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const features = [
   { icon: Brain, title: "AI Study Plans", desc: "Upload your syllabus and get a personalized weekly study schedule built by AI.", color: "bg-primary/10 text-primary" },
@@ -21,6 +22,8 @@ const testimonials = [
 const fadeUp = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0 } };
 
 export default function Landing() {
+  const [showDemo, setShowDemo] = useState(false);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
@@ -60,8 +63,8 @@ export default function Landing() {
                 Start Studying Free <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="rounded-2xl px-8 h-14 text-base">
-              Watch Demo
+            <Button variant="outline" size="lg" className="rounded-2xl px-8 h-14 text-base gap-2" onClick={() => setShowDemo(true)}>
+              <Play className="h-5 w-5 fill-current" /> Watch Demo
             </Button>
           </div>
         </motion.div>
@@ -136,6 +139,45 @@ export default function Landing() {
           </Link>
         </div>
       </section>
+
+      {/* Demo Modal */}
+      <AnimatePresence>
+        {showDemo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setShowDemo(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 20 }}
+              className="relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowDemo(false)}
+                className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              {/* 16:9 aspect ratio wrapper */}
+              <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0"
+                  title="Fikr Demo"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className="border-t border-border/50 py-8">
