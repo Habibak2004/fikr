@@ -100,11 +100,18 @@ export default function Courses() {
                         <h3 className="font-semibold text-sm leading-tight">{course.name}</h3>
                       </div>
                     </div>
-                    <Badge className={`text-[10px] ${statusColors[course.status || "active"]}`}>
-                      {course.status || "active"}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge className={`text-[10px] ${statusColors[course.status || "active"]}`}>
+                        {course.status || "active"}
+                      </Badge>
+                      {course.semester && <Badge className="text-[9px] bg-muted text-muted-foreground font-normal">{course.semester}</Badge>}
+                    </div>
                   </div>
-                  {course.professor && <p className="text-xs text-muted-foreground mb-3">Prof. {course.professor}</p>}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                    {course.professor && <span>Prof. {course.professor}</span>}
+                    {course.professor && course.semester && <span>•</span>}
+                    {course.semester && <span>{course.semester}</span>}
+                  </div>
                   <div className="mt-auto">
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <span className="text-muted-foreground">Progress</span>
