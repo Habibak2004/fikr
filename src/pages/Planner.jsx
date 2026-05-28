@@ -161,7 +161,7 @@ export default function Planner() {
 
           {/* Quick Wins */}
           <div className="bg-white border border-border/60 rounded-2xl p-5">
-            <QuickWins />
+            <QuickWins assignments={assignments} />
           </div>
 
           {/* AI Guidance Banner */}

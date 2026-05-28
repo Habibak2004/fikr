@@ -1,30 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, ArrowRight, Check, Plus, Droplets, Mail, Upload, User } from "lucide-react";
-
-const DEFAULT_WINS = [
-  { id: "w1", label: "Send email to professor", time: "< 2m", category: "Admin", icon: "mail", dopamine: "+8" },
-  { id: "w2", label: "Upload assignment to portal", time: "< 5m", category: "Academic", icon: "upload", dopamine: "+12" },
-  { id: "w3", label: "Drink a glass of water", time: "< 1m", category: "Self", icon: "drop", dopamine: "+5" },
-];
-
-const icons = {
-  mail: <Mail className="h-4 w-4" />,
-  upload: <Upload className="h-4 w-4" />,
-  drop: <Droplets className="h-4 w-4" />,
-  user: <User className="h-4 w-4" />,
-};
+import { Zap, ArrowRight, Check, Mail, Upload, User, FileText, Calendar } from "lucide-react";
+import { estimateCognitiveLoad } from "@/lib/priorityEngine";
 
 const categoryColors = {
-  Admin: "bg-amber-50 text-amber-700 border-amber-200",
-  Academic: "bg-blue-50 text-blue-700 border-blue-200",
-  Self: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  quick: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  admin: "bg-amber-50 text-amber-700 border-amber-200",
+  academic: "bg-blue-50 text-blue-700 border-blue-200",
 };
 
-export default function QuickWins() {
-  const [wins, setWins] = useState(DEFAULT_WINS);
+export default function QuickWins({ assignments = [] }) {
+  const [wins, setWins] = useState([]);
   const [done, setDone] = useState([]);
   const [totalDopamine, setTotalDopamine] = useState(0);
+
+  useEffect(() => {
+    // Filter for low cognitive load tasks (cog load <= 4)
+    const pending = assignments.filter(a => !a.completed);
+    const quickWins = pending
+      .map(a => ({
+        ...a,
+        cogLoad: estimateCognitiveLoad(a),
+      }))
+      .filter(a => a.cogLoad <= 4)
+      .slice(0, 5)
+      .map(a => ({
+        id: a.id,
+        label: a.name,
+        course: a.course_name,
+        cogLoad: a.cogLoad,
+        category: a.cogLoad <= 2 ? "quick" : /email|contact|submit|upload/i.test(a.name) ? "admin" : "academic",
+        dopamine: a.cogLoad <= 2 ? "+5" : "+8",
+      }));
+    setWins(quickWins);
+  }, [assignments]);
 
   const complete = (id) => {
     const w = wins.find(w => w.id === id);
@@ -56,21 +65,24 @@ export default function QuickWins() {
             >
               <div className="flex items-center justify-between">
                 <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${categoryColors[w.category] || "bg-muted text-muted-foreground border-border"}`}>
-                  {w.category} · {w.time}
+                  {w.category === "quick" ? "⚡ Quick" : w.category === "admin" ? "📧 Admin" : "📚 Academic"} · Cog {w.cogLoad}/10
                 </span>
               </div>
               <p className="text-sm font-medium leading-snug text-foreground">{w.label}</p>
+              {w.course && <p className="text-[10px] text-muted-foreground">{w.course}</p>}
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-emerald-600 font-semibold">{w.dopamine}</span>
                 <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors text-muted-foreground">
-                  {icons[w.icon] || <ArrowRight className="h-4 w-4" />}
+                  <Check className="h-4 w-4" />
                 </div>
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
         {wins.length === 0 && (
-          <div className="text-sm text-muted-foreground py-3 px-1">All quick wins done! 🎉</div>
+          <div className="text-sm text-muted-foreground py-3 px-1">
+            {assignments.length === 0 ? "Add tasks to see quick wins!" : "No quick wins right now. Try completing some tasks!"}
+          </div>
         )}
       </div>
     </div>
