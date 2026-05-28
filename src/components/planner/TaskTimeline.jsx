@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Mail, Leaf, BookOpen, ChevronDown, ChevronUp, Sparkles, RotateCcw, Plus } from "lucide-react";
+import { Play, Pause, Mail, Leaf, BookOpen, ChevronDown, ChevronUp, Sparkles, RotateCcw, Plus, Pencil } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { base44 } from "@/api/base44Client";
 import BlockerPanel from "@/components/planner/BlockerPanel";
@@ -43,12 +43,20 @@ function NodeDot({ type, active }) {
   );
 }
 
-function AcademicCard({ a, onStart, onToggle, school }) {
+function AcademicCard({ a, onStart, onToggle, onUpdate, school }) {
   const [expanded, setExpanded] = useState(false);
   const [miniSteps, setMiniSteps] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [editingDate, setEditingDate] = useState(false);
+  const dateInputRef = useRef(null);
   const resistance = getResistance(a);
   const days = a.due_date ? differenceInDays(new Date(a.due_date), new Date()) : null;
+
+  const handleDateChange = (e) => {
+    const newDate = e.target.value;
+    if (newDate && onUpdate) onUpdate(a.id, { due_date: newDate });
+    setEditingDate(false);
+  };
 
   const generateSteps = async () => {
     setLoading(true);
@@ -74,10 +82,24 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${RESISTANCE_LABELS[resistance].color}`}>
             {RESISTANCE_LABELS[resistance].label}
           </span>
-          {days !== null && (
-            <span className={`text-[10px] font-semibold ${days <= 1 ? "text-red-500" : days <= 3 ? "text-amber-600" : "text-muted-foreground"}`}>
-              {days === 0 ? "Due today" : days < 0 ? `${Math.abs(days)}d overdue` : `${days}d left`}
-            </span>
+          {editingDate ? (
+            <input
+              ref={dateInputRef}
+              type="datetime-local"
+              autoFocus
+              defaultValue={a.due_date ? a.due_date.slice(0, 16) : ""}
+              onBlur={handleDateChange}
+              onChange={handleDateChange}
+              className="text-[10px] border border-primary/40 rounded-md px-1.5 py-0.5 bg-white outline-none focus:ring-1 focus:ring-primary/30 w-36"
+            />
+          ) : (
+            <button
+              onClick={() => setEditingDate(true)}
+              className={`flex items-center gap-1 text-[10px] font-semibold group ${days === null ? "text-muted-foreground" : days <= 1 ? "text-red-500" : days <= 3 ? "text-amber-600" : "text-muted-foreground"}`}
+            >
+              {days === null ? "Set deadline" : days === 0 ? "Due today" : days < 0 ? `${Math.abs(days)}d overdue` : `${days}d left`}
+              <Pencil className="h-2.5 w-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+            </button>
           )}
         </div>
         <button onClick={() => setExpanded(e => !e)} className="text-muted-foreground hover:text-foreground">
@@ -288,7 +310,7 @@ function QuickAddRow({ onAdd }) {
   );
 }
 
-export default function TaskTimeline({ assignments = [], courses = [], pausedTask, onStartFocus, onToggle, onQuickAdd }) {
+export default function TaskTimeline({ assignments = [], courses = [], pausedTask, onStartFocus, onToggle, onUpdate, onQuickAdd }) {
   // Derive school name from localStorage (user can set it once in ContactRoutingPanel)
   const schoolName = localStorage.getItem("fikr_school_name") || null;
 
@@ -345,7 +367,7 @@ export default function TaskTimeline({ assignments = [], courses = [], pausedTas
               <div className="flex-1 pt-0.5">
                 {isComm
                   ? <CommCard a={a} onToggle={onToggle} school={schoolName} />
-                  : <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} school={schoolName} />
+                  : <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} onUpdate={onUpdate} school={schoolName} />
                 }
               </div>
             </div>

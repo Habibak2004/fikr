@@ -55,6 +55,11 @@ export default function Planner() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["assignments"] }); setShowAdd(false); },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Assignment.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assignments"] }),
+  });
+
   const now = new Date();
   const overdue = assignments.filter(a => !a.completed && a.due_date && isBefore(new Date(a.due_date), now));
   const isOverloaded = overdue.length >= 3 || assignments.filter(a => !a.completed).length > 10;
@@ -212,6 +217,7 @@ export default function Planner() {
                 pausedTask={pausedTask}
                 onStartFocus={handleStartFocus}
                 onToggle={handleToggle}
+                onUpdate={(id, data) => updateMutation.mutate({ id, data })}
                 onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework", course_id: "" })}
               />
             )}
