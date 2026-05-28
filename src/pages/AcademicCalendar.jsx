@@ -11,8 +11,6 @@ import SemesterConfig from "@/components/calendar/SemesterConfig";
 import WeeklyView from "@/components/calendar/WeeklyView";
 import MonthlyView from "@/components/calendar/MonthlyView";
 
-const DEFAULT_SEMESTER = { label: "Spring 2026", start: "2026-01-19", end: "2026-05-15" };
-
 const DEFAULT_MILESTONES = [
   { date: "2026-01-19", label: "Semester Start",    sub: "Jan 19",     type: "done" },
   { date: "2026-02-06", label: "Add/Drop Ends",     sub: "Feb 6",      type: "done" },
@@ -33,8 +31,21 @@ const DEFAULT_CRITICAL_DEADLINES = [
 ];
 
 export default function AcademicCalendar() {
+  const { data: semesters = [] } = useQuery({
+    queryKey: ["semesters"],
+    queryFn: () => base44.entities.Semester.list("-created_date"),
+  });
+
   const [semester, setSemester] = useState(() => {
-    try { const s = localStorage.getItem("fikr_semester"); return s ? JSON.parse(s) : DEFAULT_SEMESTER; } catch { return DEFAULT_SEMESTER; }
+    try {
+      const s = localStorage.getItem("fikr_semester");
+      if (s) return JSON.parse(s);
+    } catch {}
+    // Fallback to first semester from entities or default
+    if (semesters.length > 0) {
+      return { id: semesters[0].id, label: semesters[0].name, start: semesters[0].start_date, end: semesters[0].end_date };
+    }
+    return { label: "Spring 2026", start: "2026-01-19", end: "2026-05-15" };
   });
   const [importedEvents, setImportedEvents] = useState(() => {
     try { const e = localStorage.getItem("fikr_imported_events"); return e ? JSON.parse(e) : []; } catch { return []; }
