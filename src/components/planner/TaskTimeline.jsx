@@ -220,6 +220,14 @@ Return JSON: { "subject": "...", "body": "..." }`,
         {a.status === "pending" && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600">Waiting for response</span>
         )}
+        {a.due_date && (() => {
+          const days = differenceInDays(new Date(a.due_date), new Date());
+          return (
+            <span className={`text-[10px] font-semibold ml-auto ${days < 0 ? "text-red-500" : days <= 1 ? "text-red-500" : days <= 3 ? "text-amber-600" : "text-muted-foreground"}`}>
+              {format(new Date(a.due_date), "MMM d")} · {days === 0 ? "Due today" : days < 0 ? `${Math.abs(days)}d overdue` : `${days}d left`}
+            </span>
+          );
+        })()}
       </div>
 
       <p className="font-semibold text-[15px] mb-3">{a.name}</p>
