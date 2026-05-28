@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sparkles, Flame, Moon, Sun, Coffee } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { motion } from "framer-motion";
-import { differenceInWeeks, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
+import { isWithinInterval } from "date-fns";
 
 export default function Heatmap() {
   const [selectedSemesterId, setSelectedSemesterId] = useState("");
@@ -43,15 +43,16 @@ export default function Heatmap() {
   const semesterWeeks = (() => {
     if (!activeSemester) return [];
     
-    const minDate = startOfWeek(new Date(activeSemester.start_date));
-    const maxDate = endOfWeek(new Date(activeSemester.end_date));
-    const totalWeeks = differenceInWeeks(maxDate, minDate) + 1;
+    const minDate = new Date(activeSemester.start_date);
+    const maxDate = new Date(activeSemester.end_date);
+    const totalWeeks = Math.ceil((maxDate - minDate) / (7 * 24 * 60 * 60 * 1000)) + 1;
     
     return Array.from({ length: totalWeeks }, (_, i) => {
       const weekNum = i + 1;
       const weekStart = new Date(minDate);
       weekStart.setDate(weekStart.getDate() + i * 7);
-      const weekEnd = endOfWeek(weekStart);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
       
       const count = semesterAssignments.filter(a => {
         if (!a.due_date) return false;
