@@ -80,10 +80,10 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
       className="bg-white border border-border/70 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${RESISTANCE_LABELS[resistance].color}`}>
-            {RESISTANCE_LABELS[resistance].label}
-          </span>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${RESISTANCE_LABELS[resistance].color}`}>
+          {RESISTANCE_LABELS[resistance].label}
+        </span>
+        <div className="flex items-center gap-2">
           {editingDate ? (
             <input
               ref={dateInputRef}
@@ -97,16 +97,17 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
           ) : (
             <button
               onClick={() => setEditingDate(true)}
-              className={`flex items-center gap-1 text-[10px] font-semibold group ${days === null ? "text-muted-foreground" : days <= 1 ? "text-red-500" : days <= 3 ? "text-amber-600" : "text-muted-foreground"}`}
+              className={`flex items-center gap-1 text-[10px] font-semibold group ${days === null ? "text-muted-foreground" : days < 0 ? "text-red-500" : days <= 1 ? "text-red-500" : days <= 3 ? "text-amber-600" : "text-muted-foreground"}`}
             >
-              {days === null ? "Set deadline" : days === 0 ? "Due today" : days < 0 ? `${Math.abs(days)}d overdue` : `${days}d left`}
+              {a.due_date && <span className="opacity-70">{format(new Date(a.due_date), "MMM d")}</span>}
+              <span>{days === null ? "Set deadline" : days === 0 ? "· Due today" : days < 0 ? `· ${Math.abs(days)}d overdue` : `· ${days}d left`}</span>
               <Pencil className="h-2.5 w-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
             </button>
           )}
+          <button onClick={() => setExpanded(e => !e)} className="text-muted-foreground hover:text-foreground">
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
         </div>
-        <button onClick={() => setExpanded(e => !e)} className="text-muted-foreground hover:text-foreground">
-          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
       </div>
 
       <p className="font-semibold text-[15px] mb-1">{a.name}</p>
