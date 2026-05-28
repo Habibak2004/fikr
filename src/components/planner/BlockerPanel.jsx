@@ -96,7 +96,7 @@ function InlineDraft({ draft, onClose }) {
   );
 }
 
-export default function BlockerPanel({ task }) {
+export default function BlockerPanel({ task, school }) {
   const [open, setOpen] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -228,6 +228,7 @@ Return JSON:
                 <div className="border-t border-blue-200 pt-3">
                   <ContactRoutingPanel
                     task={task}
+                    school={school}
                     onOpenDraft={(draft) => setInlineDraft(draft)}
                   />
                   <AnimatePresence>

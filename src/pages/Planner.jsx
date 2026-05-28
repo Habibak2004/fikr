@@ -179,6 +179,7 @@ export default function Planner() {
             </div>
             <TaskTimeline
               assignments={assignments}
+              courses={courses}
               pausedTask={pausedTask}
               onStartFocus={handleStartFocus}
               onToggle={handleToggle}

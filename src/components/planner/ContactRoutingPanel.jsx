@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import { Loader2, Mail, ExternalLink, ChevronDown, ChevronUp, Shield, AlertCircle, Building2, Sparkles } from "lucide-react";
+import { Loader2, Mail, ExternalLink, ChevronDown, ChevronUp, Building2, Sparkles, GraduationCap } from "lucide-react";
 
 const CONFIDENCE_STYLES = {
   high:   { badge: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
@@ -50,11 +50,21 @@ function ContactCard({ contact, onDraft, isPrimary }) {
   );
 }
 
-export default function ContactRoutingPanel({ task, onOpenDraft }) {
+export default function ContactRoutingPanel({ task, school: schoolProp, onOpenDraft }) {
   const [open, setOpen] = useState(false);
   const [routing, setRouting] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [draftLoading, setDraftLoading] = useState(null); // contact dept name
+  const [draftLoading, setDraftLoading] = useState(null);
+  const [schoolInput, setSchoolInput] = useState(schoolProp || localStorage.getItem("fikr_school_name") || "");
+  const [schoolConfirmed, setSchoolConfirmed] = useState(!!(schoolProp || localStorage.getItem("fikr_school_name")));
+
+  const school = schoolConfirmed ? schoolInput : null;
+
+  const confirmSchool = () => {
+    if (!schoolInput.trim()) return;
+    localStorage.setItem("fikr_school_name", schoolInput.trim());
+    setSchoolConfirmed(true);
+  };
 
   const findContacts = async () => {
     if (routing) { setOpen(o => !o); return; }
@@ -66,8 +76,9 @@ export default function ContactRoutingPanel({ task, onOpenDraft }) {
 
 Task: "${task.name}"
 Course: ${task.course_name || "none"}
+University / School: ${school || "unknown — infer from course name or task context if possible"}
 
-Search for real departments, offices, and contacts at a typical US university that would handle this request. Use your knowledge of how US universities are organized.
+Search the web for the REAL department, office contact emails, and website URLs at THIS SPECIFIC university. Use the actual school's website domain. Do not use generic placeholders like "housing@university.edu" — find the real email address for this school.
 
 Return JSON:
 {
@@ -148,10 +159,38 @@ Return JSON: { "subject": "...", "body": "...", "to": "${contact.email || ""}" }
   };
 
   return (
-    <div className="mt-2">
+    <div className="mt-2 space-y-2">
+      {/* School name prompt — shown once until confirmed */}
+      {!schoolConfirmed && (
+        <div className="flex items-center gap-2">
+          <GraduationCap className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+          <input
+            value={schoolInput}
+            onChange={e => setSchoolInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && confirmSchool()}
+            placeholder="Your school name (e.g. NYU, UMich...)"
+            className="flex-1 text-xs border border-blue-200 rounded-lg px-2 py-1.5 bg-white outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+          />
+          <button
+            onClick={confirmSchool}
+            disabled={!schoolInput.trim()}
+            className="text-[11px] font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+          >
+            Set school
+          </button>
+        </div>
+      )}
+      {schoolConfirmed && (
+        <div className="flex items-center gap-1.5">
+          <GraduationCap className="h-3 w-3 text-blue-400" />
+          <span className="text-[11px] text-blue-600 font-medium">{schoolInput}</span>
+          <button onClick={() => setSchoolConfirmed(false)} className="text-[10px] text-muted-foreground hover:text-foreground underline ml-1">change</button>
+        </div>
+      )}
       <button
         onClick={findContacts}
-        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+        disabled={!schoolConfirmed}
+        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
         {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Building2 className="h-3 w-3" />}
         {loading ? "Finding contacts..." : routing ? (open ? "Hide contacts" : "Show contacts & routing") : "Find who to contact"}

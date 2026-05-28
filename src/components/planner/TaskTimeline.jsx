@@ -43,7 +43,7 @@ function NodeDot({ type, active }) {
   );
 }
 
-function AcademicCard({ a, onStart, onToggle }) {
+function AcademicCard({ a, onStart, onToggle, school }) {
   const [expanded, setExpanded] = useState(false);
   const [miniSteps, setMiniSteps] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -134,12 +134,12 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
         </button>
       </div>
 
-      <BlockerPanel task={a} />
+      <BlockerPanel task={a} school={school} />
     </motion.div>
   );
 }
 
-function CommCard({ a, onToggle }) {
+function CommCard({ a, onToggle, school }) {
   const [draft, setDraft] = useState(null);
   const [loading, setLoading] = useState(false);
   const [tone, setTone] = useState("professional");
@@ -232,7 +232,7 @@ Return JSON: { "subject": "...", "body": "..." }`,
         </button>
       </div>
 
-      <BlockerPanel task={a} />
+      <BlockerPanel task={a} school={school} />
     </motion.div>
   );
 }
@@ -288,7 +288,10 @@ function QuickAddRow({ onAdd }) {
   );
 }
 
-export default function TaskTimeline({ assignments = [], pausedTask, onStartFocus, onToggle, onQuickAdd }) {
+export default function TaskTimeline({ assignments = [], courses = [], pausedTask, onStartFocus, onToggle, onQuickAdd }) {
+  // Derive school name from localStorage (user can set it once in ContactRoutingPanel)
+  const schoolName = localStorage.getItem("fikr_school_name") || null;
+
   const isCommTask = (a) => /email|follow|professor|housing|financial|internship|contact/i.test(a.name) || a.type === "other";
 
   const pending = assignments.filter(a => !a.completed);
@@ -341,8 +344,8 @@ export default function TaskTimeline({ assignments = [], pausedTask, onStartFocu
               </div>
               <div className="flex-1 pt-0.5">
                 {isComm
-                  ? <CommCard a={a} onToggle={onToggle} />
-                  : <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} />
+                  ? <CommCard a={a} onToggle={onToggle} school={schoolName} />
+                  : <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} school={schoolName} />
                 }
               </div>
             </div>
