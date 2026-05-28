@@ -45,7 +45,7 @@ function NodeDot({ type, active }) {
   );
 }
 
-function AcademicCard({ a, onStart, onToggle, onUpdate, school, allAssignments }) {
+function AcademicCard({ a, onStart, onToggle, onUpdate, onEdit, school, allAssignments }) {
   const [expanded, setExpanded] = useState(false);
   const [miniSteps, setMiniSteps] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -143,7 +143,7 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
         )}
       </AnimatePresence>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={() => onStart(a)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors"
@@ -156,6 +156,14 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
         >
           Mark done
         </button>
+        {onEdit && (
+          <button
+            onClick={() => onEdit(a)}
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary px-2 py-1.5 rounded-xl hover:bg-muted transition-colors ml-auto"
+          >
+            <Pencil className="h-3 w-3" /> Edit
+          </button>
+        )}
       </div>
 
       <StartByBadge assignment={a} otherAssignments={allAssignments} onUpdate={onUpdate} />
@@ -165,7 +173,7 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
   );
 }
 
-function CommCard({ a, onToggle, school }) {
+function CommCard({ a, onToggle, onEdit, school }) {
   const [draft, setDraft] = useState(null);
   const [loading, setLoading] = useState(false);
   const [tone, setTone] = useState("professional");
@@ -256,6 +264,14 @@ Return JSON: { "subject": "...", "body": "..." }`,
         <button onClick={() => onToggle(a)} className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded-xl hover:bg-muted transition-colors">
           Mark done
         </button>
+        {onEdit && (
+          <button
+            onClick={() => onEdit(a)}
+            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary px-2 py-1.5 rounded-xl hover:bg-muted transition-colors ml-auto"
+          >
+            <Pencil className="h-3 w-3" /> Edit
+          </button>
+        )}
       </div>
 
       <BlockerPanel task={a} school={school} />
@@ -314,7 +330,7 @@ function QuickAddRow({ onAdd }) {
   );
 }
 
-export default function TaskTimeline({ assignments = [], courses = [], pausedTask, onStartFocus, onToggle, onUpdate, onQuickAdd, allAssignments = [] }) {
+export default function TaskTimeline({ assignments = [], courses = [], pausedTask, onStartFocus, onToggle, onUpdate, onQuickAdd, onEdit, allAssignments = [] }) {
   // Derive school name from localStorage (user can set it once in ContactRoutingPanel)
   const schoolName = localStorage.getItem("fikr_school_name") || null;
 
@@ -370,8 +386,8 @@ export default function TaskTimeline({ assignments = [], courses = [], pausedTas
               </div>
               <div className="flex-1 pt-0.5">
                 {isComm
-                  ? <CommCard a={a} onToggle={onToggle} school={schoolName} />
-                  : <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} onUpdate={onUpdate} school={schoolName} allAssignments={allAssignments} />
+                  ? <CommCard a={a} onToggle={onToggle} onEdit={onEdit} school={schoolName} />
+                  : <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} onUpdate={onUpdate} onEdit={onEdit} school={schoolName} allAssignments={allAssignments} />
                 }
               </div>
             </div>

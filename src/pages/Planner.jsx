@@ -22,6 +22,7 @@ import IdeaPad from "@/components/planner/IdeaPad";
 
 export default function Planner() {
   const [showAdd, setShowAdd] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
   const [catchupMode, setCatchupMode] = useState(false);
   const [pausedTask, setPausedTask] = useState(null);
@@ -220,6 +221,7 @@ export default function Planner() {
                 onUpdate={(id, data) => updateMutation.mutate({ id, data })}
                 onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework", course_id: "" })}
                 allAssignments={assignments}
+                onEdit={(task) => setEditingTask(task)}
               />
             )}
             {taskView === "weekly" && (
@@ -259,7 +261,76 @@ export default function Planner() {
       </div>
 
       <AddAssignmentModal open={showAdd} onClose={() => setShowAdd(false)} courses={courses} onSave={d => createMutation.mutate(d)} />
+      {editingTask && (
+        <EditAssignmentModal
+          task={editingTask}
+          courses={courses}
+          onClose={() => setEditingTask(null)}
+          onSave={(id, data) => { updateMutation.mutate({ id, data }); setEditingTask(null); }}
+        />
+      )}
     </div>
+  );
+}
+
+function EditAssignmentModal({ task, onClose, courses, onSave }) {
+  const [form, setForm] = useState({
+    name: task.name || "",
+    course_id: task.course_id || "",
+    type: task.type || "homework",
+    due_date: task.due_date ? task.due_date.slice(0, 16) : "",
+    priority: task.priority || "medium",
+    notes: task.notes || "",
+    weight: task.weight || "",
+  });
+
+  const handleSave = () => {
+    if (!form.name) return;
+    const course = courses.find(c => c.id === form.course_id);
+    onSave(task.id, {
+      ...form,
+      course_name: course?.name || task.course_name || "",
+      course_color: course?.color || task.course_color || "#0061a4",
+      weight: form.weight ? Number(form.weight) : undefined,
+    });
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogHeader><DialogTitle>Edit Task</DialogTitle></DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div><Label>Name</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="rounded-xl mt-1" /></div>
+          <div>
+            <Label>Course (optional)</Label>
+            <Select value={form.course_id} onValueChange={v => setForm(p => ({ ...p, course_id: v }))}>
+              <SelectTrigger className="rounded-xl mt-1"><SelectValue placeholder="Select course" /></SelectTrigger>
+              <SelectContent>{courses.map(c => <SelectItem key={c.id} value={c.id}>{c.code} - {c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Type</Label>
+              <Select value={form.type} onValueChange={v => setForm(p => ({ ...p, type: v }))}>
+                <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>{["homework", "exam", "quiz", "project", "paper", "lab", "other"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Priority</Label>
+              <Select value={form.priority} onValueChange={v => setForm(p => ({ ...p, priority: v }))}>
+                <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>{["low", "medium", "high"].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div><Label>Due Date</Label><Input type="datetime-local" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} className="rounded-xl mt-1" /></div>
+          <div><Label>Grade Weight % (optional)</Label><Input type="number" min="0" max="100" value={form.weight} onChange={e => setForm(p => ({ ...p, weight: e.target.value }))} className="rounded-xl mt-1" placeholder="e.g. 20" /></div>
+          <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="rounded-xl mt-1" rows={2} /></div>
+          <Button onClick={handleSave} className="w-full rounded-xl bg-primary hover:bg-primary/90">Save Changes</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
