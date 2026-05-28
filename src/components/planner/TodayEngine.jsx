@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Zap, Leaf, ChevronDown, ChevronUp, RefreshCw, Brain, Play, CheckCircle2, ArrowRight, AlertTriangle, Clock, Pencil } from "lucide-react";
 import { differenceInDays, format } from "date-fns";
 import { buildTodayPlan, estimateCognitiveLoad, getInsightLabel } from "@/lib/priorityEngine";
+import { base44 } from "@/api/base44Client";
 
 const ENERGY_LABELS = ["", "Drained", "Low", "Tired", "Below avg", "Okay", "Good", "Energized", "Sharp", "Peak", "🔥 Flow"];
 
@@ -228,13 +229,102 @@ export default function TodayEngine({ assignments, onStartFocus, onToggle, onEdi
   const [plan, setPlan] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastBuilt, setLastBuilt] = useState(null);
+  const [aiReasoning, setAiReasoning] = useState(null);
 
   useEffect(() => {
-    setRefreshing(true);
-    const result = buildTodayPlan(assignments, energyLevel);
-    setPlan(result);
-    setLastBuilt(new Date());
-    setTimeout(() => setRefreshing(false), 400);
+    const generateAIPlan = async () => {
+      setRefreshing(true);
+      const pending = assignments.filter(a => !a.completed);
+      
+      if (pending.length === 0) {
+        setPlan({ majors: [], quickWins: [], restorative: null, allScored: [] });
+        setRefreshing(false);
+        return;
+      }
+
+      try {
+        // Use LLM to actually rank and prioritize tasks
+        const taskData = pending.map(t => ({
+          id: t.id,
+          name: t.name,
+          due_date: t.due_date,
+          cognitive_load: estimateCognitiveLoad(t),
+          critical_path: t.critical_path || false,
+          type: t.type,
+          priority: t.priority,
+          weight: t.weight || 0,
+        }));
+
+        const aiResult = await base44.integrations.Core.InvokeLLM({
+          prompt: `You're an expert academic productivity coach. Rank these tasks for a college student based on their energy level, deadlines, and consequences.
+
+User's energy level: ${energyLevel}/10 (1=drained, 10=peak focus)
+
+Tasks:
+${JSON.stringify(taskData, null, 2)}
+
+Return a JSON response with:
+1. "majors": Array of top 3 task IDs to focus on first (most important/high-impact)
+2. "quickWins": Array of 1-2 task IDs that are easy wins (low cognitive load, can build momentum)
+3. "reasoning": Brief 1-2 sentence explanation of your prioritization strategy
+4. "restorative": Suggestion for a restorative activity if cognitive load is high
+
+Guidelines:
+- If energy is low (1-4): prioritize low cognitive load tasks first
+- If energy is high (8-10): tackle high-impact, high cognitive load tasks
+- Critical path tasks (block future progress) should be top priority
+- Consider deadlines heavily - overdue and due-today tasks are urgent
+- Balance between important work and momentum-building quick wins
+
+Return ONLY valid JSON in this format:
+{
+  "majors": ["task_id_1", "task_id_2"],
+  "quickWins": ["task_id_3"],
+  "reasoning": "string",
+  "restorative": "string or null"
+}`,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              majors: { type: "array", items: { type: "string" } },
+              quickWins: { type: "array", items: { type: "string" } },
+              reasoning: { type: "string" },
+              restorative: { type: ["string", "null"] },
+            },
+            required: ["majors", "quickWins", "reasoning"],
+          },
+        });
+
+        // Map AI-selected IDs back to task objects
+        const taskMap = new Map(pending.map(t => [t.id, t]));
+        const majors = (aiResult.majors || []).map(id => taskMap.get(id)).filter(Boolean);
+        const quickWins = (aiResult.quickWins || []).map(id => taskMap.get(id)).filter(Boolean);
+        
+        // Build allScored for deprioritized list
+        const prioritizedIds = new Set([...(aiResult.majors || []), ...(aiResult.quickWins || [])]);
+        const deprioritized = pending
+          .filter(t => !prioritizedIds.has(t.id))
+          .map(t => ({ task: t, score: 0, cogLoad: estimateCognitiveLoad(t) }));
+        
+        setPlan({
+          majors,
+          quickWins,
+          restorative: aiResult.restorative,
+          allScored: [...majors.map(t => ({ task: t, score: 100 })), ...quickWins.map(t => ({ task: t, score: 80 })), ...deprioritized],
+        });
+        setAiReasoning(aiResult.reasoning);
+      } catch (e) {
+        console.error('AI prioritization failed:', e);
+        // Fallback to heuristic-based planning
+        const result = buildTodayPlan(assignments, energyLevel);
+        setPlan(result);
+      }
+      
+      setLastBuilt(new Date());
+      setTimeout(() => setRefreshing(false), 400);
+    };
+    
+    generateAIPlan();
   }, [energyLevel, assignments.length]);
 
   if (!plan) return null;
@@ -285,6 +375,21 @@ export default function TodayEngine({ assignments, onStartFocus, onToggle, onEdi
         </button>
       </div>
 
+      {/* AI Reasoning */}
+      {aiReasoning && (
+        <div className="bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/20 rounded-xl p-3.5">
+          <div className="flex items-start gap-2.5">
+            <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Brain className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-1">AI Priority Strategy</p>
+              <p className="text-sm text-foreground/90 leading-relaxed">{aiReasoning}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Energy Slider */}
       <div className="bg-muted/40 rounded-xl px-4 py-3 border border-border/40">
         <EnergySelector value={energyLevel} onChange={setEnergyLevel} />
@@ -309,6 +414,7 @@ export default function TodayEngine({ assignments, onStartFocus, onToggle, onEdi
                     rank={i}
                     onStartFocus={onStartFocus}
                     onToggle={onToggle}
+                    onEdit={onEdit}
                   />
                 ))}
               </div>
