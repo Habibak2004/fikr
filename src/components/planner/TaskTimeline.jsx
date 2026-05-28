@@ -77,9 +77,14 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white border border-border/70 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
+      className={`bg-white border rounded-2xl p-4 shadow-sm hover:shadow-md transition-all ${a.critical_path ? "border-red-400 bg-red-50/30 animate-pulse-slow" : "border-border/70"}`}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+        {a.critical_path && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-red-600 text-white animate-pulse">
+            ⚠️ CRITICAL — BLOCKS PROGRESS
+          </span>
+        )}
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${RESISTANCE_LABELS[resistance].color}`}>
           {RESISTANCE_LABELS[resistance].label}
         </span>
@@ -112,6 +117,12 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
 
       <p className="font-semibold text-[15px] mb-1">{a.name}</p>
       {a.course_name && <p className="text-xs text-muted-foreground mb-3">{a.course_name}</p>}
+      {a.critical_path && (
+        <p className="text-[11px] text-red-600 font-medium mb-2 flex items-center gap-1">
+          <span>⚠️</span>
+          <span>Failure to complete this task will block your future academic progress</span>
+        </p>
+      )}
 
       <AnimatePresence>
         {expanded && (

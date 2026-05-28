@@ -291,6 +291,7 @@ function EditAssignmentModal({ task, onClose, courses, onSave }) {
     priority: task.priority || "medium",
     notes: task.notes || "",
     weight: task.weight || "",
+    critical_path: task.critical_path || false,
   });
 
   const handleSave = () => {
@@ -336,6 +337,16 @@ function EditAssignmentModal({ task, onClose, courses, onSave }) {
           <div><Label>Due Date</Label><Input type="datetime-local" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} className="rounded-xl mt-1" /></div>
           <div><Label>Grade Weight % (optional)</Label><Input type="number" min="0" max="100" value={form.weight} onChange={e => setForm(p => ({ ...p, weight: e.target.value }))} className="rounded-xl mt-1" placeholder="e.g. 20" /></div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="rounded-xl mt-1" rows={2} /></div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="edit_critical_path"
+              checked={form.critical_path}
+              onChange={e => setForm(p => ({ ...p, critical_path: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <Label htmlFor="edit_critical_path" className="text-sm font-medium">Critical path (blocks future progress)</Label>
+          </div>
           <Button onClick={handleSave} className="w-full rounded-xl bg-primary hover:bg-primary/90">Save Changes</Button>
         </div>
       </DialogContent>
@@ -344,7 +355,7 @@ function EditAssignmentModal({ task, onClose, courses, onSave }) {
 }
 
 function AddAssignmentModal({ open, onClose, courses, onSave }) {
-  const [form, setForm] = useState({ name: "", course_id: "", type: "homework", due_date: "", priority: "medium", notes: "" });
+  const [form, setForm] = useState({ name: "", course_id: "", type: "homework", due_date: "", priority: "medium", notes: "", critical_path: false });
 
   const handleSave = () => {
     if (!form.name) return;
@@ -384,6 +395,16 @@ function AddAssignmentModal({ open, onClose, courses, onSave }) {
           </div>
           <div><Label>Due Date</Label><Input type="datetime-local" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} className="rounded-xl mt-1" /></div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="rounded-xl mt-1" rows={2} /></div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="critical_path"
+              checked={form.critical_path}
+              onChange={e => setForm(p => ({ ...p, critical_path: e.target.checked }))}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <Label htmlFor="critical_path" className="text-sm font-medium">Critical path (blocks future progress)</Label>
+          </div>
           <Button onClick={handleSave} className="w-full rounded-xl bg-primary hover:bg-primary/90">Add Task</Button>
         </div>
       </DialogContent>

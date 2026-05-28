@@ -113,6 +113,11 @@
     "start_by_analysis": {
       "type": "object",
       "description": "AI-generated Start By analysis with realistic start date, dependencies, and urgency zone"
+    },
+    "critical_path": {
+      "type": "boolean",
+      "default": false,
+      "description": "Indicates if this task is critical for future progress (e.g., next semester)"
     }
   },
   "required": [

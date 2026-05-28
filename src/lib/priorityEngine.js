@@ -50,6 +50,7 @@ export function urgencyScore(task) {
 
 // ------- Impact Score -------
 // Returns 0–20 based on grade weight and task type
+// CRITICAL PATH tasks get massive boost (consequences of not completing)
 export function impactScore(task) {
   let score = 5;
   if (task.weight >= 40) score += 15;
@@ -62,7 +63,10 @@ export function impactScore(task) {
   if (task.priority === "high") score += 4;
   if (task.priority === "low") score -= 3;
 
-  return Math.min(20, score);
+  // Critical path: tasks that block future progress (e.g., next semester)
+  if (task.critical_path) score += 35;
+
+  return Math.min(55, score);
 }
 
 // ------- Momentum Potential -------
