@@ -51,7 +51,7 @@ function MajorTaskCard({ task, onStartFocus, onToggle, rank }) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: rank * 0.07 }}
-      className="bg-white border border-border/70 rounded-2xl p-4 hover:shadow-md transition-shadow"
+      className={`bg-white border rounded-2xl p-4 hover:shadow-md transition-all ${task.critical_path ? "border-red-400 bg-red-50/30" : "border-border/70"}`}
     >
       <div className="flex items-start gap-3">
         {/* Rank badge */}
@@ -62,6 +62,14 @@ function MajorTaskCard({ task, onStartFocus, onToggle, rank }) {
           <p className="font-semibold text-[15px] leading-tight">{task.name}</p>
           {task.course_name && (
             <p className="text-xs text-muted-foreground mt-0.5">{task.course_name}</p>
+          )}
+          {task.critical_path && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                <AlertTriangle className="h-2.5 w-2.5" />
+                CRITICAL — BLOCKS PROGRESS
+              </span>
+            </div>
           )}
           <div className="flex flex-wrap items-center gap-2 mt-2">
             {/* Cognitive load pill */}
@@ -85,6 +93,13 @@ function MajorTaskCard({ task, onStartFocus, onToggle, rank }) {
               <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md flex items-center gap-1">
                 <AlertTriangle className="h-2.5 w-2.5" />
                 Start today
+              </span>
+            )}
+
+            {/* Critical path consequence */}
+            {task.critical_path && (
+              <span className="text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md">
+                ⚠️ Failure to complete blocks future progress
               </span>
             )}
           </div>
