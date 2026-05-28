@@ -60,7 +60,7 @@ export default function Heatmap() {
     
     const totalWeeks = differenceInWeeks(maxDate, minDate) + 1;
     
-    return Array.from({ length: Math.min(totalWeeks, 16) }, (_, i) => {
+    return Array.from({ length: totalWeeks }, (_, i) => {
       const weekNum = i + 1;
       const weekStart = new Date(minDate);
       weekStart.setDate(weekStart.getDate() + i * 7);
