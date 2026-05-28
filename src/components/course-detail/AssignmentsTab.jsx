@@ -233,7 +233,7 @@ export default function AssignmentsTab({ courseId, assignments, courseName, cour
               <div>
                 <p className="text-base font-bold leading-snug">{a.name}</p>
                 {a.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{a.description}</p>}
-                {a.due_date && <p className="text-xs text-muted-foreground mt-0.5">Due: {format(new Date(a.due_date), "MMM dd, yyyy")}</p>}
+                {a.due_date && (() => { const d = new Date(a.due_date); return isNaN(d) ? null : <p className="text-xs text-muted-foreground mt-0.5">Due: {format(d, "MMM dd, yyyy")}</p>; })()}
               </div>
               <div>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md bg-transparent ${typeColors[a.type] || typeColors.other}`}>
