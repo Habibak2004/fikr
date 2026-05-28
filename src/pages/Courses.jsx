@@ -207,7 +207,11 @@ export default function Courses() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">AI Recommendation</p>
-              <p className="text-sm font-medium">Focus on CS101 today</p>
+              <p className="text-sm font-medium">
+                {activeCourses.length > 0
+                  ? `Focus on ${[...activeCourses].sort((a, b) => (a.progress || 0) - (b.progress || 0))[0].name} today`
+                  : "Add a course to get started"}
+              </p>
             </div>
           </Card>
         </div>
