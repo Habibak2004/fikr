@@ -1,0 +1,25 @@
+{
+  "name": "Semester",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the semester (e.g., Fall 2026, Summer A 2027)"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "The official start date of the semester"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "The official end date of the semester"
+    }
+  },
+  "required": [
+    "name",
+    "start_date",
+    "end_date"
+  ]
+}

@@ -5,12 +5,14 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Target, Clock, TrendingUp, BookOpen, ArrowRight,
   CheckCircle2, Calendar, Brain, Users, Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, differenceInDays, isAfter } from "date-fns";
+import SemesterManager from "../components/dashboard/SemesterManager";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -61,14 +63,21 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto space-y-8">
-      {/* Header */}
+    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h1 className="text-3xl font-bold">
           {greeting()}, {user?.full_name?.split(" ")[0] || "Student"}
         </h1>
         <p className="text-muted-foreground mt-1">Here's your study overview for today.</p>
       </motion.div>
+
+      <Tabs defaultValue="overview" className="mt-8">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="semesters">Semesters</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-6 space-y-8">
 
       {/* Top Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -165,6 +174,12 @@ export default function Dashboard() {
           </div>
         </Card>
       </motion.div>
+        </TabsContent>
+
+        <TabsContent value="semesters" className="mt-6">
+          <SemesterManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

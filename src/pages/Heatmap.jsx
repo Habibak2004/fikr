@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 import { differenceInWeeks, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 
 export default function Heatmap() {
-  const [selectedSemester, setSelectedSemester] = useState("");
+  const [selectedSemesterId, setSelectedSemesterId] = useState("");
 
   const { data: assignments = [] } = useQuery({
     queryKey: ["assignments"],
@@ -23,22 +23,28 @@ export default function Heatmap() {
     queryFn: () => base44.entities.Course.list("-created_date", 50),
   });
 
-  // Extract unique semesters from courses
-  const semesters = [...new Set(courses.map(c => c.semester).filter(Boolean))];
-  const activeSemester = selectedSemester || semesters[0];
-
-  // Filter assignments by selected semester (matching course semester)
-  const semesterAssignments = assignments.filter(a => {
-    if (!a.due_date) return false;
-    const course = courses.find(c => c.id === a.course_id);
-    return !selectedSemester || course?.semester === selectedSemester;
+  const { data: semesters = [] } = useQuery({
+    queryKey: ["semesters"],
+    queryFn: () => base44.entities.Semester.list("-created_date"),
   });
 
-  // Calculate semester weeks based on semester_start/semester_end or fallback to assignments
+  const activeSemester = semesters.find(s => s.id === selectedSemesterId) || semesters[0];
+
+  // Filter assignments by selected semester based on date range
+  const semesterAssignments = assignments.filter(a => {
+    if (!a.due_date || !activeSemester) return false;
+    const dueDate = new Date(a.due_date);
+    const startDate = new Date(activeSemester.start_date);
+    const endDate = new Date(activeSemester.end_date);
+    return dueDate >= startDate && dueDate <= endDate;
+  });
+
+  // Calculate semester weeks based on Semester entity dates
   const semesterWeeks = (() => {
-    const coursesInSemester = courses.filter(c => c.semester === activeSemester);
-    const semesterStart = coursesInSemester.find(c => c.semester_start)?.semester_start;
-    const semesterEnd = coursesInSemester.find(c => c.semester_end)?.semester_end;
+    if (!activeSemester) return [];
+    
+    const semesterStart = startOfWeek(new Date(activeSemester.start_date));
+    const semesterEnd = endOfWeek(new Date(activeSemester.end_date));
     
     let minDate, maxDate;
     
@@ -92,12 +98,12 @@ export default function Heatmap() {
           <p className="text-muted-foreground mt-1">Visualize your semester intensity</p>
         </div>
         {semesters.length > 0 && (
-          <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+          <Select value={selectedSemesterId} onValueChange={setSelectedSemesterId}>
             <SelectTrigger className="w-48 rounded-xl">
               <SelectValue placeholder="Select semester" />
             </SelectTrigger>
             <SelectContent>
-              {semesters.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              {semesters.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
         )}
@@ -105,7 +111,7 @@ export default function Heatmap() {
 
       {/* Heatmap Grid */}
       <Card className="p-6 rounded-2xl">
-        <h3 className="font-semibold mb-4">{activeSemester || "Current Semester"}</h3>
+        <h3 className="font-semibold mb-4">{activeSemester?.name || "Current Semester"}</h3>
         {semesterWeeks.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">No assignments found for this semester</p>
         ) : (
