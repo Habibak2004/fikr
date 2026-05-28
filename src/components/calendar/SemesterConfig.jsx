@@ -126,7 +126,12 @@ Rules:
               onClick={() => setShowDropdown(!showDropdown)}
               className="w-full flex items-center justify-between border rounded-xl px-4 py-3 text-sm font-medium hover:bg-muted/30 transition-colors"
             >
-              {selected ? `${selected.name} (${selected.start_date} → ${selected.end_date})` : "Select a semester"}
+              {selected ? (
+                <div className="flex flex-col items-start">
+                  <span className="font-medium">{selected.name}</span>
+                  <span className="text-xs text-muted-foreground">{selected.start_date} → {selected.end_date}</span>
+                </div>
+              ) : "Select a semester"}
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </button>
             <AnimatePresence>
