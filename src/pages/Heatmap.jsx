@@ -114,11 +114,19 @@ export default function Heatmap() {
                   className={`aspect-square rounded-xl ${getIntensityColor(w.count)} flex flex-col items-center justify-center cursor-default`}
                   title={`Week ${w.weekNum}: ${w.count} assignments`}
                 >
-                  <span className="text-[10px] font-bold">{w.weekNum}</span>
-                  <span className="text-[9px] text-muted-foreground">{w.count}</span>
-                  <span className="text-[8px] text-muted-foreground/60 mt-0.5">
-                    {w.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
+                  {(() => {
+                    const ratio = maxCount > 0 ? w.count / maxCount : 0;
+                    const isDark = ratio > 0.5;
+                    return (
+                      <>
+                        <span className={`text-[10px] font-bold ${isDark ? "text-white" : "text-foreground"}`}>{w.weekNum}</span>
+                        <span className={`text-[9px] ${isDark ? "text-white/80" : "text-muted-foreground"}`}>{w.count}</span>
+                        <span className={`text-[8px] mt-0.5 ${isDark ? "text-white/60" : "text-muted-foreground/60"}`}>
+                          {w.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </motion.div>
               ))}
             </div>
