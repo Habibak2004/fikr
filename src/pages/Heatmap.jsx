@@ -69,12 +69,12 @@ export default function Heatmap() {
   const busiestWeek = semesterWeeks.length > 0 ? semesterWeeks.reduce((max, w) => w.count > max.count ? w : max, semesterWeeks[0]) : { weekNum: 0, count: 0 };
 
   const getIntensityColor = (count) => {
-    if (count === 0) return "bg-primary/5";
+    if (count === 0) return "bg-primary/10";
     const ratio = count / maxCount;
-    if (ratio <= 0.25) return "bg-primary/15";
-    if (ratio <= 0.5) return "bg-primary/30";
-    if (ratio <= 0.75) return "bg-primary/50";
-    return "bg-primary/80";
+    if (ratio <= 0.25) return "bg-primary/20";
+    if (ratio <= 0.5) return "bg-primary/40";
+    if (ratio <= 0.75) return "bg-primary/60";
+    return "bg-primary/85";
   };
 
   const barData = semesterWeeks.map(w => ({ name: w.week, value: w.count }));
@@ -134,7 +134,7 @@ export default function Heatmap() {
             </div>
             <div className="flex items-center gap-3 mt-4">
               <span className="text-xs text-muted-foreground">Less</span>
-              {["bg-primary/5", "bg-primary/15", "bg-primary/30", "bg-primary/50", "bg-primary/80"].map((c, i) => (
+              {["bg-primary/10", "bg-primary/20", "bg-primary/40", "bg-primary/60", "bg-primary/85"].map((c, i) => (
                 <div key={i} className={`h-4 w-4 rounded ${c}`} />
               ))}
               <span className="text-xs text-muted-foreground">More</span>
