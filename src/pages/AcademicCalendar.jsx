@@ -603,17 +603,14 @@ export default function AcademicCalendar() {
               const semEnd   = new Date(semester.end   + "T12:00:00");
               const displayStart = viewRange.startDate ? new Date(viewRange.startDate + "T12:00:00") : new Date(semStart.getFullYear(), semStart.getMonth(), 1);
               const displayEnd   = viewRange.endDate ? new Date(viewRange.endDate + "T12:00:00") : new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0);
-              // Normalize to Monday of the week containing displayStart (shows full month, even if semester starts mid-month)
-              const dayOfWeek = displayStart.getDay();
-              const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-              const firstMonday = new Date(displayStart);
-              firstMonday.setDate(firstMonday.getDate() + mondayOffset);
-              const totalWeeks = Math.ceil((displayEnd - firstMonday) / (7 * 24 * 60 * 60 * 1000));
+              // Week 1 starts at displayStart (not the Monday before)
+              const weekStart = new Date(displayStart);
+              const totalWeeks = Math.ceil((displayEnd - weekStart) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
               // Initialize all weeks (empty)
               const weekMap = {};
               for (let w = 0; w < totalWeeks; w++) {
-                weekMap[w] = { weekNum: w, monday: new Date(firstMonday.getTime() + w * 7 * 24 * 60 * 60 * 1000), events: [] };
+                weekMap[w] = { weekNum: w, start: new Date(weekStart.getTime() + w * 7 * 24 * 60 * 60 * 1000), events: [] };
               }
 
               // Assign each regular milestone to its week
@@ -622,7 +619,7 @@ export default function AcademicCalendar() {
                 const datePart = m.date.slice(0, 10);
                 if (!datePart.match(/^\d{4}-\d{2}-\d{2}$/)) continue;
                 const d = new Date(datePart + "T12:00:00");
-                const weekNum = Math.floor((d - firstMonday) / (7 * 24 * 60 * 60 * 1000));
+                const weekNum = Math.floor((d - weekStart) / (7 * 24 * 60 * 60 * 1000));
                 if (weekMap[weekNum]) weekMap[weekNum].events.push({ ...m, date: datePart });
               }
               const weeks = Object.values(weekMap).sort((a, b) => a.weekNum - b.weekNum);
@@ -656,10 +653,10 @@ export default function AcademicCalendar() {
 
               for (const wk of weeks) {
                 const isFirstWeek = wk.weekNum === 0;
-                // Determine the month to display: use the 1st of the month if this week contains it, otherwise use the monday
-                let monthDay = wk.monday;
+                // Determine the month to display: use the 1st of the month if this week contains it, otherwise use the week start
+                let monthDay = wk.start;
                 for (let d = 0; d < 7; d++) {
-                  const day = new Date(wk.monday.getTime() + d * 24 * 60 * 60 * 1000);
+                  const day = new Date(wk.start.getTime() + d * 24 * 60 * 60 * 1000);
                   if (day.getDate() === 1) { monthDay = day; break; }
                 }
                 const wkMonthKey = format(monthDay, "yyyy-MM");
@@ -724,10 +721,10 @@ export default function AcademicCalendar() {
                 lastMonth = wkMonthKey;
 
                 // Insert check-ins whose date falls within this week
-                const wkEnd = new Date(wk.monday.getTime() + 6 * 24 * 60 * 60 * 1000);
+                const wkEnd = new Date(wk.start.getTime() + 6 * 24 * 60 * 60 * 1000);
                 const wkCheckins = checkinQueue.filter(c => {
                   const d = new Date(c.date.slice(0,10) + "T12:00:00");
-                  return d >= wk.monday && d <= wkEnd;
+                  return d >= wk.start && d <= wkEnd;
                 });
                 wkCheckins.forEach((c, i) => nodes.push(renderCheckinCol(c, `ci-wk${wk.weekNum}-${i}`)));
                 checkinQueue = checkinQueue.filter(c => {
