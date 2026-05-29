@@ -4,12 +4,13 @@ import { base44 } from "@/api/base44Client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
-import { Settings2, Sparkles, CalendarClock, Info, ChevronDown, Star, Trash2, Plus, LayoutList, CalendarDays, Calendar } from "lucide-react";
+import { Settings2, Sparkles, CalendarClock, Info, ChevronDown, Star, Trash2, Plus, LayoutList, CalendarDays, Calendar, NotebookPen } from "lucide-react";
 import { format, differenceInDays, isAfter, differenceInWeeks } from "date-fns";
 import { Link } from "react-router-dom";
 import SemesterConfig from "@/components/calendar/SemesterConfig";
 import WeeklyView from "@/components/calendar/WeeklyView";
 import MonthlyView from "@/components/calendar/MonthlyView";
+import SemesterReflectionModal from "@/components/calendar/SemesterReflectionModal";
 
 const DEFAULT_MILESTONES = [
   { date: "2026-01-19", label: "Semester Start",    sub: "Jan 19",     type: "done" },
@@ -67,6 +68,7 @@ export default function AcademicCalendar() {
   const [newMilestone, setNewMilestone] = useState({ date: "", label: "", sub: "", type: "upcoming" });
   const [calendarView, setCalendarView] = useState("timeline"); // "timeline" | "weekly" | "monthly"
   const [calendarDate, setCalendarDate] = useState(new Date());
+  const [showReflection, setShowReflection] = useState(false);
 
   const saveCriticalDeadlines = (updated) => {
     setCriticalDeadlines(updated);
@@ -546,6 +548,23 @@ export default function AcademicCalendar() {
                 </div>
               );
             })}
+
+            {/* Reflection node — always at the end */}
+            <div className="flex flex-col items-center text-center w-44 flex-shrink-0 px-2">
+              <p className="text-[10px] font-bold tracking-widest uppercase mb-3 text-amber-600">REFLECT</p>
+              <button
+                onClick={() => setShowReflection(true)}
+                className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
+              >
+                <div className="h-2 w-2 rounded-full bg-amber-400" />
+              </button>
+              <button
+                onClick={() => setShowReflection(true)}
+                className="text-left text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors"
+              >
+                🎓 Semester Reflection
+              </button>
+            </div>
           </div>
         </div>
         </div>
@@ -553,7 +572,7 @@ export default function AcademicCalendar() {
       </div>
 
       {/* Bottom Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {/* Planning Card */}
         <div className="bg-white border rounded-2xl p-5 flex gap-4 items-start">
           <img
@@ -587,6 +606,22 @@ export default function AcademicCalendar() {
             </Link>
           </div>
         </div>
+
+        {/* Semester Reflection */}
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex gap-4 items-center">
+          <div className="h-14 w-14 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow text-2xl">
+            🎓
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-amber-800 text-base">Semester Reflection</p>
+            <p className="text-xs text-amber-700/70 mt-1 mb-3">
+              Take a moment to reflect on {semester.label} — your wins, challenges, and lessons learned.
+            </p>
+            <Button size="sm" onClick={() => setShowReflection(true)} className="rounded-xl bg-amber-700 hover:bg-amber-800 text-white">
+              <NotebookPen className="h-3.5 w-3.5 mr-1.5" /> Start Reflection
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Semester Config Modal */}
@@ -599,6 +634,12 @@ export default function AcademicCalendar() {
           />
         )}
       </AnimatePresence>
+
+      <SemesterReflectionModal
+        open={showReflection}
+        onClose={() => setShowReflection(false)}
+        semesterLabel={semester.label}
+      />
     </div>
   );
 }
