@@ -673,13 +673,12 @@ export default function AcademicCalendar() {
                     <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${monthChanged ? (hasActive ? "text-primary" : "text-muted-foreground") : "text-transparent select-none"}`}>
                       {monthChanged ? MONTH_NAMES[wkMonthIdx] : "·"}
                     </p>
-                    {/* Semester marker dot */}
-                    {(isSemesterStartWeek || isSemesterEndWeek) && (
+                    {/* Week indicator dot */}
+                    {isSemesterStartWeek || isSemesterEndWeek ? (
                       <div className="h-5 w-5 rounded-full z-10 flex items-center justify-center mb-2 bg-purple-100 border-2 border-purple-400">
                         <div className="h-2.5 w-2.5 rounded-full bg-purple-500" />
                       </div>
-                    )}
-                    {!isSemesterStartWeek && !isSemesterEndWeek && (
+                    ) : (
                       <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-2 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
                         {allDone && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
                       </div>
