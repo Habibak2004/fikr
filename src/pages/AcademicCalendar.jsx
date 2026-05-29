@@ -85,6 +85,14 @@ export default function AcademicCalendar() {
     queryFn: () => base44.entities.Assignment.list("-due_date", 200),
   });
 
+  const { data: allCourses = [] } = useQuery({
+    queryKey: ["courses"],
+    queryFn: () => base44.entities.Course.list("-created_date", 50),
+  });
+
+  // Courses matching the active semester label
+  const semesterCourses = allCourses.filter(c => c.semester === semester.label);
+
   const now = new Date();
 
   const semesterStart = new Date(semester.start);
@@ -639,6 +647,7 @@ export default function AcademicCalendar() {
         open={showReflection}
         onClose={() => setShowReflection(false)}
         semesterLabel={semester.label}
+        courses={semesterCourses}
       />
     </div>
   );
