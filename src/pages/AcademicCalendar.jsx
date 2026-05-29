@@ -71,18 +71,6 @@ export default function AcademicCalendar() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [showReflection, setShowReflection] = useState(false);
   const [reflectionType, setReflectionType] = useState("end_of_semester");
-  const [displayStartDate, setDisplayStartDate] = useState(() => {
-    try {
-      const saved = localStorage.getItem("fikr_display_start");
-      return saved || "";
-    } catch { return ""; }
-  });
-  const [displayEndDate, setDisplayEndDate] = useState(() => {
-    try {
-      const saved = localStorage.getItem("fikr_display_end");
-      return saved || "";
-    } catch { return ""; }
-  });
 
   // Compute check-in dates from semester bounds
   const checkInMilestones = useMemo(() => {
@@ -341,6 +329,8 @@ export default function AcademicCalendar() {
                         </button>
                       ))}
                     </div>
+                  </div>
+                )}
 
                 {/* Manual entry */}
                 <div className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-primary/30 bg-primary/5">
@@ -412,7 +402,6 @@ export default function AcademicCalendar() {
               {editingTimeline ? "Done" : "Edit Timeline"}
             </button>
           )}
-          </div>
           <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
             {[
               { id: "timeline", icon: LayoutList, label: "Timeline" },
@@ -430,6 +419,7 @@ export default function AcademicCalendar() {
                 <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
+          </div>
           </div>
         </div>
 
@@ -454,28 +444,10 @@ export default function AcademicCalendar() {
         )}
 
         {calendarView === "timeline" && (
-          <div className="space-y-5">
-            {editingTimeline && (
-              <div className="mb-5 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
-                <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-muted-foreground">Display Range:</span>
-                <input
-                  type="date"
-                  value={displayStartDate || semester.start}
-                  onChange={(e) => setDisplayStartDate(e.target.value)}
-                  className="text-xs border rounded-md px-2 py-1 bg-white outline-none focus:ring-1 focus:ring-primary/30"
-                />
-                <span className="text-muted-foreground">→</span>
-                <input
-                  type="date"
-                  value={displayEndDate || semester.end}
-                  onChange={(e) => setDisplayEndDate(e.target.value)}
-                  className="text-xs border rounded-md px-2 py-1 bg-white outline-none focus:ring-1 focus:ring-primary/30"
-                />
-              </div>
-            </div>
+        <div>
+        {editingTimeline && (
+          <div className="mb-5 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
             <div className="flex flex-wrap gap-2 items-end">
               <div>
                 <p className="text-[10px] text-muted-foreground mb-1">Date</p>
@@ -522,10 +494,10 @@ export default function AcademicCalendar() {
                 </div>
               </div>
             )}
-              </div>
-            )}
-            <div className="overflow-x-auto -mx-6 px-6">
-              <div className="flex gap-0 relative min-w-max">
+          </div>
+        )}
+        <div className="overflow-x-auto -mx-6 px-6">
+          <div className="flex gap-0 relative min-w-max">
             {/* Connecting line */}
             <div className="absolute top-[52px] left-[36px] right-[36px] h-0.5 bg-border" />
 
@@ -536,19 +508,13 @@ export default function AcademicCalendar() {
 
               const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-              // Build global week buckets — use display dates if set, otherwise expand to full months
+              // Build global week buckets — expand to show full months around semester dates
               const semStart = new Date(semester.start + "T12:00:00");
               const semEnd   = new Date(semester.end   + "T12:00:00");
-              let displayStart, displayEnd;
-              if (displayStartDate && displayEndDate) {
-                displayStart = new Date(displayStartDate + "T12:00:00");
-                displayEnd = new Date(displayEndDate + "T12:00:00");
-              } else {
-                // Default: expand to full months
-                displayStart = new Date(semStart.getFullYear(), semStart.getMonth(), 1);
-                displayEnd = new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0);
-              }
-              // Normalize to Monday of the week containing displayStart
+              // Display from the 1st of the semester's start month to the last day of the end month
+              const displayStart = new Date(semStart.getFullYear(), semStart.getMonth(), 1);
+              const displayEnd   = new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0);
+              // Normalize to Monday of the week containing displayStart (shows full month, even if semester starts mid-month)
               const dayOfWeek = displayStart.getDay();
               const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
               const firstMonday = new Date(displayStart);
@@ -686,10 +652,11 @@ export default function AcademicCalendar() {
 
               return nodes;
             })()}
-              </div>
-            </div>
           </div>
+        </div>
+        </div>
         )}
+      </div>
 
       {/* Bottom Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
