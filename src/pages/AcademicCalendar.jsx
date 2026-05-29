@@ -632,7 +632,7 @@ export default function AcademicCalendar() {
 
               const renderCheckinCol = (m, key) => (
                 <div key={key} className="flex flex-col items-center text-center w-32 flex-shrink-0 px-2 relative pt-[22px]">
-                  <div className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center absolute top-[23px] bg-amber-50">
+                  <div className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center absolute top-[33px] bg-amber-50">
                     <div className="h-2 w-2 rounded-full bg-amber-400" />
                   </div>
                   <button
