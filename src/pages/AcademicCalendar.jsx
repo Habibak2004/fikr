@@ -630,10 +630,10 @@ export default function AcademicCalendar() {
 
               const renderCheckinCol = (m, key) => (
                 <div key={key} className="flex flex-col items-center text-center w-32 flex-shrink-0 px-2">
-                  <p className="text-[10px] font-bold tracking-widest uppercase mb-3 text-amber-600">REFLECT</p>
                   <button
                     onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
                     className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
+                    title="Reflection checkpoint"
                   >
                     <div className="h-2 w-2 rounded-full bg-amber-400" />
                   </button>
