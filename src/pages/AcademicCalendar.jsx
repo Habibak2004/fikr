@@ -593,8 +593,6 @@ export default function AcademicCalendar() {
 
             {(() => {
               const regularMilestones = milestones.filter(m => m.type !== "checkin");
-              const checkins = milestones.filter(m => m.type === "checkin");
-              let checkinQueue = [...checkins].sort((a, b) => a.date.localeCompare(b.date));
 
               const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -624,14 +622,7 @@ export default function AcademicCalendar() {
               }
               const weeks = Object.values(weekMap).sort((a, b) => a.weekNum - b.weekNum);
 
-              // Pull out setup checkin to render first
-              const setupCheckin = checkinQueue.find(c => c.reflectionType === "semester_setup");
-              if (setupCheckin) checkinQueue = checkinQueue.filter(c => c.reflectionType !== "semester_setup");
-
-
-
               const nodes = [];
-
               let lastMonth = null;
 
               for (const wk of weeks) {
