@@ -108,8 +108,8 @@ export default function AcademicCalendar() {
     return [
       { date: semester.start, label: "Semester Setup Check-In", type: "checkin", reflectionType: "semester_setup", emoji: "🌱" },
       { date: format(addDays(start, Math.round(total * 0.33)), "yyyy-MM-dd"), label: "One-Third Check-In", type: "checkin", reflectionType: "one_third", emoji: "⅓" },
-      { date: format(addDays(start, Math.round(total * 0.5)),  "yyyy-MM-dd"), label: "Mid-Semester Check-In", type: "checkin", reflectionType: "mid_semester", emoji: "🔄" },
-      { date: semester.end,   label: "End-of-Semester Check-In", type: "checkin", reflectionType: "end_of_semester", emoji: "🎓" },
+      { date: format(addDays(start, Math.round(total * 0.55)), "yyyy-MM-dd"), label: "Mid-Semester Check-In", type: "checkin", reflectionType: "mid_semester", emoji: "🔄" },
+      { date: semester.end, label: "End-of-Semester Check-In", type: "checkin", reflectionType: "end_of_semester", emoji: "🎓" },
     ];
   }, [semester]);
 
