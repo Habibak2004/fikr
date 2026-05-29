@@ -566,20 +566,16 @@ export default function AcademicCalendar() {
               let lastMonth = null;
 
               for (const wk of weeks) {
-                // Find the first calendar day in this week (Mon–Sun) that is a new month
-                // i.e. the week that contains the 1st of a month
                 const isFirstWeek = wk.weekNum === 0;
-                // Show month label on first week OR when any day in this week is in a new month vs lastMonth
-                let newMonthInWeek = null;
+                // Determine the month to display: use the 1st of the month if this week contains it, otherwise use the monday
+                let monthDay = wk.monday;
                 for (let d = 0; d < 7; d++) {
                   const day = new Date(wk.monday.getTime() + d * 24 * 60 * 60 * 1000);
-                  const key = format(day, "yyyy-MM");
-                  if (key !== lastMonth) { newMonthInWeek = day; break; }
+                  if (day.getDate() === 1) { monthDay = day; break; }
                 }
-                const monthChanged = isFirstWeek || newMonthInWeek !== null;
-                const displayDay = newMonthInWeek || wk.monday;
-                const wkMonthKey = format(displayDay, "yyyy-MM");
-                const wkMonthIdx = displayDay.getMonth();
+                const wkMonthKey = format(monthDay, "yyyy-MM");
+                const wkMonthIdx = monthDay.getMonth();
+                const monthChanged = isFirstWeek || wkMonthKey !== lastMonth;
                 const globalWeekNum = wk.weekNum + 1; // 1-based
                 const hasActive = wk.events.some(e => e.type === "active");
                 const allDone = wk.events.every(e => e.type === "done");
@@ -636,7 +632,7 @@ export default function AcademicCalendar() {
                   </div>
                 );
 
-                if (monthChanged) lastMonth = wkMonthKey;
+                lastMonth = wkMonthKey;
 
                 // Insert check-ins whose date falls within this week
                 const wkEnd = new Date(wk.monday.getTime() + 6 * 24 * 60 * 60 * 1000);
