@@ -610,11 +610,6 @@ export default function AcademicCalendar() {
               firstMonday.setDate(firstMonday.getDate() + mondayOffset);
               const totalWeeks = Math.ceil((displayEnd - firstMonday) / (7 * 24 * 60 * 60 * 1000));
 
-              // Calculate semester week 1 start (Monday of the week containing semester start)
-              const semStartDayOfWeek = semStart.getDay();
-              const semWeek1Start = new Date(semStart);
-              semWeek1Start.setDate(semStart.getDate() + (semStartDayOfWeek === 0 ? -6 : 1 - semStartDayOfWeek));
-
               // Initialize all weeks (empty)
               const weekMap = {};
               for (let w = 0; w < totalWeeks; w++) {
@@ -670,8 +665,7 @@ export default function AcademicCalendar() {
                 const wkMonthKey = format(monthDay, "yyyy-MM");
                 const wkMonthIdx = monthDay.getMonth();
                 const monthChanged = isFirstWeek || wkMonthKey !== lastMonth;
-                // Calculate semester-relative week number
-                const semesterWeekNum = Math.floor((wk.monday - semWeek1Start) / (7 * 24 * 60 * 60 * 1000)) + 1;
+                const globalWeekNum = wk.weekNum + 1; // 1-based
                 const hasActive = wk.events.some(e => e.type === "active");
                 const allDone = wk.events.every(e => e.type === "done");
 
@@ -687,7 +681,7 @@ export default function AcademicCalendar() {
                     </div>
                     {/* Week label */}
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">
-                      Week {semesterWeekNum > 0 ? semesterWeekNum : 0}
+                      Week {globalWeekNum}
                     </p>
                     {/* Events */}
                     <div className="space-y-1 w-full">
