@@ -673,19 +673,6 @@ export default function AcademicCalendar() {
                     <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${monthChanged ? (hasActive ? "text-primary" : "text-muted-foreground") : "text-transparent select-none"}`}>
                       {monthChanged ? MONTH_NAMES[wkMonthIdx] : "·"}
                     </p>
-                    {/* Semester start/end badge - above dots */}
-                    {isSemesterStartWeek && (
-                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
-                        <p className="text-[9px] font-bold text-purple-700">🎓 Semester Starts</p>
-                        <p className="text-[8px] text-purple-600">{format(semStart, "MMM d")}</p>
-                      </div>
-                    )}
-                    {isSemesterEndWeek && (
-                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
-                        <p className="text-[9px] font-bold text-purple-700">🎓 Semester Ends</p>
-                        <p className="text-[8px] text-purple-600">{format(semEnd, "MMM d")}</p>
-                      </div>
-                    )}
                     {/* Semester marker dot */}
                     {(isSemesterStartWeek || isSemesterEndWeek) && (
                       <div className="h-5 w-5 rounded-full z-10 flex items-center justify-center mb-2 bg-purple-100 border-2 border-purple-400">
@@ -696,6 +683,17 @@ export default function AcademicCalendar() {
                       <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-2 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
                         {allDone && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
                       </div>
+                    )}
+                    {/* Semester start/end badge - like month labels */}
+                    {isSemesterStartWeek && (
+                      <p className="text-[10px] font-bold text-purple-700 mb-3">
+                        🎓 Semester Starts
+                      </p>
+                    )}
+                    {isSemesterEndWeek && (
+                      <p className="text-[10px] font-bold text-purple-700 mb-3">
+                        🎓 Semester Ends
+                      </p>
                     )}
                     {/* Week label */}
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">
