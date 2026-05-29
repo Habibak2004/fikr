@@ -479,7 +479,25 @@ export default function AcademicCalendar() {
         <div className="space-y-5">
         {editingTimeline && (
           <div className="mb-5 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">Display Range:</span>
+                <input
+                  type="date"
+                  value={displayStartDate || semester.start}
+                  onChange={(e) => setDisplayStartDate(e.target.value)}
+                  className="text-xs border rounded-md px-2 py-1 bg-white outline-none focus:ring-1 focus:ring-primary/30"
+                />
+                <span className="text-muted-foreground">→</span>
+                <input
+                  type="date"
+                  value={displayEndDate || semester.end}
+                  onChange={(e) => setDisplayEndDate(e.target.value)}
+                  className="text-xs border rounded-md px-2 py-1 bg-white outline-none focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2 items-end">
               <div>
                 <p className="text-[10px] text-muted-foreground mb-1">Date</p>
