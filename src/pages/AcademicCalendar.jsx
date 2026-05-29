@@ -191,6 +191,7 @@ export default function AcademicCalendar() {
   const handleSemesterChange = (newSemester, events = []) => {
     setSemester(newSemester);
     setImportedEvents(events);
+    saveViewRange({ startDate: "", endDate: "" });
     try {
       localStorage.setItem("fikr_semester", JSON.stringify(newSemester));
       localStorage.setItem("fikr_imported_events", JSON.stringify(events));
