@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Progress } from "@/components/ui/progress";
@@ -72,6 +72,18 @@ export default function AcademicCalendar() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [showReflection, setShowReflection] = useState(false);
   const [reflectionType, setReflectionType] = useState("end_of_semester");
+  const [today, setToday] = useState(new Date());
+
+  // Update "today" at midnight daily so countdowns refresh automatically
+  useEffect(() => {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const msUntilMidnight = tomorrow - now;
+    const timer = setTimeout(() => {
+      setToday(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+    }, msUntilMidnight);
+    return () => clearTimeout(timer);
+  }, [today]);
 
   // Compute check-in dates from semester bounds
   const checkInMilestones = useMemo(() => {
@@ -148,11 +160,11 @@ export default function AcademicCalendar() {
     const oneThirdDate = addDays(start, Math.round(total * 0.33));
     const midDate = addDays(start, Math.round(total * 0.5));
     return [
-      { label: "1/3 Check-In", date: oneThirdDate, days: Math.max(0, differenceInDays(oneThirdDate, now)) },
-      { label: "Mid-Semester", date: midDate, days: Math.max(0, differenceInDays(midDate, now)) },
-      { label: "End of Semester", date: end, days: Math.max(0, differenceInDays(end, now)) },
+      { label: "1/3 Check-In", date: oneThirdDate, days: Math.max(0, differenceInDays(oneThirdDate, today)) },
+      { label: "Mid-Semester", date: midDate, days: Math.max(0, differenceInDays(midDate, today)) },
+      { label: "End of Semester", date: end, days: Math.max(0, differenceInDays(end, today)) },
     ];
-  }, [semester]);
+  }, [semester, today]);
 
   const handleSemesterChange = (newSemester, events = []) => {
     setSemester(newSemester);
