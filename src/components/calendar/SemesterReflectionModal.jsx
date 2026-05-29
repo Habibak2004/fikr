@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
-import { Sparkles, ChevronRight, ChevronLeft, Star } from "lucide-react";
+import { Sparkles, ChevronRight, ChevronLeft, Star, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SEMESTER_QUESTIONS = [
@@ -26,23 +26,30 @@ const CHECKIN_LABELS = {
 
 export default function SemesterReflectionModal({ open, onClose, semesterId, semesterLabel, courses = [], reflectionType = "end_of_semester", onSave }) {
   const [step, setStep] = useState(0);
+  const [selectedSemester, setSelectedSemester] = useState(semesterLabel || "");
   const [semesterRating, setSemesterRating] = useState(0);
   const [semesterAnswers, setSemesterAnswers] = useState({});
   const [courseRatings, setCourseRatings] = useState({});
   const [courseNotes, setCourseNotes] = useState({});
   const [aiSummary, setAiSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [semesters, setSemesters] = useState([]);
+
+  useEffect(() => {
+    base44.entities.Semester.list("-created_date").then(setSemesters).catch(() => {});
+  }, []);
 
   const semesterQCount = SEMESTER_QUESTIONS.length;
   const courseCount = courses.length;
-  // Step layout: 0=semRating, 1..semesterQCount=semQuestions, semesterQCount+1..semesterQCount+courseCount=courses, last=summary
-  const summaryStep = semesterQCount + courseCount + 1;
+  // Step layout: 0=semesterSelect, 1=semRating, 2..semesterQCount+1=semQuestions, etc.
+  const summaryStep = semesterQCount + courseCount + 2;
   const totalSteps = summaryStep + 1;
 
-  const isRatingStep = step === 0;
+  const isSemesterSelectStep = step === 0;
+  const isRatingStep = step === 1;
   const isSummaryStep = step === summaryStep;
-  const semQIdx = step >= 1 && step <= semesterQCount ? step - 1 : null; // index into SEMESTER_QUESTIONS
-  const courseIdx = step > semesterQCount && step <= semesterQCount + courseCount ? step - semesterQCount - 1 : null; // index into courses
+  const semQIdx = step >= 2 && step <= semesterQCount + 1 ? step - 2 : null; // index into SEMESTER_QUESTIONS
+  const courseIdx = step > semesterQCount + 1 && step <= semesterQCount + courseCount + 1 ? step - semesterQCount - 2 : null; // index into courses
 
   const currentSemQ = semQIdx !== null ? SEMESTER_QUESTIONS[semQIdx] : null;
   const currentCourse = courseIdx !== null ? courses[courseIdx] : null;
@@ -84,6 +91,7 @@ Write a warm, encouraging 3–4 sentence closing reflection. Acknowledge their o
 
   const handleClose = () => {
     setStep(0);
+    setSelectedSemester(semesterLabel || "");
     setSemesterRating(0);
     setSemesterAnswers({});
     setCourseRatings({});
@@ -100,7 +108,7 @@ Write a warm, encouraging 3–4 sentence closing reflection. Acknowledge their o
     const reflectionData = {
       type: reflectionType,
       semester_id: semesterId,
-      semester_label: semesterLabel,
+      semester_label: selectedSemester,
       answers: {
         overall_rating: semesterRating,
         ...semesterAnswers,
@@ -129,7 +137,7 @@ Write a warm, encouraging 3–4 sentence closing reflection. Acknowledge their o
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span>{CHECKIN_LABELS[reflectionType] || "🎓 Semester Reflection"}</span>
-            <span className="text-muted-foreground font-normal text-sm">— {semesterLabel}</span>
+            <span className="text-muted-foreground font-normal text-sm">— {selectedSemester}</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -143,7 +151,37 @@ Write a warm, encouraging 3–4 sentence closing reflection. Acknowledge their o
         </div>
 
         <AnimatePresence mode="wait">
-          {/* Step 0: Semester star rating */}
+          {/* Step 0: Semester Selection */}
+          {isSemesterSelectStep && (
+            <motion.div key="semester-select" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="py-4 space-y-4">
+              <div className="text-center space-y-2">
+                <BookOpen className="h-12 w-12 text-primary mx-auto" />
+                <p className="font-semibold text-base">Which semester is this for?</p>
+                <p className="text-sm text-muted-foreground">Select the correct semester to organize your reflection</p>
+              </div>
+              <select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                className="w-full text-sm border rounded-lg px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-primary/30 font-medium"
+                autoFocus
+              >
+                {semesters.length > 0 ? (
+                  semesters.map((s) => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Spring 2026">Spring 2026</option>
+                    <option value="Summer 2026">Summer 2026</option>
+                    <option value="Fall 2026">Fall 2026</option>
+                    <option value="Spring 2027">Spring 2027</option>
+                  </>
+                )}
+              </select>
+            </motion.div>
+          )}
+
+          {/* Step 1: Semester star rating */}
           {isRatingStep && (
             <motion.div key="rating" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="py-4 space-y-5">
               <p className="text-center text-muted-foreground text-sm">How would you rate this semester overall?</p>
@@ -262,7 +300,7 @@ Write a warm, encouraging 3–4 sentence closing reflection. Acknowledge their o
           ) : (
             <Button
               onClick={handleNext}
-              disabled={isRatingStep && semesterRating === 0}
+              disabled={(isSemesterSelectStep && !selectedSemester) || (isRatingStep && semesterRating === 0)}
               className="rounded-xl bg-primary hover:bg-primary/90 gap-1"
               size="sm"
             >
