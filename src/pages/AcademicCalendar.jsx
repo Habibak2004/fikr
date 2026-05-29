@@ -508,24 +508,30 @@ export default function AcademicCalendar() {
 
               const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-              // Build global week buckets from semester start
+              // Build global week buckets from semester start to end
               const semStart = new Date(semester.start + "T12:00:00");
+              const semEnd   = new Date(semester.end   + "T12:00:00");
               // Normalize to Monday of semester start week
-              const dayOfWeek = semStart.getDay(); // 0=Sun
+              const dayOfWeek = semStart.getDay();
               const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
               const firstMonday = new Date(semStart);
               firstMonday.setDate(firstMonday.getDate() + mondayOffset);
+              const totalWeeks = Math.ceil((semEnd - firstMonday) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
-              // Assign each regular milestone to a global week number
+              // Initialize all weeks (empty)
               const weekMap = {};
+              for (let w = 0; w < totalWeeks; w++) {
+                weekMap[w] = { weekNum: w, monday: new Date(firstMonday.getTime() + w * 7 * 24 * 60 * 60 * 1000), events: [] };
+              }
+
+              // Assign each regular milestone to its week
               for (const m of regularMilestones) {
                 if (!m.date || typeof m.date !== "string") continue;
                 const datePart = m.date.slice(0, 10);
                 if (!datePart.match(/^\d{4}-\d{2}-\d{2}$/)) continue;
                 const d = new Date(datePart + "T12:00:00");
                 const weekNum = Math.floor((d - firstMonday) / (7 * 24 * 60 * 60 * 1000));
-                if (!weekMap[weekNum]) weekMap[weekNum] = { weekNum, monday: new Date(firstMonday.getTime() + weekNum * 7 * 24 * 60 * 60 * 1000), events: [] };
-                weekMap[weekNum].events.push({ ...m, date: datePart });
+                if (weekMap[weekNum]) weekMap[weekNum].events.push({ ...m, date: datePart });
               }
               const weeks = Object.values(weekMap).sort((a, b) => a.weekNum - b.weekNum);
 
