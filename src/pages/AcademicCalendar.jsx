@@ -456,8 +456,8 @@ export default function AcademicCalendar() {
         )}
 
         {calendarView === "timeline" && (
-        <div className="space-y-5">
-        {editingTimeline && (
+          <div className="space-y-5">
+            {editingTimeline && (
           <div className="mb-5 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
@@ -690,8 +690,7 @@ export default function AcademicCalendar() {
             })()}
           </div>
         </div>
-        </div>
-        </div>
+      </div>
       )}
 
       {/* Bottom Cards */}
