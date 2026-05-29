@@ -166,9 +166,11 @@ export default function AcademicCalendar() {
     const start = new Date(semester.start + "T12:00:00");
     const end = new Date(semester.end + "T12:00:00");
     const total = differenceInDays(end, start);
+    const setupDate = start;
     const oneThirdDate = addDays(start, Math.round(total * 0.33));
     const midDate = addDays(start, Math.round(total * 0.5));
     return [
+      { label: "Semester Setup", date: setupDate, days: Math.max(0, differenceInDays(setupDate, today)) },
       { label: "1/3 Check-In", date: oneThirdDate, days: Math.max(0, differenceInDays(oneThirdDate, today)) },
       { label: "Mid-Semester", date: midDate, days: Math.max(0, differenceInDays(midDate, today)) },
       { label: "End of Semester", date: end, days: Math.max(0, differenceInDays(end, today)) },
