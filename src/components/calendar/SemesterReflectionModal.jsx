@@ -24,7 +24,7 @@ const CHECKIN_LABELS = {
   end_of_semester: "🎓 End-of-Semester",
 };
 
-export default function SemesterReflectionModal({ open, onClose, semesterLabel, courses = [], reflectionType = "end_of_semester", onSave }) {
+export default function SemesterReflectionModal({ open, onClose, semesterId, semesterLabel, courses = [], reflectionType = "end_of_semester", onSave }) {
   const [step, setStep] = useState(0);
   const [semesterRating, setSemesterRating] = useState(0);
   const [semesterAnswers, setSemesterAnswers] = useState({});
@@ -99,6 +99,7 @@ Write a warm, encouraging 3–4 sentence closing reflection. Acknowledge their o
     }
     const reflectionData = {
       type: reflectionType,
+      semester_id: semesterId,
       semester_label: semesterLabel,
       answers: {
         overall_rating: semesterRating,

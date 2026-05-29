@@ -834,6 +834,7 @@ export default function AcademicCalendar() {
       <SemesterReflectionModal
         open={showReflection}
         onClose={() => setShowReflection(false)}
+        semesterId={semester.id}
         semesterLabel={semester.label}
         courses={semesterCourses}
         reflectionType={reflectionType}
