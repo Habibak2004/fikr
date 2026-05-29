@@ -407,33 +407,13 @@ export default function AcademicCalendar() {
           </div>
           <div className="flex items-center gap-2">
           {calendarView === "timeline" && (
-            <>
             <button
               onClick={() => setEditingTimeline(e => !e)}
               className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${editingTimeline ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
             >
               {editingTimeline ? "Done" : "Edit Timeline"}
             </button>
-            <button
-              onClick={() => {
-                const newStart = prompt("Timeline start date (YYYY-MM-DD):", displayStartDate || "");
-                const newEnd = prompt("Timeline end date (YYYY-MM-DD):", displayEndDate || "");
-                if (newStart && newEnd) {
-                  setDisplayStartDate(newStart);
-                  setDisplayEndDate(newEnd);
-                  try {
-                    localStorage.setItem("fikr_display_start", newStart);
-                    localStorage.setItem("fikr_display_end", newEnd);
-                  } catch {}
-                }
-              }}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
-            >
-              Set View Range
-            </button>
-            </>
           )}
-          </div>
           <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
             {[
               { id: "timeline", icon: LayoutList, label: "Timeline" },
