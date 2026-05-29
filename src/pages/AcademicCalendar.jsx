@@ -599,11 +599,11 @@ export default function AcademicCalendar() {
               // Build global week buckets — use custom viewRange dates if set, otherwise use semester dates
               const semStart = new Date(semester.start + "T12:00:00");
               const semEnd   = new Date(semester.end   + "T12:00:00");
-              const displayStart = viewRange.startDate ? new Date(viewRange.startDate + "T12:00:00") : new Date(semStart.getFullYear(), semStart.getMonth(), 1);
-              const displayEnd   = viewRange.endDate ? new Date(viewRange.endDate + "T12:00:00") : new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0);
+              const displayStart = viewRange.startDate && viewRange.startDate.trim() ? new Date(viewRange.startDate + "T12:00:00") : new Date(semStart.getFullYear(), semStart.getMonth(), 1);
+              const displayEnd   = viewRange.endDate && viewRange.endDate.trim() ? new Date(viewRange.endDate + "T12:00:00") : new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0);
               // Week 1 starts at displayStart (not the Monday before)
               const weekStart = new Date(displayStart);
-              const totalWeeks = Math.ceil((displayEnd - weekStart) / (7 * 24 * 60 * 60 * 1000)) + 1;
+              const totalWeeks = Math.max(1, Math.ceil((displayEnd - weekStart) / (7 * 24 * 60 * 60 * 1000)) + 1);
 
               // Initialize all weeks (empty)
               const weekMap = {};
