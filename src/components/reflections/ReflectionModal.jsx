@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
-import { ChevronLeft, ChevronRight, Sparkles, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Loader2, BookOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSemesterSetupSteps } from "./steps/SemesterSetupSteps";
 import { getOneThirdSteps } from "./steps/OneThirdSteps";
@@ -87,12 +87,20 @@ Generate a structured JSON response with:
 
 export default function ReflectionModal({ type, semesterLabel, courses, onClose, onSaved }) {
   const [step, setStep] = useState(0);
+  const [selectedSemester, setSelectedSemester] = useState(semesterLabel || "");
   const [answers, setAnswers] = useState({});
   const [courseReflections, setCourseReflections] = useState({});
   const [aiReport, setAiReport] = useState(null);
   const [aiSummary, setAiSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [direction, setDirection] = useState(1);
+
+  const [semesters, setSemesters] = useState([]);
+
+  // Fetch semesters on mount
+  useState(() => {
+    base44.entities.Semester.list("-created_date").then(setSemesters).catch(() => {});
+  }, []);
 
   const steps = useMemo(() => {
     switch (type) {
@@ -105,10 +113,11 @@ export default function ReflectionModal({ type, semesterLabel, courses, onClose,
     }
   }, [type, courses]);
 
+  const isSemesterStep = step === 0;
   const isSummaryStep = step === steps.length;
-  const totalSteps = steps.length + 1;
+  const totalSteps = steps.length + 2; // +1 for semester selection
   const progress = Math.round((step / (totalSteps - 1)) * 100);
-  const currentStep = steps[step];
+  const currentStep = steps[step - 1]; // -1 because step 0 is semester selection
 
   const updateAnswer = (key, value) => setAnswers(a => ({ ...a, [key]: value }));
   const updateCourseReflection = (courseId, key, value) =>
@@ -116,6 +125,10 @@ export default function ReflectionModal({ type, semesterLabel, courses, onClose,
 
   const goNext = async () => {
     setDirection(1);
+    if (isSemesterStep) {
+      setStep(s => s + 1);
+      return;
+    }
     if (step === steps.length - 1) {
       // Last real step → generate AI + show summary
       setLoading(true);
@@ -135,7 +148,7 @@ export default function ReflectionModal({ type, semesterLabel, courses, onClose,
         });
         await base44.entities.Reflection.create({
           type,
-          semester_label: semesterLabel,
+          semester_label: selectedSemester,
           exam_name: answers.exam_name,
           course_id: answers.course_id,
           course_name: answers.course_name,
@@ -176,13 +189,51 @@ export default function ReflectionModal({ type, semesterLabel, courses, onClose,
           />
         </div>
         <p className="text-xs text-muted-foreground text-right -mt-1 flex-shrink-0">
-          {isSummaryStep ? "AI Summary" : `Step ${step + 1} of ${steps.length}`}
+          {isSemesterStep ? "Select Semester" : isSummaryStep ? "AI Summary" : `Step ${step} of ${steps.length}`}
         </p>
 
         {/* Step Content */}
         <div className="flex-1 overflow-y-auto min-h-0 pr-1">
           <AnimatePresence mode="wait" custom={direction}>
-            {isSummaryStep ? (
+            {isSemesterStep ? (
+              <motion.div
+                key="semester"
+                custom={direction}
+                initial={{ opacity: 0, x: direction * 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction * -30 }}
+                transition={{ duration: 0.25 }}
+                className="py-4 space-y-4"
+              >
+                <div className="text-center space-y-2">
+                  <BookOpen className="h-12 w-12 text-primary mx-auto" />
+                  <p className="font-semibold text-base">Which semester is this reflection for?</p>
+                  <p className="text-sm text-muted-foreground">Select the semester to organize your reflection</p>
+                </div>
+                <select
+                  value={selectedSemester}
+                  onChange={(e) => setSelectedSemester(e.target.value)}
+                  className="w-full text-sm border rounded-lg px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-primary/30 font-medium"
+                  autoFocus
+                >
+                  {semesters.length > 0 ? (
+                    semesters.map((s) => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Spring 2026">Spring 2026</option>
+                      <option value="Summer 2026">Summer 2026</option>
+                      <option value="Fall 2026">Fall 2026</option>
+                      <option value="Spring 2027">Spring 2027</option>
+                    </>
+                  )}
+                </select>
+                <p className="text-xs text-muted-foreground text-center">
+                  This ensures your reflection appears in the correct semester view
+                </p>
+              </motion.div>
+            ) : isSummaryStep ? (
               <motion.div key="summary" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4 py-2">
                 <div className="flex items-center gap-2 justify-center text-primary mb-2">
                   <Sparkles className="h-4 w-4" />
@@ -228,8 +279,15 @@ export default function ReflectionModal({ type, semesterLabel, courses, onClose,
           {isSummaryStep ? (
             <Button onClick={onClose} className="rounded-xl bg-primary" size="sm">Done — Close</Button>
           ) : (
-            <Button onClick={goNext} className="rounded-xl bg-primary gap-1" size="sm">
-              {step === steps.length - 1 ? (
+            <Button
+              onClick={goNext}
+              disabled={isSemesterStep && !selectedSemester}
+              className="rounded-xl bg-primary gap-1"
+              size="sm"
+            >
+              {isSemesterStep ? (
+                <>Next <ChevronRight className="h-4 w-4" /></>
+              ) : step === steps.length - 1 ? (
                 <><Sparkles className="h-3.5 w-3.5" /> Generate Report</>
               ) : (
                 <>Next <ChevronRight className="h-4 w-4" /></>
