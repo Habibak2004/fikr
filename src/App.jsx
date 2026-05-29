@@ -20,6 +20,7 @@ import Insights from './pages/Insights';
 import AppLayout from './components/layout/AppLayout';
 import GardenFocusRoom from './pages/GardenFocusRoom';
 import ResetRoom from './pages/ResetRoom';
+import Reflections from './pages/Reflections';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
         <Route path="/focus" element={<FocusRoom />} />
         <Route path="/garden" element={<GardenFocusRoom />} />
         <Route path="/reset-room" element={<ResetRoom />} />
+        <Route path="/reflections" element={<Reflections />} />
         <Route path="/community" element={<Community />} />
         <Route path="/coach" element={<StudyCoach />} />
         <Route path="/insights" element={<Insights />} />

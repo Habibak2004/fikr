@@ -1,0 +1,76 @@
+{
+  "name": "Reflection",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "semester_setup",
+        "one_third",
+        "mid_semester",
+        "end_of_semester",
+        "exam"
+      ],
+      "description": "Type of reflection checkpoint"
+    },
+    "semester_label": {
+      "type": "string",
+      "description": "e.g. Spring 2026"
+    },
+    "course_id": {
+      "type": "string",
+      "description": "For exam reflections, the related course"
+    },
+    "course_name": {
+      "type": "string"
+    },
+    "exam_name": {
+      "type": "string",
+      "description": "For exam reflections"
+    },
+    "answers": {
+      "type": "object",
+      "description": "All question answers as key-value pairs"
+    },
+    "course_reflections": {
+      "type": "array",
+      "description": "Per-course reflection data",
+      "items": {
+        "type": "object",
+        "properties": {
+          "course_id": {
+            "type": "string"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "course_code": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "ai_summary": {
+      "type": "string",
+      "description": "AI-generated reflection summary"
+    },
+    "ai_report": {
+      "type": "object",
+      "description": "Structured AI output (report, plan, etc.)"
+    },
+    "completed": {
+      "type": "boolean",
+      "default": false
+    },
+    "semester_progress_at_time": {
+      "type": "number",
+      "description": "Semester progress % when reflection was taken"
+    }
+  },
+  "required": [
+    "type"
+  ]
+}

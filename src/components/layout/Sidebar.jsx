@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard, BookOpen, CalendarDays, Target,
   Users, Brain, BarChart3, Timer, Flame, Map, Sparkles,
-  LogOut, Settings, ChevronUp
+  LogOut, Settings, ChevronUp, NotebookPen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
@@ -19,6 +19,7 @@ const navItems = [
   { icon: Brain, label: "Study Coach", path: "/coach" },
   { icon: BarChart3, label: "Insights", path: "/insights" },
   { icon: Sparkles, label: "Reset Room", path: "/reset-room" },
+  { icon: NotebookPen, label: "Reflections", path: "/reflections" },
 ];
 
 export default function Sidebar() {
