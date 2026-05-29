@@ -622,7 +622,34 @@ export default function AcademicCalendar() {
               }
               const weeks = Object.values(weekMap).sort((a, b) => a.weekNum - b.weekNum);
 
+              // Get check-ins
+              const checkins = milestones.filter(m => m.type === "checkin");
+              let checkinQueue = [...checkins].sort((a, b) => a.date.localeCompare(b.date));
+
+              // Pull out setup checkin to render first
+              const setupCheckin = checkinQueue.find(c => c.reflectionType === "semester_setup");
+              if (setupCheckin) checkinQueue = checkinQueue.filter(c => c.reflectionType !== "semester_setup");
+
+              const renderCheckinCol = (m, key) => (
+                <div key={key} className="flex flex-col items-center text-center w-32 flex-shrink-0 px-2">
+                  <button
+                    onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
+                    className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
+                    title="Reflection checkpoint"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-amber-400" />
+                  </button>
+                  <button
+                    onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
+                    className="text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors"
+                  >
+                    {m.emoji} {m.label.replace(" Check-In", "")}
+                  </button>
+                </div>
+              );
+
               const nodes = [];
+              if (setupCheckin) nodes.push(renderCheckinCol(setupCheckin, "setup"));
               let lastMonth = null;
 
               for (const wk of weeks) {
@@ -717,6 +744,17 @@ export default function AcademicCalendar() {
                 );
 
                 lastMonth = wkMonthKey;
+
+                // Insert check-ins whose date falls within this week
+                const wkCheckins = checkinQueue.filter(c => {
+                  const d = new Date(c.date.slice(0,10) + "T12:00:00");
+                  return d >= wk.start && d <= wkEnd;
+                });
+                wkCheckins.forEach((c, i) => nodes.push(renderCheckinCol(c, `ci-wk${wk.weekNum}-${i}`)));
+                checkinQueue = checkinQueue.filter(c => {
+                  const d = new Date(c.date.slice(0,10) + "T12:00:00");
+                  return !(d >= wk.start && d <= wkEnd);
+                });
               }
 
               return nodes;
