@@ -634,7 +634,7 @@ export default function AcademicCalendar() {
                 <div key={key} className="flex flex-col items-center text-center w-32 flex-shrink-0 px-2">
                   <button
                     onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
-                    className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
+                    className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-2 bg-amber-50 hover:bg-amber-100 transition-colors"
                     title="Reflection checkpoint"
                   >
                     <div className="h-2 w-2 rounded-full bg-amber-400" />
@@ -679,12 +679,12 @@ export default function AcademicCalendar() {
                     </p>
                     {/* Semester marker dot */}
                     {(isSemesterStartWeek || isSemesterEndWeek) && (
-                      <div className="h-5 w-5 rounded-full z-10 flex items-center justify-center mb-3 bg-purple-100 border-2 border-purple-400">
+                      <div className="h-5 w-5 rounded-full z-10 flex items-center justify-center mb-2 bg-purple-100 border-2 border-purple-400">
                         <div className="h-2.5 w-2.5 rounded-full bg-purple-500" />
                       </div>
                     )}
                     {!isSemesterStartWeek && !isSemesterEndWeek && (
-                      <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
+                      <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-2 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
                         {allDone && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
                       </div>
                     )}
