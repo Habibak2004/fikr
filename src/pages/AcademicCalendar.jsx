@@ -414,6 +414,7 @@ export default function AcademicCalendar() {
               {editingTimeline ? "Done" : "Edit Timeline"}
             </button>
           )}
+          </div>
           <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
             {[
               { id: "timeline", icon: LayoutList, label: "Timeline" },
@@ -432,7 +433,6 @@ export default function AcademicCalendar() {
               </button>
             ))}
           </div>
-        </div>
         </div>
 
         {calendarView === "weekly" && (
@@ -689,6 +689,7 @@ export default function AcademicCalendar() {
               return nodes;
             })()}
           </div>
+        </div>
         </div>
         </div>
       )}
