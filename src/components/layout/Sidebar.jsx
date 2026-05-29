@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -31,6 +32,57 @@ export default function Sidebar() {
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
+
+  const { data: studySessions = [] } = useQuery({
+    queryKey: ["studySessions"],
+    queryFn: () => base44.entities.StudySession.list("-date"),
+  });
+
+  // Calculate current study streak
+  const calculateStreak = () => {
+    if (!studySessions.length) return 0;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const uniqueDates = [...new Set(studySessions.map(s => s.date.slice(0, 10)))];
+    uniqueDates.sort((a, b) => new Date(b) - new Date(a));
+    
+    let streak = 0;
+    let currentDate = new Date(today);
+    
+    // Check if there's a session today or yesterday to start the streak
+    const hasToday = uniqueDates.some(d => {
+      const sessionDate = new Date(d);
+      return sessionDate.toDateString() === today.toDateString();
+    });
+    
+    if (!hasToday) {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const hasYesterday = uniqueDates.some(d => {
+        const sessionDate = new Date(d);
+        return sessionDate.toDateString() === yesterday.toDateString();
+      });
+      if (!hasYesterday) return 0;
+      currentDate = yesterday;
+    }
+    
+    // Count consecutive days
+    while (true) {
+      const dateStr = currentDate.toISOString().slice(0, 10);
+      if (uniqueDates.includes(dateStr)) {
+        streak++;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  };
+
+  const streak = calculateStreak();
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -77,8 +129,8 @@ export default function Sidebar() {
       <div className="p-4 space-y-3">
         <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-secondary/10 p-4">
           <p className="text-xs font-semibold text-foreground">Study Streak</p>
-          <p className="text-2xl font-bold text-primary mt-1">7 days</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Keep it going!</p>
+          <p className="text-2xl font-bold text-primary mt-1">{streak} {streak === 1 ? "day" : "days"}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">{streak > 0 ? "Keep it going!" : "Start studying today!"}</p>
         </div>
 
         {/* User Profile */}
