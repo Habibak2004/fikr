@@ -670,17 +670,17 @@ export default function AcademicCalendar() {
                 nodes.push(
                   <div key={`wk-${wk.weekNum}`} className="flex flex-col items-start text-left w-44 flex-shrink-0 px-3">
                     {/* Month label — only when month changes */}
-                    <p className={`text-[10px] font-bold tracking-widest uppercase mb-2 ${monthChanged ? (hasActive ? "text-primary" : "text-muted-foreground") : "text-transparent select-none"}`}>
+                    <p className={`text-[10px] font-bold tracking-widest uppercase mb-1 ${monthChanged ? (hasActive ? "text-primary" : "text-muted-foreground") : "text-transparent select-none"}`}>
                       {monthChanged ? MONTH_NAMES[wkMonthIdx] : "·"}
                     </p>
                     {/* Semester start/end badge - above dots, like month labels */}
                     {isSemesterStartWeek && (
-                      <p className="text-[10px] font-bold text-purple-700 mb-2">
+                      <p className="text-[10px] font-bold text-purple-700 mb-1">
                         🎓 Semester Starts
                       </p>
                     )}
                     {isSemesterEndWeek && (
-                      <p className="text-[10px] font-bold text-purple-700 mb-2">
+                      <p className="text-[10px] font-bold text-purple-700 mb-1">
                         🎓 Semester Ends
                       </p>
                     )}
