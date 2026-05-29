@@ -678,7 +678,7 @@ export default function AcademicCalendar() {
                     </div>
                     {/* Week label */}
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">
-                      Week {globalWeekNum}
+                      Week {globalWeekNum} <span className="font-normal">({format(wk.start, "MMM d")}–{format(wkEnd, "MMM d")})</span>
                     </p>
                     {/* Events */}
                     <div className="space-y-1 w-full">
