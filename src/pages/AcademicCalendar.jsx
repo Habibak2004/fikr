@@ -65,6 +65,7 @@ export default function AcademicCalendar() {
   });
   const [editingDeadlines, setEditingDeadlines] = useState(false);
   const [editingTimeline, setEditingTimeline] = useState(false);
+  const [viewRange, setViewRange] = useState({ monthsBefore: 0, monthsAfter: 0 });
   const [newDeadline, setNewDeadline] = useState({ label: "", detail: "", urgency: "UPCOMING", date: "" });
   const [newMilestone, setNewMilestone] = useState({ date: "", label: "", sub: "", type: "upcoming" });
   const [calendarView, setCalendarView] = useState("timeline"); // "timeline" | "weekly" | "monthly"
@@ -447,7 +448,38 @@ export default function AcademicCalendar() {
         <div>
         {editingTimeline && (
           <div className="mb-5 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-semibold text-muted-foreground">View Range:</span>
+                <button
+                  onClick={() => setViewRange(r => ({ ...r, monthsBefore: Math.max(0, r.monthsBefore - 1) }))}
+                  className="h-6 w-6 rounded-md bg-white border border-border flex items-center justify-center text-xs hover:bg-primary/10"
+                >
+                  −
+                </button>
+                <span className="text-xs font-bold w-16 text-center">{viewRange.monthsBefore}m before / {viewRange.monthsAfter}m after</span>
+                <button
+                  onClick={() => setViewRange(r => ({ ...r, monthsBefore: r.monthsBefore + 1 }))}
+                  className="h-6 w-6 rounded-md bg-white border border-border flex items-center justify-center text-xs hover:bg-primary/10"
+                >
+                  +
+                </button>
+                <span className="text-[10px] text-muted-foreground ml-2">|</span>
+                <button
+                  onClick={() => setViewRange(r => ({ ...r, monthsAfter: Math.max(0, r.monthsAfter - 1) }))}
+                  className="h-6 w-6 rounded-md bg-white border border-border flex items-center justify-center text-xs hover:bg-primary/10"
+                >
+                  −
+                </button>
+                <button
+                  onClick={() => setViewRange(r => ({ ...r, monthsAfter: r.monthsAfter + 1 }))}
+                  className="h-6 w-6 rounded-md bg-white border border-border flex items-center justify-center text-xs hover:bg-primary/10"
+                >
+                  +
+                </button>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2 items-end">
               <div>
                 <p className="text-[10px] text-muted-foreground mb-1">Date</p>
@@ -508,12 +540,12 @@ export default function AcademicCalendar() {
 
               const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-              // Build global week buckets — expand to show full months around semester dates
+              // Build global week buckets — expand to show full months around semester dates using viewRange
               const semStart = new Date(semester.start + "T12:00:00");
               const semEnd   = new Date(semester.end   + "T12:00:00");
-              // Display from the 1st of the semester's start month to the last day of the end month
-              const displayStart = new Date(semStart.getFullYear(), semStart.getMonth(), 1);
-              const displayEnd   = new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0);
+              // Display from the 1st of the semester's start month to the last day of the end month, expanded by viewRange
+              const displayStart = new Date(semStart.getFullYear(), semStart.getMonth() - viewRange.monthsBefore, 1);
+              const displayEnd   = new Date(semEnd.getFullYear(), semEnd.getMonth() + 1 + viewRange.monthsAfter, 0);
               // Normalize to Monday of the week containing displayStart (shows full month, even if semester starts mid-month)
               const dayOfWeek = displayStart.getDay();
               const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
