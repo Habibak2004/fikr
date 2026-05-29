@@ -653,6 +653,7 @@ export default function AcademicCalendar() {
 
               for (const wk of weeks) {
                 const isFirstWeek = wk.weekNum === 0;
+                const wkEnd = new Date(wk.start.getTime() + 6 * 24 * 60 * 60 * 1000);
                 // Determine the month to display: use the 1st of the month if this week contains it, otherwise use the week start
                 let monthDay = wk.start;
                 for (let d = 0; d < 7; d++) {
@@ -720,8 +721,7 @@ export default function AcademicCalendar() {
 
                 lastMonth = wkMonthKey;
 
-                // Insert check-ins whose date falls within this week
-                const wkEnd = new Date(wk.start.getTime() + 6 * 24 * 60 * 60 * 1000);
+                // Insert check-ins whose date falls within this week (wkEnd already defined above)
                 const wkCheckins = checkinQueue.filter(c => {
                   const d = new Date(c.date.slice(0,10) + "T12:00:00");
                   return d >= wk.start && d <= wkEnd;
