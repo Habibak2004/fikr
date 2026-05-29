@@ -527,12 +527,11 @@ export default function AcademicCalendar() {
               let checkinQueue = [...checkins].sort((a, b) => a.date.localeCompare(b.date));
 
               for (const [monthKey, events] of monthGroups) {
-                // Insert any check-ins that fall before or at the end of this month
-                const monthEnd = monthKey + "-31";
+                nodes.push({ kind: "month", key: monthKey, events, label: MONTH_NAMES[parseInt(monthKey.split("-")[1], 10) - 1] });
+                // Insert check-ins that fall within or before this month, after the month column
                 while (checkinQueue.length > 0 && checkinQueue[0].date.slice(0, 7) <= monthKey) {
                   nodes.push({ kind: "checkin", data: checkinQueue.shift() });
                 }
-                nodes.push({ kind: "month", key: monthKey, events, label: MONTH_NAMES[parseInt(monthKey.split("-")[1], 10) - 1] });
               }
               // Any remaining check-ins after last month
               while (checkinQueue.length > 0) {
