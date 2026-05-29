@@ -497,130 +497,161 @@ export default function AcademicCalendar() {
           </div>
         )}
         <div className="overflow-x-auto -mx-6 px-6">
-          <div className="flex gap-0 relative min-w-max">
-            {/* Connecting line */}
-            <div className="absolute top-[52px] left-[56px] right-[56px] h-0.5 bg-border" />
-
+          <div className="relative">
             {(() => {
-              // Separate check-ins from regular milestones
               const regularMilestones = milestones.filter(m => m.type !== "checkin");
               const checkins = milestones.filter(m => m.type === "checkin");
-
-              // Build month groups from regular milestones only
-              const monthGroups = Object.entries(
-                regularMilestones.reduce((acc, m) => {
-                  if (!m.date || typeof m.date !== "string") return acc;
-                  const datePart = m.date.slice(0, 10);
-                  if (!datePart.match(/^\d{4}-\d{2}-\d{2}$/)) return acc;
-                  const [year, month] = datePart.split("-").map(Number);
-                  const key = `${String(year).padStart(4,"0")}-${String(month).padStart(2, "0")}`;
-                  if (!acc[key]) acc[key] = [];
-                  acc[key].push({ ...m, date: datePart });
-                  return acc;
-                }, {})
-              ).sort(([a], [b]) => a.localeCompare(b));
-
-              const MONTH_NAMES = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
-
-              // Build a flat ordered list of nodes: interleave check-ins by date
-              const nodes = [];
               let checkinQueue = [...checkins].sort((a, b) => a.date.localeCompare(b.date));
 
-              // 🌱 Semester Setup always goes first (before all month columns)
+              const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+              // Group regular milestones by month
+              const monthMap = regularMilestones.reduce((acc, m) => {
+                if (!m.date || typeof m.date !== "string") return acc;
+                const datePart = m.date.slice(0, 10);
+                if (!datePart.match(/^\d{4}-\d{2}-\d{2}$/)) return acc;
+                const key = datePart.slice(0, 7);
+                if (!acc[key]) acc[key] = [];
+                acc[key].push({ ...m, date: datePart });
+                return acc;
+              }, {});
+              const sortedMonths = Object.keys(monthMap).sort();
+
+              // Pull out setup checkin to render first
               const setupCheckin = checkinQueue.find(c => c.reflectionType === "semester_setup");
-              if (setupCheckin) {
-                checkinQueue = checkinQueue.filter(c => c.reflectionType !== "semester_setup");
-                nodes.push({ kind: "checkin", data: setupCheckin });
-              }
+              if (setupCheckin) checkinQueue = checkinQueue.filter(c => c.reflectionType !== "semester_setup");
 
-              for (const [monthKey, events] of monthGroups) {
-                nodes.push({ kind: "month", key: monthKey, events, label: MONTH_NAMES[parseInt(monthKey.split("-")[1], 10) - 1] });
-                // Insert remaining check-ins that fall within this month, after the month column
-                while (checkinQueue.length > 0 && checkinQueue[0].date.slice(0, 7) <= monthKey) {
-                  nodes.push({ kind: "checkin", data: checkinQueue.shift() });
-                }
-              }
-              // Any remaining check-ins after last month
-              while (checkinQueue.length > 0) {
-                nodes.push({ kind: "checkin", data: checkinQueue.shift() });
-              }
+              const renderCheckin = (m, key) => (
+                <div key={key} className="flex items-start gap-3 py-2 pl-4 border-l-2 border-amber-300 ml-2 mb-1">
+                  <button
+                    onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
+                    className="h-5 w-5 rounded-full border-2 border-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5 bg-amber-50 hover:bg-amber-100 transition-colors"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-amber-400" />
+                  </button>
+                  <button
+                    onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
+                    className="text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors text-left"
+                  >
+                    {m.emoji} {m.label.replace(" Check-In", "")} — <span className="font-normal">{format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")}</span>
+                  </button>
+                </div>
+              );
 
-              return nodes.map((node, ni) => {
-                if (node.kind === "checkin") {
-                  const m = node.data;
-                  return (
-                    <div key={`checkin-${ni}`} className="flex flex-col items-center text-center w-36 flex-shrink-0 px-2">
-                      <p className="text-[10px] font-bold tracking-widest uppercase mb-3 text-amber-600">REFLECT</p>
-                      <button
-                        onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
-                        className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
-                      >
-                        <div className="h-2 w-2 rounded-full bg-amber-400" />
-                      </button>
-                      <button
-                        onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
-                        className="text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors"
-                      >
-                        {m.emoji} {m.label.replace(" Check-In", "")}
-                      </button>
-                    </div>
-                  );
-                }
-
-                // Regular month node
-                const { events, label: monthLabel } = node;
-                const hasActive = events.some(e => e.type === "active");
+              const renderEvent = (m, i) => {
+                const isActive   = m.type === "active";
+                const isDone     = m.type === "done";
+                const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
+                const isBreak    = /break|recess|holiday|no class|vacation/i.test(m.label);
+                const isStarred  = criticalDeadlines.some(d => d.label === m.label);
                 return (
-                  <div key={node.key} className="flex flex-col items-center text-center w-44 flex-shrink-0 px-2">
-                    <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${hasActive ? "text-primary" : "text-muted-foreground"}`}>
-                      {monthLabel}
+                  <div key={i} className="flex items-start gap-2 group">
+                    <div className={`h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0 ${
+                      isBreak ? "bg-emerald-400" : isActive ? "bg-primary" : isDone ? "bg-primary/50" : "bg-border"
+                    }`} />
+                    <p className={`text-xs font-medium leading-tight flex-1 ${
+                      isBreak ? "text-emerald-600" : isActive ? "text-primary" : isImported ? "text-secondary" : isDone ? "text-foreground" : "text-muted-foreground"
+                    }`}>
+                      <span className="font-semibold">{format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")}</span> — {m.label}
                     </p>
-                    <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
-                      {events.every(e => e.type === "done") && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
-                    </div>
-                    <div className="space-y-1.5 w-full">
-                      {events.map((m, i) => {
-                        const isActive   = m.type === "active";
-                        const isDone     = m.type === "done";
-                        const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
-                        const isBreak    = /break|recess|holiday|no class|vacation/i.test(m.label);
-                        const isStarred  = criticalDeadlines.some(d => d.label === m.label);
-                        return (
-                          <div key={i} className="text-left flex items-start gap-1 group">
-                            <p className={`text-xs font-semibold leading-tight flex-1 ${
-                              isBreak    ? "text-emerald-600" :
-                              isActive   ? "text-primary" :
-                              isImported ? "text-secondary" :
-                              isDone     ? "text-foreground" :
-                              "text-muted-foreground"
-                            }`}>
-                              {format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")} — {m.label}
-                            </p>
-                            <button
-                              title={isStarred ? "Remove from Critical Deadlines" : "Add to Critical Deadlines"}
-                              onClick={() => {
-                                if (isStarred) {
-                                  saveCriticalDeadlines(criticalDeadlines.filter(d => d.label !== m.label));
-                                } else {
-                                  saveCriticalDeadlines([...criticalDeadlines, {
-                                    label: m.label,
-                                    date: m.date.slice(0, 10),
-                                    detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"),
-                                    urgency: "UPCOMING",
-                                  }]);
-                                }
-                              }}
-                              className={`flex-shrink-0 transition-opacity ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
-                            >
-                              <Star className={`h-3 w-3 ${isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <button
+                      title={isStarred ? "Remove" : "Add to Critical Deadlines"}
+                      onClick={() => {
+                        if (isStarred) {
+                          saveCriticalDeadlines(criticalDeadlines.filter(d => d.label !== m.label));
+                        } else {
+                          saveCriticalDeadlines([...criticalDeadlines, {
+                            label: m.label, date: m.date.slice(0, 10),
+                            detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"), urgency: "UPCOMING",
+                          }]);
+                        }
+                      }}
+                      className={`flex-shrink-0 transition-opacity ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
+                    >
+                      <Star className={`h-3 w-3 ${isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                    </button>
                   </div>
                 );
-              });
+              };
+
+              const sections = [];
+
+              // Setup checkin first
+              if (setupCheckin) {
+                sections.push(
+                  <div key="setup-checkin" className="mb-4">
+                    {renderCheckin(setupCheckin, "setup")}
+                  </div>
+                );
+              }
+
+              for (const monthKey of sortedMonths) {
+                const events = monthMap[monthKey];
+                const monthIdx = parseInt(monthKey.split("-")[1], 10) - 1;
+                const monthLabel = MONTH_NAMES[monthIdx] + " " + monthKey.split("-")[0];
+                const hasActive = events.some(e => e.type === "active");
+
+                // Group events within this month by week (Mon–Sun)
+                const weekMap = {};
+                for (const ev of events) {
+                  const d = new Date(ev.date + "T12:00:00");
+                  // Week number within month (1-based, week starts Monday)
+                  const dayOfMonth = d.getDate();
+                  const weekNum = Math.ceil(dayOfMonth / 7);
+                  const wk = `W${weekNum}`;
+                  if (!weekMap[wk]) weekMap[wk] = { label: wk, start: d, events: [] };
+                  weekMap[wk].events.push(ev);
+                }
+                const weeks = Object.values(weekMap);
+
+                sections.push(
+                  <div key={monthKey} className="mb-6">
+                    {/* Month header */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${hasActive ? "bg-primary" : "bg-border"}`} />
+                      <p className={`text-sm font-extrabold uppercase tracking-widest ${hasActive ? "text-primary" : "text-muted-foreground"}`}>
+                        {monthLabel}
+                      </p>
+                      <div className="flex-1 h-px bg-border" />
+                    </div>
+
+                    {/* Weeks */}
+                    <div className="ml-5 space-y-3">
+                      {weeks.map((wk) => (
+                        <div key={wk.label}>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">
+                            Week of {format(wk.start, "MMM d")}
+                          </p>
+                          <div className="space-y-1">
+                            {wk.events.map((ev, i) => renderEvent(ev, i))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Check-ins that fall in this month */}
+                    {checkinQueue.filter(c => c.date.slice(0, 7) === monthKey).length > 0 && (
+                      <div className="ml-5 mt-3 space-y-1">
+                        {checkinQueue.filter(c => c.date.slice(0, 7) === monthKey).map((c, i) => renderCheckin(c, `ci-${monthKey}-${i}`))}
+                      </div>
+                    )}
+                  </div>
+                );
+
+                // Remove rendered check-ins from queue
+                checkinQueue = checkinQueue.filter(c => c.date.slice(0, 7) !== monthKey);
+              }
+
+              // Remaining check-ins after all months
+              if (checkinQueue.length > 0) {
+                sections.push(
+                  <div key="trailing-checkins" className="space-y-1">
+                    {checkinQueue.map((c, i) => renderCheckin(c, `trail-${i}`))}
+                  </div>
+                );
+              }
+
+              return sections;
             })()}
           </div>
         </div>
