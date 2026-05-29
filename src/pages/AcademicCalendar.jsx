@@ -563,9 +563,19 @@ export default function AcademicCalendar() {
               let lastMonth = null;
 
               for (const wk of weeks) {
-                const wkMonthKey = format(wk.monday, "yyyy-MM");
-                const wkMonthIdx = wk.monday.getMonth();
-                const monthChanged = wkMonthKey !== lastMonth;
+                // Find the first calendar day in this week (Mon–Sun) that is a new month
+                // i.e. the week that contains the 1st of a month
+                let newMonthInWeek = null;
+                for (let d = 0; d < 7; d++) {
+                  const day = new Date(wk.monday.getTime() + d * 24 * 60 * 60 * 1000);
+                  const key = format(day, "yyyy-MM");
+                  if (key !== lastMonth && day.getDate() === 1) { newMonthInWeek = day; break; }
+                }
+                // Fallback: first week ever (semester start week)
+                const isFirstWeek = wk.weekNum === 0;
+                const wkMonthKey = newMonthInWeek ? format(newMonthInWeek, "yyyy-MM") : (isFirstWeek ? format(wk.monday, "yyyy-MM") : lastMonth);
+                const wkMonthIdx = newMonthInWeek ? newMonthInWeek.getMonth() : wk.monday.getMonth();
+                const monthChanged = (newMonthInWeek !== null) || isFirstWeek;
                 const globalWeekNum = wk.weekNum + 1; // 1-based
                 const hasActive = wk.events.some(e => e.type === "active");
                 const allDone = wk.events.every(e => e.type === "done");
@@ -622,7 +632,7 @@ export default function AcademicCalendar() {
                   </div>
                 );
 
-                if (monthChanged) lastMonth = wkMonthKey;
+                if (newMonthInWeek || isFirstWeek) lastMonth = wkMonthKey;
 
                 // Insert check-ins whose date falls within this week
                 const wkEnd = new Date(wk.monday.getTime() + 6 * 24 * 60 * 60 * 1000);
