@@ -3,13 +3,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { format, differenceInDays } from "date-fns";
 import {
   BookOpen, Star, BarChart2, FileText, Lightbulb, ChevronRight,
-  Clock, CheckCircle2, Plus, Brain, TrendingUp, Sparkles, Filter
+  Clock, CheckCircle2, Plus, Brain, TrendingUp, Sparkles, Filter, Eye
 } from "lucide-react";
 import ReflectionModal from "@/components/reflections/ReflectionModal";
 import LongitudinalInsights from "@/components/reflections/LongitudinalInsights";
+import ViewReflectionModal from "@/components/reflections/ViewReflectionModal";
 
 const CHECKPOINT_TYPES = [
   {
@@ -77,6 +79,7 @@ const CHECKPOINT_TYPES = [
 export default function Reflections() {
   const qc = useQueryClient();
   const [activeModal, setActiveModal] = useState(null); // { type, existingReflection? }
+  const [viewReflection, setViewReflection] = useState(null); // reflection to view
   const [selectedSemester, setSelectedSemester] = useState("all"); // "all" or semester id
 
   const { data: reflections = [] } = useQuery({
@@ -181,7 +184,11 @@ export default function Reflections() {
                 {history.length > 0 && (
                   <div className="space-y-1.5">
                     {history.slice(0, 2).map((r) => (
-                      <div key={r.id} className="flex items-center gap-2 bg-white/60 rounded-xl px-3 py-2">
+                      <button
+                        key={r.id}
+                        onClick={() => setViewReflection(r)}
+                        className="w-full flex items-center gap-2 bg-white/60 rounded-xl px-3 py-2 hover:bg-white/80 transition-colors text-left"
+                      >
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
                         <span className="text-xs font-medium flex-1 truncate">
                           {r.exam_name ? `${r.exam_name} · ` : ""}
@@ -190,7 +197,8 @@ export default function Reflections() {
                         <span className="text-[10px] text-muted-foreground">
                           {format(new Date(r.created_date), "MMM d")}
                         </span>
-                      </div>
+                        <Eye className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                      </button>
                     ))}
                   </div>
                 )}
@@ -227,7 +235,11 @@ export default function Reflections() {
               const cp = CHECKPOINT_TYPES.find(c => c.id === r.type);
               const Icon = cp?.icon || FileText;
               return (
-                <div key={r.id} className="bg-white border rounded-xl px-4 py-3 flex items-center gap-3">
+                <button
+                  key={r.id}
+                  onClick={() => setViewReflection(r)}
+                  className="w-full bg-white border rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left"
+                >
                   <div className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${cp?.iconBg || "bg-muted"}`}>
                     <Icon className={`h-4 w-4 ${cp?.iconColor || "text-muted-foreground"}`} />
                   </div>
@@ -243,7 +255,8 @@ export default function Reflections() {
                   {r.ai_summary && (
                     <Lightbulb className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" title="Has AI summary" />
                   )}
-                </div>
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                </button>
               );
             })}
           </div>
@@ -260,6 +273,13 @@ export default function Reflections() {
             qc.invalidateQueries({ queryKey: ["reflections"] });
             setActiveModal(null);
           }}
+        />
+      )}
+
+      {viewReflection && (
+        <ViewReflectionModal
+          reflection={viewReflection}
+          onClose={() => setViewReflection(null)}
         />
       )}
     </div>
