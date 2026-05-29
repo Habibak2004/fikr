@@ -497,13 +497,16 @@ export default function AcademicCalendar() {
           </div>
         )}
         <div className="overflow-x-auto -mx-6 px-6">
-          <div className="relative">
+          <div className="flex gap-0 relative min-w-max">
+            {/* Connecting line */}
+            <div className="absolute top-[52px] left-[56px] right-[56px] h-0.5 bg-border" />
+
             {(() => {
               const regularMilestones = milestones.filter(m => m.type !== "checkin");
               const checkins = milestones.filter(m => m.type === "checkin");
               let checkinQueue = [...checkins].sort((a, b) => a.date.localeCompare(b.date));
 
-              const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+              const MONTH_NAMES = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
 
               // Group regular milestones by month
               const monthMap = regularMilestones.reduce((acc, m) => {
@@ -521,137 +524,112 @@ export default function AcademicCalendar() {
               const setupCheckin = checkinQueue.find(c => c.reflectionType === "semester_setup");
               if (setupCheckin) checkinQueue = checkinQueue.filter(c => c.reflectionType !== "semester_setup");
 
-              const renderCheckin = (m, key) => (
-                <div key={key} className="flex items-start gap-3 py-2 pl-4 border-l-2 border-amber-300 ml-2 mb-1">
+              const renderCheckinCol = (m, key) => (
+                <div key={key} className="flex flex-col items-center text-center w-36 flex-shrink-0 px-2">
+                  <p className="text-[10px] font-bold tracking-widest uppercase mb-3 text-amber-600">REFLECT</p>
                   <button
                     onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
-                    className="h-5 w-5 rounded-full border-2 border-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5 bg-amber-50 hover:bg-amber-100 transition-colors"
+                    className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
                   >
                     <div className="h-2 w-2 rounded-full bg-amber-400" />
                   </button>
                   <button
                     onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
-                    className="text-xs font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors text-left"
+                    className="text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors"
                   >
-                    {m.emoji} {m.label.replace(" Check-In", "")} — <span className="font-normal">{format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")}</span>
+                    {m.emoji} {m.label.replace(" Check-In", "")}
                   </button>
                 </div>
               );
 
-              const renderEvent = (m, i) => {
-                const isActive   = m.type === "active";
-                const isDone     = m.type === "done";
-                const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
-                const isBreak    = /break|recess|holiday|no class|vacation/i.test(m.label);
-                const isStarred  = criticalDeadlines.some(d => d.label === m.label);
-                return (
-                  <div key={i} className="flex items-start gap-2 group">
-                    <div className={`h-1.5 w-1.5 rounded-full mt-1.5 flex-shrink-0 ${
-                      isBreak ? "bg-emerald-400" : isActive ? "bg-primary" : isDone ? "bg-primary/50" : "bg-border"
-                    }`} />
-                    <p className={`text-xs font-medium leading-tight flex-1 ${
-                      isBreak ? "text-emerald-600" : isActive ? "text-primary" : isImported ? "text-secondary" : isDone ? "text-foreground" : "text-muted-foreground"
-                    }`}>
-                      <span className="font-semibold">{format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")}</span> — {m.label}
-                    </p>
-                    <button
-                      title={isStarred ? "Remove" : "Add to Critical Deadlines"}
-                      onClick={() => {
-                        if (isStarred) {
-                          saveCriticalDeadlines(criticalDeadlines.filter(d => d.label !== m.label));
-                        } else {
-                          saveCriticalDeadlines([...criticalDeadlines, {
-                            label: m.label, date: m.date.slice(0, 10),
-                            detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"), urgency: "UPCOMING",
-                          }]);
-                        }
-                      }}
-                      className={`flex-shrink-0 transition-opacity ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
-                    >
-                      <Star className={`h-3 w-3 ${isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
-                    </button>
-                  </div>
-                );
-              };
-
-              const sections = [];
+              const nodes = [];
 
               // Setup checkin first
-              if (setupCheckin) {
-                sections.push(
-                  <div key="setup-checkin" className="mb-4">
-                    {renderCheckin(setupCheckin, "setup")}
-                  </div>
-                );
-              }
+              if (setupCheckin) nodes.push(renderCheckinCol(setupCheckin, "setup"));
 
               for (const monthKey of sortedMonths) {
                 const events = monthMap[monthKey];
                 const monthIdx = parseInt(monthKey.split("-")[1], 10) - 1;
-                const monthLabel = MONTH_NAMES[monthIdx] + " " + monthKey.split("-")[0];
+                const monthLabel = MONTH_NAMES[monthIdx];
                 const hasActive = events.some(e => e.type === "active");
 
-                // Group events within this month by week (Mon–Sun)
+                // Group events by week within month
                 const weekMap = {};
                 for (const ev of events) {
                   const d = new Date(ev.date + "T12:00:00");
-                  // Week number within month (1-based, week starts Monday)
-                  const dayOfMonth = d.getDate();
-                  const weekNum = Math.ceil(dayOfMonth / 7);
-                  const wk = `W${weekNum}`;
-                  if (!weekMap[wk]) weekMap[wk] = { label: wk, start: d, events: [] };
-                  weekMap[wk].events.push(ev);
+                  const weekNum = Math.ceil(d.getDate() / 7);
+                  if (!weekMap[weekNum]) weekMap[weekNum] = { weekNum, start: d, events: [] };
+                  weekMap[weekNum].events.push(ev);
                 }
-                const weeks = Object.values(weekMap);
+                const weeks = Object.values(weekMap).sort((a, b) => a.weekNum - b.weekNum);
 
-                sections.push(
-                  <div key={monthKey} className="mb-6">
-                    {/* Month header */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${hasActive ? "bg-primary" : "bg-border"}`} />
-                      <p className={`text-sm font-extrabold uppercase tracking-widest ${hasActive ? "text-primary" : "text-muted-foreground"}`}>
-                        {monthLabel}
-                      </p>
-                      <div className="flex-1 h-px bg-border" />
+                nodes.push(
+                  <div key={monthKey} className="flex flex-col items-start text-left w-52 flex-shrink-0 px-3">
+                    {/* Month label */}
+                    <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${hasActive ? "text-primary" : "text-muted-foreground"}`}>
+                      {monthLabel}
+                    </p>
+                    {/* Dot */}
+                    <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
+                      {events.every(e => e.type === "done") && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
                     </div>
-
                     {/* Weeks */}
-                    <div className="ml-5 space-y-3">
+                    <div className="space-y-3 w-full">
                       {weeks.map((wk) => (
-                        <div key={wk.label}>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">
-                            Week of {format(wk.start, "MMM d")}
+                        <div key={wk.weekNum}>
+                          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1">
+                            Wk of {format(wk.start, "MMM d")}
                           </p>
                           <div className="space-y-1">
-                            {wk.events.map((ev, i) => renderEvent(ev, i))}
+                            {wk.events.map((ev, i) => {
+                              const isActive   = ev.type === "active";
+                              const isDone     = ev.type === "done";
+                              const isImported = importedEvents.some(e => e.date === ev.date && e.label === ev.label);
+                              const isBreak    = /break|recess|holiday|no class|vacation/i.test(ev.label);
+                              const isStarred  = criticalDeadlines.some(d => d.label === ev.label);
+                              return (
+                                <div key={i} className="flex items-start gap-1 group">
+                                  <p className={`text-xs font-semibold leading-tight flex-1 ${
+                                    isBreak ? "text-emerald-600" : isActive ? "text-primary" : isImported ? "text-secondary" : isDone ? "text-foreground" : "text-muted-foreground"
+                                  }`}>
+                                    <span className="font-bold">{format(new Date(ev.date + "T12:00:00"), "MMM d")}</span> — {ev.label}
+                                  </p>
+                                  <button
+                                    title={isStarred ? "Remove" : "Star"}
+                                    onClick={() => {
+                                      if (isStarred) {
+                                        saveCriticalDeadlines(criticalDeadlines.filter(d => d.label !== ev.label));
+                                      } else {
+                                        saveCriticalDeadlines([...criticalDeadlines, {
+                                          label: ev.label, date: ev.date.slice(0, 10),
+                                          detail: format(new Date(ev.date + "T12:00:00"), "MMM d"), urgency: "UPCOMING",
+                                        }]);
+                                      }
+                                    }}
+                                    className={`flex-shrink-0 transition-opacity ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
+                                  >
+                                    <Star className={`h-3 w-3 ${isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ))}
                     </div>
-
-                    {/* Check-ins that fall in this month */}
-                    {checkinQueue.filter(c => c.date.slice(0, 7) === monthKey).length > 0 && (
-                      <div className="ml-5 mt-3 space-y-1">
-                        {checkinQueue.filter(c => c.date.slice(0, 7) === monthKey).map((c, i) => renderCheckin(c, `ci-${monthKey}-${i}`))}
-                      </div>
-                    )}
                   </div>
                 );
 
-                // Remove rendered check-ins from queue
+                // Insert check-ins that fall in this month, after the month column
+                const monthCheckins = checkinQueue.filter(c => c.date.slice(0, 7) === monthKey);
+                monthCheckins.forEach((c, i) => nodes.push(renderCheckinCol(c, `ci-${monthKey}-${i}`)));
                 checkinQueue = checkinQueue.filter(c => c.date.slice(0, 7) !== monthKey);
               }
 
               // Remaining check-ins after all months
-              if (checkinQueue.length > 0) {
-                sections.push(
-                  <div key="trailing-checkins" className="space-y-1">
-                    {checkinQueue.map((c, i) => renderCheckin(c, `trail-${i}`))}
-                  </div>
-                );
-              }
+              checkinQueue.forEach((c, i) => nodes.push(renderCheckinCol(c, `trail-${i}`)));
 
-              return sections;
+              return nodes;
             })()}
           </div>
         </div>
