@@ -516,7 +516,7 @@ export default function AcademicCalendar() {
               const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
               const firstMonday = new Date(semStart);
               firstMonday.setDate(firstMonday.getDate() + mondayOffset);
-              const totalWeeks = Math.ceil((semEnd - firstMonday) / (7 * 24 * 60 * 60 * 1000)) + 1;
+              const totalWeeks = Math.ceil((semEnd - firstMonday) / (7 * 24 * 60 * 60 * 1000));
 
               // Initialize all weeks (empty)
               const weekMap = {};
