@@ -587,9 +587,9 @@ export default function AcademicCalendar() {
           </div>
         )}
         <div className="overflow-x-auto -mx-6 px-6">
-          <div className="flex gap-0 relative min-w-max pb-4">
+          <div className="flex gap-0 relative min-w-max">
             {/* Connecting line */}
-            <div className="absolute top-[80px] left-[48px] right-[48px] h-[2px] bg-gradient-to-r from-transparent via-border to-transparent" />
+            <div className="absolute top-[52px] left-[36px] right-[36px] h-0.5 bg-border" />
 
             {(() => {
               const regularMilestones = milestones.filter(m => m.type !== "checkin");
@@ -631,21 +631,19 @@ export default function AcademicCalendar() {
               if (setupCheckin) checkinQueue = checkinQueue.filter(c => c.reflectionType !== "semester_setup");
 
               const renderCheckinCol = (m, key) => (
-                <div key={key} className="flex flex-col items-center text-center w-36 flex-shrink-0 px-3 py-2">
+                <div key={key} className="flex flex-col items-center text-center w-32 flex-shrink-0 px-2">
                   <button
                     onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
-                    className="h-6 w-6 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-gradient-to-br from-amber-50 to-amber-100 hover:shadow-md transition-all"
+                    className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
                     title="Reflection checkpoint"
                   >
-                    <div className="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse" />
+                    <div className="h-2 w-2 rounded-full bg-amber-400" />
                   </button>
                   <button
                     onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
-                    className="text-xs font-semibold leading-snug text-amber-700 hover:text-amber-800 hover:underline transition-colors"
+                    className="text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors"
                   >
-                    <span className="text-sm">{m.emoji}</span>
-                    <br />
-                    <span className="text-[10px] uppercase tracking-wide">{m.label.replace(" Check-In", "")}</span>
+                    {m.emoji} {m.label.replace(" Check-In", "")}
                   </button>
                 </div>
               );
@@ -674,46 +672,41 @@ export default function AcademicCalendar() {
                 const allDone = wk.events.every(e => e.type === "done");
 
                 nodes.push(
-                  <div key={`wk-${wk.weekNum}`} className="flex flex-col items-start text-left w-48 flex-shrink-0 px-4 py-2">
+                  <div key={`wk-${wk.weekNum}`} className="flex flex-col items-start text-left w-44 flex-shrink-0 px-3">
                     {/* Month label — only when month changes */}
                     <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${monthChanged ? (hasActive ? "text-primary" : "text-muted-foreground") : "text-transparent select-none"}`}>
                       {monthChanged ? MONTH_NAMES[wkMonthIdx] : "·"}
                     </p>
-                    {/* Week node dot */}
-                    <div className="relative mb-3">
-                      {(isSemesterStartWeek || isSemesterEndWeek) && (
-                        <div className="h-4 w-4 rounded-full z-10 flex items-center justify-center bg-gradient-to-br from-purple-100 to-purple-50 border-2 border-purple-400 shadow-sm">
-                          <div className="h-2 w-2 rounded-full bg-purple-500" />
-                        </div>
-                      )}
-                      {!isSemesterStartWeek && !isSemesterEndWeek && (
-                        <div className={`h-4 w-4 rounded-full z-10 border-2 flex items-center justify-center bg-white shadow-sm ${hasActive ? "border-primary border-[3px]" : "border-border/60"}`}>
-                          {allDone && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
-                        </div>
-                      )}
-                    </div>
+                    {/* Semester marker dot */}
+                    {(isSemesterStartWeek || isSemesterEndWeek) && (
+                      <div className="h-5 w-5 rounded-full z-10 flex items-center justify-center mb-2 bg-purple-100 border-2 border-purple-400">
+                        <div className="h-2.5 w-2.5 rounded-full bg-purple-500" />
+                      </div>
+                    )}
+                    {!isSemesterStartWeek && !isSemesterEndWeek && (
+                      <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-2 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
+                        {allDone && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                      </div>
+                    )}
                     {/* Week label */}
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60 mb-2">
-                      W{globalWeekNum}
-                    </p>
-                    <p className="text-[9px] text-muted-foreground -mt-1 mb-2">
-                      {format(wk.start, "MMM d")}–{format(wkEnd, "MMM d")}
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">
+                      Week {globalWeekNum} <span className="font-normal">({format(wk.start, "MMM d")}–{format(wkEnd, "MMM d")})</span>
                     </p>
                     {/* Semester start/end badge */}
                     {isSemesterStartWeek && (
-                      <div className="mb-3 px-2.5 py-2 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100/80 border border-purple-200/60 shadow-sm">
+                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
                         <p className="text-[9px] font-bold text-purple-700">🎓 Semester Starts</p>
-                        <p className="text-[8px] text-purple-600 font-medium">{format(semStart, "MMM d, yyyy")}</p>
+                        <p className="text-[8px] text-purple-600">{format(semStart, "MMM d")}</p>
                       </div>
                     )}
                     {isSemesterEndWeek && (
-                      <div className="mb-3 px-2.5 py-2 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100/80 border border-purple-200/60 shadow-sm">
+                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
                         <p className="text-[9px] font-bold text-purple-700">🎓 Semester Ends</p>
-                        <p className="text-[8px] text-purple-600 font-medium">{format(semEnd, "MMM d, yyyy")}</p>
+                        <p className="text-[8px] text-purple-600">{format(semEnd, "MMM d")}</p>
                       </div>
                     )}
                     {/* Events */}
-                    <div className="space-y-1.5 w-full">
+                    <div className="space-y-1 w-full">
                       {wk.events.map((ev, i) => {
                         const isActive   = ev.type === "active";
                         const isDone     = ev.type === "done";
@@ -721,22 +714,14 @@ export default function AcademicCalendar() {
                         const isBreak    = /break|recess|holiday|no class|vacation/i.test(ev.label);
                         const isStarred  = criticalDeadlines.some(d => d.label === ev.label);
                         return (
-                          <div key={i} className="group flex items-start gap-1.5 p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
-                            <div className={`mt-0.5 h-1.5 w-1.5 rounded-full flex-shrink-0 ${
-                              isBreak ? "bg-emerald-400" : isActive ? "bg-primary" : isImported ? "bg-secondary" : isDone ? "bg-slate-300" : "bg-slate-200"
-                            }`} />
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-[10px] font-semibold leading-snug ${
-                                isBreak ? "text-emerald-700" : isActive ? "text-primary" : isImported ? "text-secondary" : isDone ? "text-slate-600" : "text-slate-500"
-                              }`}>
-                                {ev.label}
-                              </p>
-                              <p className="text-[9px] text-slate-400 font-medium mt-0.5">
-                                {format(new Date(ev.date + "T12:00:00"), "MMM d")}
-                              </p>
-                            </div>
+                          <div key={i} className="flex items-start gap-1 group">
+                            <p className={`text-xs font-semibold leading-tight flex-1 ${
+                              isBreak ? "text-emerald-600" : isActive ? "text-primary" : isImported ? "text-secondary" : isDone ? "text-foreground" : "text-muted-foreground"
+                            }`}>
+                              <span className="font-bold">{format(new Date(ev.date + "T12:00:00"), "MMM d")}</span> — {ev.label}
+                            </p>
                             <button
-                              title={isStarred ? "Remove from critical" : "Add to critical"}
+                              title={isStarred ? "Remove" : "Star"}
                               onClick={() => {
                                 if (isStarred) {
                                   saveCriticalDeadlines(criticalDeadlines.filter(d => d.label !== ev.label));
@@ -747,9 +732,9 @@ export default function AcademicCalendar() {
                                   }]);
                                 }
                               }}
-                              className={`flex-shrink-0 transition-all ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-70 hover:opacity-100"}`}
+                              className={`flex-shrink-0 transition-opacity ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
                             >
-                              <Star className={`h-3.5 w-3.5 ${isStarred ? "fill-amber-400 text-amber-400" : "text-slate-300 hover:text-amber-400"}`} />
+                              <Star className={`h-3 w-3 ${isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
                             </button>
                           </div>
                         );
