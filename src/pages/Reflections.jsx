@@ -99,10 +99,10 @@ export default function Reflections() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["reflections"] }),
   });
 
-  // Filter reflections by selected semester
+  // Filter reflections by selected semester (use semester_label which is stored in Reflection entity)
   const filteredReflections = selectedSemester === "all" 
     ? reflections 
-    : reflections.filter(r => r.semester_id === selectedSemester);
+    : reflections.filter(r => r.semester_label === selectedSemester);
 
   // Group reflections by type, most recent first
   const byType = (type) => filteredReflections.filter(r => r.type === type).sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
@@ -136,7 +136,7 @@ export default function Reflections() {
             >
               <option value="all">All Semesters</option>
               {semesters.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.name}>{s.name}</option>
               ))}
             </select>
           </div>
