@@ -696,11 +696,6 @@ export default function AcademicCalendar() {
                         <p className="text-[8px] text-purple-600">{format(semEnd, "MMM d")}</p>
                       </div>
                     )}
-                    {!isSemesterStartWeek && !isSemesterEndWeek && (
-                      <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-2 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
-                        {allDone && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
-                      </div>
-                    )}
                     {/* Week label */}
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">
                       Week {globalWeekNum} <span className="font-normal">({format(wk.start, "MMM d")}–{format(wkEnd, "MMM d")})</span>
