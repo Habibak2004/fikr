@@ -341,8 +341,6 @@ export default function AcademicCalendar() {
                         </button>
                       ))}
                     </div>
-                  </div>
-                )}
 
                 {/* Manual entry */}
                 <div className="flex items-center gap-2 p-3 rounded-xl border border-dashed border-primary/30 bg-primary/5">
