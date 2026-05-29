@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { format, differenceInDays } from "date-fns";
 import {
   BookOpen, Star, BarChart2, FileText, Lightbulb, ChevronRight,
-  Clock, CheckCircle2, Plus, Brain, TrendingUp, Sparkles
+  Clock, CheckCircle2, Plus, Brain, TrendingUp, Sparkles, Filter
 } from "lucide-react";
 import ReflectionModal from "@/components/reflections/ReflectionModal";
 import LongitudinalInsights from "@/components/reflections/LongitudinalInsights";
@@ -77,6 +77,7 @@ const CHECKPOINT_TYPES = [
 export default function Reflections() {
   const qc = useQueryClient();
   const [activeModal, setActiveModal] = useState(null); // { type, existingReflection? }
+  const [selectedSemester, setSelectedSemester] = useState("all"); // "all" or semester id
 
   const { data: reflections = [] } = useQuery({
     queryKey: ["reflections"],
@@ -98,14 +99,19 @@ export default function Reflections() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["reflections"] }),
   });
 
+  // Filter reflections by selected semester
+  const filteredReflections = selectedSemester === "all" 
+    ? reflections 
+    : reflections.filter(r => r.semester_id === selectedSemester);
+
   // Group reflections by type, most recent first
-  const byType = (type) => reflections.filter(r => r.type === type).sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+  const byType = (type) => filteredReflections.filter(r => r.type === type).sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   const activeSemester = semesters[0] || null;
   const semesterLabel = activeSemester?.name || "Current Semester";
 
-  const totalReflections = reflections.length;
-  const completedTypes = [...new Set(reflections.map(r => r.type))].length;
+  const totalReflections = filteredReflections.length;
+  const completedTypes = [...new Set(filteredReflections.map(r => r.type))].length;
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
@@ -116,10 +122,25 @@ export default function Reflections() {
             <Brain className="h-7 w-7 text-primary" /> Reflection System
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Your personal academic learning journal — {semesterLabel}
+            Your personal academic learning journal
           </p>
         </div>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-3">
+          {/* Semester Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="text-sm border rounded-lg px-3 py-2 bg-white outline-none focus:ring-1 focus:ring-primary/30"
+            >
+              <option value="all">All Semesters</option>
+              {semesters.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="w-px h-8 bg-border" />
           <div className="text-center">
             <p className="font-bold text-2xl text-primary">{totalReflections}</p>
             <p className="text-muted-foreground text-xs">Reflections</p>
@@ -190,18 +211,19 @@ export default function Reflections() {
       </div>
 
       {/* Longitudinal Insights */}
-      {reflections.length >= 2 && (
-        <LongitudinalInsights reflections={reflections} courses={courses} />
+      {filteredReflections.length >= 2 && (
+        <LongitudinalInsights reflections={filteredReflections} courses={courses} />
       )}
 
       {/* Recent Reflections */}
-      {reflections.length > 0 && (
+      {filteredReflections.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" /> Recent Reflections
+            {selectedSemester !== "all" && <span className="text-xs font-normal text-muted-foreground">({semesters.find(s => s.id === selectedSemester)?.name || "Selected"})</span>}
           </h2>
           <div className="space-y-2">
-            {reflections.slice(0, 10).map((r) => {
+            {filteredReflections.slice(0, 10).map((r) => {
               const cp = CHECKPOINT_TYPES.find(c => c.id === r.type);
               const Icon = cp?.icon || FileText;
               return (
