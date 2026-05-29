@@ -17,7 +17,14 @@ const SEMESTER_QUESTIONS = [
 const RATING_LABELS = ["Really rough", "Challenging", "Okay overall", "Pretty good", "Amazing"];
 
 // Steps: 0 = semester rating, 1..N = semester questions, N+1..N+courses.length = per-course, last = AI summary
-export default function SemesterReflectionModal({ open, onClose, semesterLabel, courses = [] }) {
+const CHECKIN_LABELS = {
+  semester_setup: "🌱 Semester Setup",
+  one_third: "⅓ One-Third Check-In",
+  mid_semester: "🔄 Mid-Semester Check-In",
+  end_of_semester: "🎓 End-of-Semester",
+};
+
+export default function SemesterReflectionModal({ open, onClose, semesterLabel, courses = [], reflectionType = "end_of_semester" }) {
   const [step, setStep] = useState(0);
   const [semesterRating, setSemesterRating] = useState(0);
   const [semesterAnswers, setSemesterAnswers] = useState({});
@@ -92,8 +99,8 @@ Write a warm, encouraging 3–4 sentence closing reflection. Acknowledge their o
       <DialogContent className="rounded-2xl max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span>🎓</span>
-            <span>Semester Reflection — {semesterLabel}</span>
+            <span>{CHECKIN_LABELS[reflectionType] || "🎓 Semester Reflection"}</span>
+            <span className="text-muted-foreground font-normal text-sm">— {semesterLabel}</span>
           </DialogTitle>
         </DialogHeader>
 

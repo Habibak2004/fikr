@@ -11,6 +11,7 @@ import SemesterConfig from "@/components/calendar/SemesterConfig";
 import WeeklyView from "@/components/calendar/WeeklyView";
 import MonthlyView from "@/components/calendar/MonthlyView";
 import SemesterReflectionModal from "@/components/calendar/SemesterReflectionModal";
+import { addDays } from "date-fns";
 
 const DEFAULT_MILESTONES = [
   { date: "2026-01-19", label: "Semester Start",    sub: "Jan 19",     type: "done" },
@@ -69,6 +70,20 @@ export default function AcademicCalendar() {
   const [calendarView, setCalendarView] = useState("timeline"); // "timeline" | "weekly" | "monthly"
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [showReflection, setShowReflection] = useState(false);
+  const [reflectionType, setReflectionType] = useState("end_of_semester");
+
+  // Compute check-in dates from semester bounds
+  const checkInMilestones = useMemo(() => {
+    const start = new Date(semester.start + "T12:00:00");
+    const end   = new Date(semester.end   + "T12:00:00");
+    const total = differenceInDays(end, start);
+    return [
+      { date: semester.start, label: "Semester Setup Check-In", type: "checkin", reflectionType: "semester_setup", emoji: "🌱" },
+      { date: format(addDays(start, Math.round(total * 0.33)), "yyyy-MM-dd"), label: "One-Third Check-In", type: "checkin", reflectionType: "one_third", emoji: "⅓" },
+      { date: format(addDays(start, Math.round(total * 0.5)),  "yyyy-MM-dd"), label: "Mid-Semester Check-In", type: "checkin", reflectionType: "mid_semester", emoji: "🔄" },
+      { date: semester.end,   label: "End-of-Semester Check-In", type: "checkin", reflectionType: "end_of_semester", emoji: "🎓" },
+    ];
+  }, [semester]);
 
   const saveCriticalDeadlines = (updated) => {
     setCriticalDeadlines(updated);
@@ -115,11 +130,11 @@ export default function AcademicCalendar() {
         { date: semester.end,   label: "Semester End",   sub: format(new Date(semester.end   + "T12:00:00"), "MMM d"), type: "upcoming" },
       ];
     }
-    // Merge custom milestones
-    combined = [...combined, ...customMilestones];
+    // Merge custom milestones and check-ins
+    combined = [...combined, ...customMilestones, ...checkInMilestones];
     combined.sort((a, b) => a.date.slice(0, 10).localeCompare(b.date.slice(0, 10)));
     return combined;
-  }, [semester, importedEvents, customMilestones]);
+  }, [semester, importedEvents, customMilestones, checkInMilestones]);
 
   const nextMilestone = milestones.find(m => isAfter(new Date(m.date), now)) || milestones[milestones.length - 1];
   const daysUntilNext = nextMilestone ? differenceInDays(new Date(nextMilestone.date), now) : 0;
@@ -520,6 +535,20 @@ export default function AcademicCalendar() {
                       const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
                       const isBreak    = /break|recess|holiday|no class|vacation/i.test(m.label);
                       const isStarred  = criticalDeadlines.some(d => d.label === m.label);
+                      const isCheckin = m.type === "checkin";
+                      if (isCheckin) {
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
+                            className="text-left w-full flex items-start gap-1 group"
+                          >
+                            <p className="text-xs font-semibold leading-tight flex-1 text-amber-600 hover:text-amber-700 hover:underline transition-colors">
+                              {m.emoji} {format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")} — {m.label}
+                            </p>
+                          </button>
+                        );
+                      }
                       return (
                         <div key={i} className="text-left flex items-start gap-1 group">
                           <p className={`text-xs font-semibold leading-tight flex-1 ${
@@ -561,13 +590,13 @@ export default function AcademicCalendar() {
             <div className="flex flex-col items-center text-center w-44 flex-shrink-0 px-2">
               <p className="text-[10px] font-bold tracking-widest uppercase mb-3 text-amber-600">REFLECT</p>
               <button
-                onClick={() => setShowReflection(true)}
+                onClick={() => { setReflectionType("end_of_semester"); setShowReflection(true); }}
                 className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
               >
                 <div className="h-2 w-2 rounded-full bg-amber-400" />
               </button>
               <button
-                onClick={() => setShowReflection(true)}
+                onClick={() => { setReflectionType("end_of_semester"); setShowReflection(true); }}
                 className="text-left text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors"
               >
                 🎓 Semester Reflection
@@ -625,7 +654,7 @@ export default function AcademicCalendar() {
             <p className="text-xs text-amber-700/70 mt-1 mb-3">
               Take a moment to reflect on {semester.label} — your wins, challenges, and lessons learned.
             </p>
-            <Button size="sm" onClick={() => setShowReflection(true)} className="rounded-xl bg-amber-700 hover:bg-amber-800 text-white">
+            <Button size="sm" onClick={() => { setReflectionType("end_of_semester"); setShowReflection(true); }} className="rounded-xl bg-amber-700 hover:bg-amber-800 text-white">
               <NotebookPen className="h-3.5 w-3.5 mr-1.5" /> Start Reflection
             </Button>
           </div>
@@ -648,6 +677,7 @@ export default function AcademicCalendar() {
         onClose={() => setShowReflection(false)}
         semesterLabel={semester.label}
         courses={semesterCourses}
+        reflectionType={reflectionType}
       />
     </div>
   );
