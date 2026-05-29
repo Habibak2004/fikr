@@ -703,7 +703,7 @@ export default function AcademicCalendar() {
                     </p>
                     {/* Events */}
                     <div className="space-y-1 w-full">
-                      {wk.events.map((ev, i) => {
+                      {wk.events.filter(ev => !/semester (start|end)/i.test(ev.label)).map((ev, i) => {
                         const isActive   = ev.type === "active";
                         const isDone     = ev.type === "done";
                         const isImported = importedEvents.some(e => e.date === ev.date && e.label === ev.label);
