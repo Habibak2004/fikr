@@ -71,6 +71,18 @@ export default function AcademicCalendar() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [showReflection, setShowReflection] = useState(false);
   const [reflectionType, setReflectionType] = useState("end_of_semester");
+  const [displayStartDate, setDisplayStartDate] = useState(() => {
+    try {
+      const saved = localStorage.getItem("fikr_display_start");
+      return saved || "";
+    } catch { return ""; }
+  });
+  const [displayEndDate, setDisplayEndDate] = useState(() => {
+    try {
+      const saved = localStorage.getItem("fikr_display_end");
+      return saved || "";
+    } catch { return ""; }
+  });
 
   // Compute check-in dates from semester bounds
   const checkInMilestones = useMemo(() => {
@@ -395,13 +407,33 @@ export default function AcademicCalendar() {
           </div>
           <div className="flex items-center gap-2">
           {calendarView === "timeline" && (
+            <>
             <button
               onClick={() => setEditingTimeline(e => !e)}
               className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${editingTimeline ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
             >
               {editingTimeline ? "Done" : "Edit Timeline"}
             </button>
+            <button
+              onClick={() => {
+                const newStart = prompt("Timeline start date (YYYY-MM-DD):", displayStartDate || "");
+                const newEnd = prompt("Timeline end date (YYYY-MM-DD):", displayEndDate || "");
+                if (newStart && newEnd) {
+                  setDisplayStartDate(newStart);
+                  setDisplayEndDate(newEnd);
+                  try {
+                    localStorage.setItem("fikr_display_start", newStart);
+                    localStorage.setItem("fikr_display_end", newEnd);
+                  } catch {}
+                }
+              }}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+            >
+              Set View Range
+            </button>
+            </>
           )}
+          </div>
           <div className="flex items-center gap-1 bg-muted rounded-xl p-1">
             {[
               { id: "timeline", icon: LayoutList, label: "Timeline" },
@@ -420,7 +452,7 @@ export default function AcademicCalendar() {
               </button>
             ))}
           </div>
-          </div>
+        </div>
         </div>
 
         {calendarView === "weekly" && (
@@ -444,7 +476,7 @@ export default function AcademicCalendar() {
         )}
 
         {calendarView === "timeline" && (
-        <div>
+        <div className="space-y-5">
         {editingTimeline && (
           <div className="mb-5 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
             <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
@@ -508,13 +540,19 @@ export default function AcademicCalendar() {
 
               const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-              // Build global week buckets — expand to show full months around semester dates
+              // Build global week buckets — use display dates if set, otherwise expand to full months
               const semStart = new Date(semester.start + "T12:00:00");
               const semEnd   = new Date(semester.end   + "T12:00:00");
-              // Display from the 1st of the semester's start month to the last day of the end month
-              const displayStart = new Date(semStart.getFullYear(), semStart.getMonth(), 1);
-              const displayEnd   = new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0);
-              // Normalize to Monday of the week containing displayStart (shows full month, even if semester starts mid-month)
+              let displayStart, displayEnd;
+              if (displayStartDate && displayEndDate) {
+                displayStart = new Date(displayStartDate + "T12:00:00");
+                displayEnd = new Date(displayEndDate + "T12:00:00");
+              } else {
+                // Default: expand to full months
+                displayStart = new Date(semStart.getFullYear(), semStart.getMonth(), 1);
+                displayEnd = new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0);
+              }
+              // Normalize to Monday of the week containing displayStart
               const dayOfWeek = displayStart.getDay();
               const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
               const firstMonday = new Date(displayStart);
