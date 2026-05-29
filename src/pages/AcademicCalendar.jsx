@@ -527,7 +527,7 @@ export default function AcademicCalendar() {
               </div>
             )}
             <div className="overflow-x-auto -mx-6 px-6">
-          <div className="flex gap-0 relative min-w-max">
+              <div className="flex gap-0 relative min-w-max">
             {/* Connecting line */}
             <div className="absolute top-[52px] left-[36px] right-[36px] h-0.5 bg-border" />
 
@@ -691,8 +691,7 @@ export default function AcademicCalendar() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Bottom Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
