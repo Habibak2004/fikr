@@ -589,7 +589,7 @@ export default function AcademicCalendar() {
         <div className="overflow-x-auto -mx-6 px-6">
           <div className="flex gap-0 relative min-w-max">
             {/* Connecting line */}
-            <div className="absolute top-[60px] left-[36px] right-[36px] h-0.5 bg-border" />
+            <div className="absolute top-[72px] left-[36px] right-[36px] h-0.5 bg-border" />
 
             {(() => {
               const regularMilestones = milestones.filter(m => m.type !== "checkin");
