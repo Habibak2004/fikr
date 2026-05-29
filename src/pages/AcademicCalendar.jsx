@@ -670,24 +670,31 @@ export default function AcademicCalendar() {
                 nodes.push(
                   <div key={`wk-${wk.weekNum}`} className="flex flex-col items-start text-left w-44 flex-shrink-0 px-3">
                     {/* Month label — only when month changes */}
-                    <p className={`text-[10px] font-bold tracking-widest uppercase mb-1 ${monthChanged ? (hasActive ? "text-primary" : "text-muted-foreground") : "text-transparent select-none"}`}>
+                    <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${monthChanged ? (hasActive ? "text-primary" : "text-muted-foreground") : "text-transparent select-none"}`}>
                       {monthChanged ? MONTH_NAMES[wkMonthIdx] : "·"}
                     </p>
-                    {/* Semester start/end badge - above dots, like month labels */}
-                    {isSemesterStartWeek && (
-                      <p className="text-[10px] font-bold text-purple-700 mb-1">
-                        🎓 Semester Starts
-                      </p>
-                    )}
-                    {isSemesterEndWeek && (
-                      <p className="text-[10px] font-bold text-purple-700 mb-1">
-                        🎓 Semester Ends
-                      </p>
-                    )}
                     {/* Semester marker dot */}
                     {(isSemesterStartWeek || isSemesterEndWeek) && (
                       <div className="h-5 w-5 rounded-full z-10 flex items-center justify-center mb-2 bg-purple-100 border-2 border-purple-400">
                         <div className="h-2.5 w-2.5 rounded-full bg-purple-500" />
+                      </div>
+                    )}
+                    {!isSemesterStartWeek && !isSemesterEndWeek && (
+                      <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-2 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
+                        {allDone && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                      </div>
+                    )}
+                    {/* Semester start/end badge - below dot */}
+                    {isSemesterStartWeek && (
+                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
+                        <p className="text-[9px] font-bold text-purple-700">🎓 Semester Starts</p>
+                        <p className="text-[8px] text-purple-600">{format(semStart, "MMM d")}</p>
+                      </div>
+                    )}
+                    {isSemesterEndWeek && (
+                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
+                        <p className="text-[9px] font-bold text-purple-700">🎓 Semester Ends</p>
+                        <p className="text-[8px] text-purple-600">{format(semEnd, "MMM d")}</p>
                       </div>
                     )}
                     {!isSemesterStartWeek && !isSemesterEndWeek && (
