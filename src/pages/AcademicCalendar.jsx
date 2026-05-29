@@ -684,23 +684,21 @@ export default function AcademicCalendar() {
                         {allDone && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
                       </div>
                     )}
+                    {/* Semester start/end badge - above timeline */}
+                    {isSemesterStartWeek && (
+                      <div className="mb-1 px-2 py-0.5 rounded-md bg-purple-100 border border-purple-200">
+                        <p className="text-[8px] font-bold text-purple-700">🎓 Starts {format(semStart, "MMM d")}</p>
+                      </div>
+                    )}
+                    {isSemesterEndWeek && (
+                      <div className="mb-1 px-2 py-0.5 rounded-md bg-purple-100 border border-purple-200">
+                        <p className="text-[8px] font-bold text-purple-700">🎓 Ends {format(semEnd, "MMM d")}</p>
+                      </div>
+                    )}
                     {/* Week label */}
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">
                       Week {globalWeekNum} <span className="font-normal">({format(wk.start, "MMM d")}–{format(wkEnd, "MMM d")})</span>
                     </p>
-                    {/* Semester start/end badge */}
-                    {isSemesterStartWeek && (
-                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
-                        <p className="text-[9px] font-bold text-purple-700">🎓 Semester Starts</p>
-                        <p className="text-[8px] text-purple-600">{format(semStart, "MMM d")}</p>
-                      </div>
-                    )}
-                    {isSemesterEndWeek && (
-                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
-                        <p className="text-[9px] font-bold text-purple-700">🎓 Semester Ends</p>
-                        <p className="text-[8px] text-purple-600">{format(semEnd, "MMM d")}</p>
-                      </div>
-                    )}
                     {/* Events */}
                     <div className="space-y-1 w-full">
                       {wk.events.map((ev, i) => {
