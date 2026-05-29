@@ -140,6 +140,20 @@ export default function AcademicCalendar() {
   const nextMilestone = milestones.find(m => isAfter(new Date(m.date), now)) || milestones[milestones.length - 1];
   const daysUntilNext = nextMilestone ? differenceInDays(new Date(nextMilestone.date), now) : 0;
 
+  // Reflection countdowns based on semester dates
+  const reflectionCountdowns = useMemo(() => {
+    const start = new Date(semester.start + "T12:00:00");
+    const end = new Date(semester.end + "T12:00:00");
+    const total = differenceInDays(end, start);
+    const oneThirdDate = addDays(start, Math.round(total * 0.33));
+    const midDate = addDays(start, Math.round(total * 0.5));
+    return [
+      { label: "1/3 Check-In", date: oneThirdDate, days: Math.max(0, differenceInDays(oneThirdDate, now)) },
+      { label: "Mid-Semester", date: midDate, days: Math.max(0, differenceInDays(midDate, now)) },
+      { label: "End of Semester", date: end, days: Math.max(0, differenceInDays(end, now)) },
+    ];
+  }, [semester]);
+
   const handleSemesterChange = (newSemester, events = []) => {
     setSemester(newSemester);
     setImportedEvents(events);
@@ -205,6 +219,20 @@ export default function AcademicCalendar() {
               <Info className="h-3 w-3" />
               {format(new Date(semester.start), "MMM d, yyyy")} → {format(new Date(semester.end), "MMM d, yyyy")}
             </p>
+          </div>
+
+          {/* Reflection Countdowns */}
+          <div className="mt-5 pt-4 border-t border-border/60">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Reflection Checkpoints</p>
+            <div className="grid grid-cols-3 gap-2">
+              {reflectionCountdowns.map((r, i) => (
+                <div key={i} className="bg-amber-50 rounded-lg p-2 text-center">
+                  <p className="text-[10px] font-semibold text-amber-700 mb-0.5">{r.label}</p>
+                  <p className="text-lg font-bold text-amber-800">{r.days}</p>
+                  <p className="text-[9px] text-amber-600">days</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
