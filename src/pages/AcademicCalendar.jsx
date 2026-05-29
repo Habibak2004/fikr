@@ -508,13 +508,13 @@ export default function AcademicCalendar() {
 
               const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-              // Build global week buckets — expand to full months
+              // Build global week buckets — expand to show full months around semester dates
               const semStart = new Date(semester.start + "T12:00:00");
               const semEnd   = new Date(semester.end   + "T12:00:00");
               // Display from the 1st of the semester's start month to the last day of the end month
               const displayStart = new Date(semStart.getFullYear(), semStart.getMonth(), 1);
-              const displayEnd   = new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0); // last day of end month
-              // Normalize to Monday of display start week
+              const displayEnd   = new Date(semEnd.getFullYear(), semEnd.getMonth() + 1, 0);
+              // Normalize to Monday of the week containing displayStart (shows full month, even if semester starts mid-month)
               const dayOfWeek = displayStart.getDay();
               const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
               const firstMonday = new Date(displayStart);
