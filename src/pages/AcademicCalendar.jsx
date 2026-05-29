@@ -501,107 +501,121 @@ export default function AcademicCalendar() {
             {/* Connecting line */}
             <div className="absolute top-[52px] left-[56px] right-[56px] h-0.5 bg-border" />
 
-            {Object.entries(
-              milestones.reduce((acc, m) => {
-                if (!m.date || typeof m.date !== "string") return acc;
-                // Extract just the YYYY-MM-DD part regardless of what follows
-                const datePart = m.date.slice(0, 10);
-                if (!datePart.match(/^\d{4}-\d{2}-\d{2}$/)) return acc;
-                const [year, month, day] = datePart.split("-").map(Number);
-                const key = `${String(year).padStart(4,"0")}-${String(month).padStart(2, "0")}`;
-                if (!acc[key]) acc[key] = [];
-                acc[key].push({ ...m, date: datePart });
-                return acc;
-              }, {})
-            ).sort(([a], [b]) => a.localeCompare(b)).map(([monthKey, events]) => {
-              const MONTH_NAMES = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
-              const monthIndex = parseInt(monthKey.split("-")[1], 10) - 1;
-              const monthLabel = MONTH_NAMES[monthIndex];
-              const hasActive = events.some(e => e.type === "active");
-              return (
-                <div key={monthKey} className="flex flex-col items-center text-center w-44 flex-shrink-0 px-2">
-                  <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${hasActive ? "text-primary" : "text-muted-foreground"}`}>
-                    {monthLabel}
-                  </p>
-                  {/* Dot on the timeline line */}
-                  <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
-                    {events.every(e => e.type === "done") && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
-                  </div>
-                  {/* Events listed under the dot */}
-                  <div className="space-y-1.5 w-full">
-                    {events.map((m, i) => {
-                      const isActive   = m.type === "active";
-                      const isDone     = m.type === "done";
-                      const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
-                      const isBreak    = /break|recess|holiday|no class|vacation/i.test(m.label);
-                      const isStarred  = criticalDeadlines.some(d => d.label === m.label);
-                      const isCheckin = m.type === "checkin";
-                      if (isCheckin) {
-                        return (
-                          <button
-                            key={i}
-                            onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
-                            className="text-left w-full flex items-start gap-1 group"
-                          >
-                            <p className="text-xs font-semibold leading-tight flex-1 text-amber-600 hover:text-amber-700 hover:underline transition-colors">
-                              {m.emoji} {format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")} — {m.label}
-                            </p>
-                          </button>
-                        );
-                      }
-                      return (
-                        <div key={i} className="text-left flex items-start gap-1 group">
-                          <p className={`text-xs font-semibold leading-tight flex-1 ${
-                            isBreak    ? "text-emerald-600" :
-                            isActive   ? "text-primary" :
-                            isImported ? "text-secondary" :
-                            isDone     ? "text-foreground" :
-                            "text-muted-foreground"
-                          }`}>
-                            {format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")} — {m.label}
-                          </p>
-                          <button
-                            title={isStarred ? "Remove from Critical Deadlines" : "Add to Critical Deadlines"}
-                            onClick={() => {
-                             if (isStarred) {
-                               saveCriticalDeadlines(criticalDeadlines.filter(d => d.label !== m.label));
-                             } else {
-                               saveCriticalDeadlines([...criticalDeadlines, {
-                                 label: m.label,
-                                 date: m.date.slice(0, 10),
-                                 detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"),
-                                 urgency: "UPCOMING",
-                               }]);
-                             }
-                            }}
-                            className={`flex-shrink-0 transition-opacity ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
-                          >
-                            <Star className={`h-3 w-3 ${isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+            {(() => {
+              // Separate check-ins from regular milestones
+              const regularMilestones = milestones.filter(m => m.type !== "checkin");
+              const checkins = milestones.filter(m => m.type === "checkin");
 
-            {/* Reflection node — always at the end */}
-            <div className="flex flex-col items-center text-center w-44 flex-shrink-0 px-2">
-              <p className="text-[10px] font-bold tracking-widest uppercase mb-3 text-amber-600">REFLECT</p>
-              <button
-                onClick={() => { setReflectionType("end_of_semester"); setShowReflection(true); }}
-                className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
-              >
-                <div className="h-2 w-2 rounded-full bg-amber-400" />
-              </button>
-              <button
-                onClick={() => { setReflectionType("end_of_semester"); setShowReflection(true); }}
-                className="text-left text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors"
-              >
-                🎓 Semester Reflection
-              </button>
-            </div>
+              // Build month groups from regular milestones only
+              const monthGroups = Object.entries(
+                regularMilestones.reduce((acc, m) => {
+                  if (!m.date || typeof m.date !== "string") return acc;
+                  const datePart = m.date.slice(0, 10);
+                  if (!datePart.match(/^\d{4}-\d{2}-\d{2}$/)) return acc;
+                  const [year, month] = datePart.split("-").map(Number);
+                  const key = `${String(year).padStart(4,"0")}-${String(month).padStart(2, "0")}`;
+                  if (!acc[key]) acc[key] = [];
+                  acc[key].push({ ...m, date: datePart });
+                  return acc;
+                }, {})
+              ).sort(([a], [b]) => a.localeCompare(b));
+
+              const MONTH_NAMES = ["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+
+              // Build a flat ordered list of nodes: interleave check-ins by date
+              const nodes = [];
+              let checkinQueue = [...checkins].sort((a, b) => a.date.localeCompare(b.date));
+
+              for (const [monthKey, events] of monthGroups) {
+                // Insert any check-ins that fall before or at the end of this month
+                const monthEnd = monthKey + "-31";
+                while (checkinQueue.length > 0 && checkinQueue[0].date.slice(0, 7) <= monthKey) {
+                  nodes.push({ kind: "checkin", data: checkinQueue.shift() });
+                }
+                nodes.push({ kind: "month", key: monthKey, events, label: MONTH_NAMES[parseInt(monthKey.split("-")[1], 10) - 1] });
+              }
+              // Any remaining check-ins after last month
+              while (checkinQueue.length > 0) {
+                nodes.push({ kind: "checkin", data: checkinQueue.shift() });
+              }
+
+              return nodes.map((node, ni) => {
+                if (node.kind === "checkin") {
+                  const m = node.data;
+                  return (
+                    <div key={`checkin-${ni}`} className="flex flex-col items-center text-center w-36 flex-shrink-0 px-2">
+                      <p className="text-[10px] font-bold tracking-widest uppercase mb-3 text-amber-600">REFLECT</p>
+                      <button
+                        onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
+                        className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-3 bg-amber-50 hover:bg-amber-100 transition-colors"
+                      >
+                        <div className="h-2 w-2 rounded-full bg-amber-400" />
+                      </button>
+                      <button
+                        onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
+                        className="text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors"
+                      >
+                        {m.emoji} {m.label.replace(" Check-In", "")}
+                      </button>
+                    </div>
+                  );
+                }
+
+                // Regular month node
+                const { events, label: monthLabel } = node;
+                const hasActive = events.some(e => e.type === "active");
+                return (
+                  <div key={node.key} className="flex flex-col items-center text-center w-44 flex-shrink-0 px-2">
+                    <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${hasActive ? "text-primary" : "text-muted-foreground"}`}>
+                      {monthLabel}
+                    </p>
+                    <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-3 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
+                      {events.every(e => e.type === "done") && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                    </div>
+                    <div className="space-y-1.5 w-full">
+                      {events.map((m, i) => {
+                        const isActive   = m.type === "active";
+                        const isDone     = m.type === "done";
+                        const isImported = importedEvents.some(e => e.date === m.date && e.label === m.label);
+                        const isBreak    = /break|recess|holiday|no class|vacation/i.test(m.label);
+                        const isStarred  = criticalDeadlines.some(d => d.label === m.label);
+                        return (
+                          <div key={i} className="text-left flex items-start gap-1 group">
+                            <p className={`text-xs font-semibold leading-tight flex-1 ${
+                              isBreak    ? "text-emerald-600" :
+                              isActive   ? "text-primary" :
+                              isImported ? "text-secondary" :
+                              isDone     ? "text-foreground" :
+                              "text-muted-foreground"
+                            }`}>
+                              {format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d")} — {m.label}
+                            </p>
+                            <button
+                              title={isStarred ? "Remove from Critical Deadlines" : "Add to Critical Deadlines"}
+                              onClick={() => {
+                                if (isStarred) {
+                                  saveCriticalDeadlines(criticalDeadlines.filter(d => d.label !== m.label));
+                                } else {
+                                  saveCriticalDeadlines([...criticalDeadlines, {
+                                    label: m.label,
+                                    date: m.date.slice(0, 10),
+                                    detail: format(new Date(m.date.slice(0,10) + "T12:00:00"), "MMM d"),
+                                    urgency: "UPCOMING",
+                                  }]);
+                                }
+                              }}
+                              className={`flex-shrink-0 transition-opacity ${isStarred ? "opacity-100" : "opacity-0 group-hover:opacity-60"}`}
+                            >
+                              <Star className={`h-3 w-3 ${isStarred ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
         </div>
