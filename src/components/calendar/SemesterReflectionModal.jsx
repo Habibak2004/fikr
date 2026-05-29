@@ -24,7 +24,7 @@ const CHECKIN_LABELS = {
   end_of_semester: "🎓 End-of-Semester",
 };
 
-export default function SemesterReflectionModal({ open, onClose, semesterLabel, courses = [], reflectionType = "end_of_semester" }) {
+export default function SemesterReflectionModal({ open, onClose, semesterLabel, courses = [], reflectionType = "end_of_semester", onSave }) {
   const [step, setStep] = useState(0);
   const [semesterRating, setSemesterRating] = useState(0);
   const [semesterAnswers, setSemesterAnswers] = useState({});
@@ -90,6 +90,34 @@ Write a warm, encouraging 3–4 sentence closing reflection. Acknowledge their o
     setCourseNotes({});
     setAiSummary(null);
     onClose();
+  };
+
+  const handleSave = () => {
+    if (!onSave) {
+      handleClose();
+      return;
+    }
+    const reflectionData = {
+      type: reflectionType,
+      semester_label: semesterLabel,
+      answers: {
+        overall_rating: semesterRating,
+        ...semesterAnswers,
+      },
+      course_reflections: courses.map(c => ({
+        course_id: c.id,
+        course_name: c.name,
+        course_code: c.code || "",
+        data: {
+          rating: courseRatings[c.id] || 0,
+          notes: courseNotes[c.id] || "",
+        },
+      })),
+      ai_summary: aiSummary,
+      completed: true,
+    };
+    onSave(reflectionData);
+    handleClose();
   };
 
   const isLastBeforeSummary = step === summaryStep - 1;
@@ -229,7 +257,7 @@ Write a warm, encouraging 3–4 sentence closing reflection. Acknowledge their o
           <span className="text-xs text-muted-foreground">{step + 1} / {totalSteps}</span>
 
           {isSummaryStep ? (
-            <Button onClick={handleClose} className="rounded-xl bg-primary hover:bg-primary/90" size="sm">Done</Button>
+            <Button onClick={handleSave} className="rounded-xl bg-primary hover:bg-primary/90" size="sm">Save & Close</Button>
           ) : (
             <Button
               onClick={handleNext}

@@ -12,6 +12,7 @@ import WeeklyView from "@/components/calendar/WeeklyView";
 import MonthlyView from "@/components/calendar/MonthlyView";
 import SemesterReflectionModal from "@/components/calendar/SemesterReflectionModal";
 import { addDays } from "date-fns";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const DEFAULT_MILESTONES = [
   { date: "2026-01-19", label: "Semester Start",    sub: "Jan 19",     type: "done" },
@@ -73,6 +74,14 @@ export default function AcademicCalendar() {
   const [showReflection, setShowReflection] = useState(false);
   const [reflectionType, setReflectionType] = useState("end_of_semester");
   const [today, setToday] = useState(new Date());
+  const queryClient = useQueryClient();
+
+  const saveReflectionMutation = useMutation({
+    mutationFn: (reflectionData) => base44.entities.Reflection.create(reflectionData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reflections"] });
+    },
+  });
 
   // Update "today" at midnight daily so countdowns refresh automatically
   useEffect(() => {
@@ -794,6 +803,7 @@ export default function AcademicCalendar() {
         semesterLabel={semester.label}
         courses={semesterCourses}
         reflectionType={reflectionType}
+        onSave={saveReflectionMutation.mutate}
       />
     </div>
   );
