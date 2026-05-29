@@ -526,9 +526,16 @@ export default function AcademicCalendar() {
               const nodes = [];
               let checkinQueue = [...checkins].sort((a, b) => a.date.localeCompare(b.date));
 
+              // 🌱 Semester Setup always goes first (before all month columns)
+              const setupCheckin = checkinQueue.find(c => c.reflectionType === "semester_setup");
+              if (setupCheckin) {
+                checkinQueue = checkinQueue.filter(c => c.reflectionType !== "semester_setup");
+                nodes.push({ kind: "checkin", data: setupCheckin });
+              }
+
               for (const [monthKey, events] of monthGroups) {
                 nodes.push({ kind: "month", key: monthKey, events, label: MONTH_NAMES[parseInt(monthKey.split("-")[1], 10) - 1] });
-                // Insert check-ins that fall within or before this month, after the month column
+                // Insert remaining check-ins that fall within this month, after the month column
                 while (checkinQueue.length > 0 && checkinQueue[0].date.slice(0, 7) <= monthKey) {
                   nodes.push({ kind: "checkin", data: checkinQueue.shift() });
                 }
