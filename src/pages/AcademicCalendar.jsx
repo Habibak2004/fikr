@@ -458,8 +458,8 @@ export default function AcademicCalendar() {
         {calendarView === "timeline" && (
           <div className="space-y-5">
             {editingTimeline && (
-          <div className="mb-5 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
-            <div className="flex items-center justify-between mb-2">
+              <div className="mb-5 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 space-y-3">
+                <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold uppercase tracking-widest text-primary">Add Timeline Event</p>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-muted-foreground">Display Range:</span>
@@ -524,9 +524,9 @@ export default function AcademicCalendar() {
                 </div>
               </div>
             )}
-          </div>
-        )}
-        <div className="overflow-x-auto -mx-6 px-6">
+              </div>
+            )}
+            <div className="overflow-x-auto -mx-6 px-6">
           <div className="flex gap-0 relative min-w-max">
             {/* Connecting line */}
             <div className="absolute top-[52px] left-[36px] right-[36px] h-0.5 bg-border" />
@@ -688,9 +688,10 @@ export default function AcademicCalendar() {
 
               return nodes;
             })()}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
       )}
 
       {/* Bottom Cards */}
