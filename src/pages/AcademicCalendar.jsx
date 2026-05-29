@@ -631,13 +631,13 @@ export default function AcademicCalendar() {
               if (setupCheckin) checkinQueue = checkinQueue.filter(c => c.reflectionType !== "semester_setup");
 
               const renderCheckinCol = (m, key) => (
-                <div key={key} className="flex flex-col items-center text-center w-32 flex-shrink-0 px-2">
-                  <div className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center mb-2 bg-amber-50">
+                <div key={key} className="flex flex-col items-center text-center w-32 flex-shrink-0 px-2 relative pt-[22px]">
+                  <div className="h-5 w-5 rounded-full z-10 border-2 border-amber-400 flex items-center justify-center absolute top-[23px] bg-amber-50">
                     <div className="h-2 w-2 rounded-full bg-amber-400" />
                   </div>
                   <button
                     onClick={() => { setReflectionType(m.reflectionType); setShowReflection(true); }}
-                    className="text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors"
+                    className="text-xs font-semibold leading-tight text-amber-600 hover:text-amber-700 hover:underline transition-colors mt-8"
                   >
                     {m.emoji} {m.label.replace(" Check-In", "")}
                   </button>
