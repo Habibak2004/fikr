@@ -66,7 +66,13 @@ export default function AcademicCalendar() {
   });
   const [editingDeadlines, setEditingDeadlines] = useState(false);
   const [editingTimeline, setEditingTimeline] = useState(false);
-  const [viewRange, setViewRange] = useState({ startDate: "", endDate: "" });
+  const [viewRange, setViewRange] = useState(() => {
+    try {
+      const saved = localStorage.getItem("fikr_view_range");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { startDate: "", endDate: "" };
+  });
   const [newDeadline, setNewDeadline] = useState({ label: "", detail: "", urgency: "UPCOMING", date: "" });
   const [newMilestone, setNewMilestone] = useState({ date: "", label: "", sub: "", type: "upcoming" });
   const [calendarView, setCalendarView] = useState("timeline"); // "timeline" | "weekly" | "monthly"
@@ -110,6 +116,11 @@ export default function AcademicCalendar() {
   const saveCriticalDeadlines = (updated) => {
     setCriticalDeadlines(updated);
     try { localStorage.setItem("fikr_critical_deadlines", JSON.stringify(updated ?? [])); } catch {}
+  };
+
+  const saveViewRange = (updated) => {
+    setViewRange(updated);
+    try { localStorage.setItem("fikr_view_range", JSON.stringify(updated)); } catch {}
   };
 
   const saveCustomMilestones = (updated) => {
@@ -506,7 +517,7 @@ export default function AcademicCalendar() {
                 <input
                   type="date"
                   value={viewRange.startDate || ""}
-                  onChange={(e) => setViewRange(r => ({ ...r, startDate: e.target.value }))}
+                  onChange={(e) => saveViewRange({ ...viewRange, startDate: e.target.value })}
                   className="text-xs border rounded-md px-2 py-1 bg-white outline-none w-32"
                   placeholder="Start"
                 />
@@ -514,12 +525,12 @@ export default function AcademicCalendar() {
                 <input
                   type="date"
                   value={viewRange.endDate || ""}
-                  onChange={(e) => setViewRange(r => ({ ...r, endDate: e.target.value }))}
+                  onChange={(e) => saveViewRange({ ...viewRange, endDate: e.target.value })}
                   className="text-xs border rounded-md px-2 py-1 bg-white outline-none w-32"
                   placeholder="End"
                 />
                 <button
-                  onClick={() => setViewRange({ startDate: "", endDate: "" })}
+                  onClick={() => saveViewRange({ startDate: "", endDate: "" })}
                   className="text-[10px] font-semibold text-primary hover:underline ml-1"
                 >
                   Reset
