@@ -654,6 +654,9 @@ export default function AcademicCalendar() {
               for (const wk of weeks) {
                 const isFirstWeek = wk.weekNum === 0;
                 const wkEnd = new Date(wk.start.getTime() + 6 * 24 * 60 * 60 * 1000);
+                // Check if this week contains semester start or end
+                const isSemesterStartWeek = wk.start <= semStart && wkEnd >= semStart;
+                const isSemesterEndWeek = wk.start <= semEnd && wkEnd >= semEnd;
                 // Determine the month to display: use the 1st of the month if this week contains it, otherwise use the week start
                 let monthDay = wk.start;
                 for (let d = 0; d < 7; d++) {
@@ -673,14 +676,34 @@ export default function AcademicCalendar() {
                     <p className={`text-[10px] font-bold tracking-widest uppercase mb-3 ${monthChanged ? (hasActive ? "text-primary" : "text-muted-foreground") : "text-transparent select-none"}`}>
                       {monthChanged ? MONTH_NAMES[wkMonthIdx] : "·"}
                     </p>
-                    {/* Dot */}
-                    <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-2 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
-                      {allDone && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
-                    </div>
+                    {/* Semester marker dot */}
+                    {(isSemesterStartWeek || isSemesterEndWeek) && (
+                      <div className="h-5 w-5 rounded-full z-10 flex items-center justify-center mb-2 bg-purple-100 border-2 border-purple-400">
+                        <div className="h-2.5 w-2.5 rounded-full bg-purple-500" />
+                      </div>
+                    )}
+                    {!isSemesterStartWeek && !isSemesterEndWeek && (
+                      <div className={`h-5 w-5 rounded-full z-10 border-2 flex items-center justify-center mb-2 bg-white ${hasActive ? "border-primary border-[3px]" : "border-border"}`}>
+                        {allDone && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                      </div>
+                    )}
                     {/* Week label */}
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-1.5">
                       Week {globalWeekNum} <span className="font-normal">({format(wk.start, "MMM d")}–{format(wkEnd, "MMM d")})</span>
                     </p>
+                    {/* Semester start/end badge */}
+                    {isSemesterStartWeek && (
+                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
+                        <p className="text-[9px] font-bold text-purple-700">🎓 Semester Starts</p>
+                        <p className="text-[8px] text-purple-600">{format(semStart, "MMM d")}</p>
+                      </div>
+                    )}
+                    {isSemesterEndWeek && (
+                      <div className="mb-2 px-2 py-1 rounded-md bg-purple-100 border border-purple-200">
+                        <p className="text-[9px] font-bold text-purple-700">🎓 Semester Ends</p>
+                        <p className="text-[8px] text-purple-600">{format(semEnd, "MMM d")}</p>
+                      </div>
+                    )}
                     {/* Events */}
                     <div className="space-y-1 w-full">
                       {wk.events.map((ev, i) => {
