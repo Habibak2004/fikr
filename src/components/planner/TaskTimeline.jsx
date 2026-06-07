@@ -13,8 +13,15 @@ const RESISTANCE_LABELS = {
   high: { label: "HIGH RESISTANCE", color: "bg-red-100 text-red-700" },
 };
 
+function safeDate(val) {
+  if (!val) return null;
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function getResistance(a) {
-  const days = a.due_date ? differenceInDays(new Date(a.due_date), new Date()) : 99;
+  const d = safeDate(a.due_date);
+  const days = d ? differenceInDays(d, new Date()) : 99;
   if (a.priority === "high" || days <= 1) return "high";
   if (a.priority === "medium" || days <= 4) return "medium";
   return "low";
@@ -52,7 +59,8 @@ function AcademicCard({ a, onStart, onToggle, onUpdate, onEdit, school, allAssig
   const [editingDate, setEditingDate] = useState(false);
   const dateInputRef = useRef(null);
   const resistance = getResistance(a);
-  const days = a.due_date ? differenceInDays(new Date(a.due_date), new Date()) : null;
+  const _dueDate = safeDate(a.due_date);
+  const days = _dueDate ? differenceInDays(_dueDate, new Date()) : null;
 
   const handleDateChange = (e) => {
     const newDate = e.target.value;
@@ -101,10 +109,10 @@ Return JSON: { "steps": ["step1", "step2", "step3"] }`,
             />
           ) : (
             <button
-              onClick={() => setEditingDate(true)}
-              className={`flex items-center gap-1 text-[10px] font-semibold group ${days === null ? "text-muted-foreground" : days < 0 ? "text-red-500" : days <= 1 ? "text-red-500" : days <= 3 ? "text-amber-600" : "text-muted-foreground"}`}
+            onClick={() => setEditingDate(true)}
+            className={`flex items-center gap-1 text-[10px] font-semibold group ${days === null ? "text-muted-foreground" : days < 0 ? "text-red-500" : days <= 1 ? "text-red-500" : days <= 3 ? "text-amber-600" : "text-muted-foreground"}`}
             >
-              {a.due_date && <span className="opacity-70">{format(new Date(a.due_date), "MMM d")}</span>}
+            {_dueDate && <span className="opacity-70">{format(_dueDate, "MMM d")}</span>}
               <span>{days === null ? "Set deadline" : days === 0 ? "· Due today" : days < 0 ? `· ${Math.abs(days)}d overdue` : `· ${days}d left`}</span>
               <Pencil className="h-2.5 w-2.5 opacity-0 group-hover:opacity-60 transition-opacity" />
             </button>
@@ -220,11 +228,12 @@ Return JSON: { "subject": "...", "body": "..." }`,
         {a.status === "pending" && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600">Waiting for response</span>
         )}
-        {a.due_date && (() => {
-          const days = differenceInDays(new Date(a.due_date), new Date());
+        {safeDate(a.due_date) && (() => {
+          const d = safeDate(a.due_date);
+          const days = differenceInDays(d, new Date());
           return (
             <span className={`text-[10px] font-semibold ml-auto ${days < 0 ? "text-red-500" : days <= 1 ? "text-red-500" : days <= 3 ? "text-amber-600" : "text-muted-foreground"}`}>
-              {format(new Date(a.due_date), "MMM d")} · {days === 0 ? "Due today" : days < 0 ? `${Math.abs(days)}d overdue` : `${days}d left`}
+              {format(d, "MMM d")} · {days === 0 ? "Due today" : days < 0 ? `${Math.abs(days)}d overdue` : `${days}d left`}
             </span>
           );
         })()}
