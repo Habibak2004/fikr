@@ -1,5 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component } from "react";
 import { base44 } from "@/api/base44Client";
+
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) return (
+      <div className="p-4 text-sm text-muted-foreground bg-muted/40 rounded-2xl">
+        Something went wrong loading this section. Try refreshing.
+      </div>
+    );
+    return this.props.children;
+  }
+}
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -166,11 +179,11 @@ export default function Planner() {
 
           {/* Quick Wins */}
           <div className="bg-white border border-border/60 rounded-2xl p-5">
-            <QuickWins assignments={assignments} />
+            <ErrorBoundary><QuickWins assignments={assignments} /></ErrorBoundary>
           </div>
 
           {/* AI Guidance Banner */}
-          <AIGuidanceBanner assignments={assignments} />
+          <ErrorBoundary><AIGuidanceBanner assignments={assignments} /></ErrorBoundary>
 
           {/* Overload warning */}
           {isOverloaded && !catchupMode && (
@@ -220,25 +233,29 @@ export default function Planner() {
             </div>
 
             {taskView === "today" && (
-              <TodayEngine
-                assignments={assignments}
-                onStartFocus={handleStartFocus}
-                onToggle={handleToggle}
-                onEdit={(task) => setEditingTask(task)}
-              />
+              <ErrorBoundary>
+                <TodayEngine
+                  assignments={assignments}
+                  onStartFocus={handleStartFocus}
+                  onToggle={handleToggle}
+                  onEdit={(task) => setEditingTask(task)}
+                />
+              </ErrorBoundary>
             )}
             {taskView === "list" && (
-              <TaskTimeline
-                assignments={assignments}
-                courses={courses}
-                pausedTask={pausedTask}
-                onStartFocus={handleStartFocus}
-                onToggle={handleToggle}
-                onUpdate={(id, data) => updateMutation.mutate({ id, data })}
-                onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework", course_id: "" })}
-                allAssignments={assignments}
-                onEdit={(task) => setEditingTask(task)}
-              />
+              <ErrorBoundary>
+                <TaskTimeline
+                  assignments={assignments}
+                  courses={courses}
+                  pausedTask={pausedTask}
+                  onStartFocus={handleStartFocus}
+                  onToggle={handleToggle}
+                  onUpdate={(id, data) => updateMutation.mutate({ id, data })}
+                  onQuickAdd={(name) => createMutation.mutate({ name, priority: "medium", type: "homework", course_id: "" })}
+                  allAssignments={assignments}
+                  onEdit={(task) => setEditingTask(task)}
+                />
+              </ErrorBoundary>
             )}
             {taskView === "weekly" && (
               <WeeklyView
@@ -270,7 +287,7 @@ export default function Planner() {
               </div>
               <h2 className="font-bold text-sm">Life Radar</h2>
             </div>
-            <LifeRadar assignments={assignments} />
+            <ErrorBoundary><LifeRadar assignments={assignments} /></ErrorBoundary>
             <div className="mt-5 pt-5 border-t border-border/40">
               <IdeaPad />
             </div>
