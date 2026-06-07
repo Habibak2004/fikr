@@ -607,7 +607,7 @@ export function buildAdaptivePlan(tasks, userState) {
 
   // Cognitive load balancing
   const majorLoads = majors.map(t => extractTaskFeatures(t).cognitiveLoad);
-  const avgLoad = majorLoads.reduce((a, b) => a + b, 0) / majorLoads.length;
+  const avgLoad = majorLoads.length > 0 ? majorLoads.reduce((a, b) => a + b, 0) / majorLoads.length : 0;
   
   let cognitiveLoadBalance = "optimal";
   if (avgLoad >= 8) cognitiveLoadBalance = "heavy";

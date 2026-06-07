@@ -293,7 +293,13 @@ Provide a 1-2 sentence insight about how to approach these tasks given their ene
     generateAdaptivePlan();
   }, [energyLevel, assignments.length]);
 
-  if (!plan) return null;
+  if (!plan) return (
+    <div className="space-y-3 animate-pulse">
+      <div className="h-4 bg-muted rounded w-1/3" />
+      <div className="h-20 bg-muted rounded-2xl" />
+      <div className="h-20 bg-muted rounded-2xl" />
+    </div>
+  );
 
   const prioritizedIds = new Set([
     ...plan.majors.map(t => t.id),
