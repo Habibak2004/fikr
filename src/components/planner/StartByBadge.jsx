@@ -5,11 +5,15 @@ import { CalendarClock, Loader2, ChevronDown, ChevronUp, AlertTriangle, CheckCir
 import { differenceInDays, format, parseISO } from "date-fns";
 
 function getZone(startByDate) {
-  const daysUntilStart = differenceInDays(new Date(startByDate), new Date());
-  if (daysUntilStart < 0) return "overdue";
-  if (daysUntilStart <= 1) return "crunch";
-  if (daysUntilStart <= 3) return "warning";
-  return "safe";
+  try {
+    const d = new Date(startByDate);
+    if (isNaN(d.getTime())) return "safe";
+    const daysUntilStart = differenceInDays(d, new Date());
+    if (daysUntilStart < 0) return "overdue";
+    if (daysUntilStart <= 1) return "crunch";
+    if (daysUntilStart <= 3) return "warning";
+    return "safe";
+  } catch { return "safe"; }
 }
 
 const ZONE_CONFIG = {
@@ -119,11 +123,11 @@ Return JSON:
     setLoading(false);
   };
 
-  const zone = sb ? getZone(sb.start_by_date) : null;
+  const zone = sb?.start_by_date ? getZone(sb.start_by_date) : null;
   const zoneConfig = zone ? ZONE_CONFIG[zone] : null;
   const ZoneIcon = zoneConfig?.icon || Clock;
 
-  const startByDays = sb ? differenceInDays(new Date(sb.start_by_date), new Date()) : null;
+  const startByDays = sb?.start_by_date ? (() => { try { return differenceInDays(new Date(sb.start_by_date), new Date()); } catch { return null; } })() : null;
 
   return (
     <div className="mt-2">
@@ -147,7 +151,7 @@ Return JSON:
             ? <>
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${zoneConfig?.badge}`}>{zoneConfig?.label}</span>
                 <span className="text-[10px] text-muted-foreground">
-                  Start by {format(parseISO(sb.start_by_date), "MMM d")}
+                  {sb.start_by_date ? `Start by ${format(parseISO(sb.start_by_date), "MMM d")}` : ""}
                   {startByDays !== null && startByDays <= 0 ? " (now!)" : startByDays !== null ? ` (in ${startByDays}d)` : ""}
                 </span>
                 {open ? <ChevronUp className="h-3 w-3 ml-0.5" /> : <ChevronDown className="h-3 w-3 ml-0.5" />}
@@ -169,7 +173,7 @@ Return JSON:
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-0.5">Recommended Start By</p>
-                  <p className="text-lg font-extrabold text-foreground">{format(parseISO(sb.start_by_date), "MMMM d")}</p>
+                  <p className="text-lg font-extrabold text-foreground">{sb.start_by_date ? format(parseISO(sb.start_by_date), "MMMM d") : "—"}</p>
                 </div>
                 <div className="text-right space-y-0.5">
                   <p className="text-[10px] text-muted-foreground">~{sb.estimated_hours}h total</p>
@@ -207,7 +211,7 @@ Return JSON:
                     return (
                       <div key={i} className="flex items-start gap-2 bg-white/60 rounded-lg px-2.5 py-2 border border-white/80">
                         <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 mt-0.5 ${ZONE_CONFIG[depZone]?.badge}`}>
-                          {format(parseISO(dep.start_by), "MMM d")}
+                          {dep.start_by ? format(parseISO(dep.start_by), "MMM d") : "—"}
                         </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-foreground truncate">{dep.step}</p>
