@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { differenceInWeeks } from "date-fns";
+import { differenceInWeeks, addWeeks, format } from "date-fns";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -173,9 +173,15 @@ Important: base the session titles and topics directly on what is in the syllabu
     );
   }
 
+  const semesterStart = course.semester_start ? new Date(course.semester_start) : null;
+
   return (
     <div className="space-y-3">
-      {course.study_plan.map((week) => (
+      {course.study_plan.map((week) => {
+        const weekStart = semesterStart ? addWeeks(semesterStart, week.week - 1) : null;
+        const weekEnd = weekStart ? addWeeks(weekStart, 1) : null;
+        const dateRange = weekStart ? `${format(weekStart, "MMM d")} – ${format(weekEnd, "MMM d")}` : null;
+        return (
         <Collapsible key={week.week} open={expandedWeeks[week.week]} onOpenChange={() => toggleWeek(week.week)}>
           <CollapsibleTrigger asChild>
             <Card className="p-4 rounded-2xl cursor-pointer hover:bg-muted/30 transition-colors">
@@ -183,7 +189,10 @@ Important: base the session titles and topics directly on what is in the syllabu
                 <div className="flex items-center gap-3">
                   {expandedWeeks[week.week] ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                   <div>
-                    <p className="text-sm font-semibold">Week {week.week}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold">Week {week.week}</p>
+                      {dateRange && <span className="text-xs text-muted-foreground">{dateRange}</span>}
+                    </div>
                     <p className="text-xs text-muted-foreground">{week.title}</p>
                   </div>
                 </div>
@@ -213,7 +222,8 @@ Important: base the session titles and topics directly on what is in the syllabu
             </div>
           </CollapsibleContent>
         </Collapsible>
-      ))}
+        );
+      })}
     </div>
   );
 }
