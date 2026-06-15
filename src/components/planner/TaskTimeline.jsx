@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, Mail, Leaf, BookOpen, ChevronDown, ChevronUp, Sparkles, RotateCcw, Plus, Pencil } from "lucide-react";
+import { Play, Pause, Mail, Leaf, BookOpen, ChevronDown, ChevronUp, Sparkles, RotateCcw, Plus, Pencil, CheckCircle2, Circle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { base44 } from "@/api/base44Client";
 import BlockerPanel from "@/components/planner/BlockerPanel";
@@ -359,20 +359,69 @@ function QuickAddRow({ onAdd }) {
   );
 }
 
+function CheckboxDot({ completed, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex-shrink-0 transition-transform hover:scale-110"
+      title={completed ? "Mark incomplete" : "Mark complete"}
+    >
+      {completed
+        ? <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+        : <Circle className="h-6 w-6 text-border hover:text-emerald-400 transition-colors" />
+      }
+    </button>
+  );
+}
+
 export default function TaskTimeline({ assignments = [], courses = [], pausedTask, onStartFocus, onToggle, onUpdate, onQuickAdd, onEdit, allAssignments = [] }) {
-  // Derive school name from localStorage (user can set it once in ContactRoutingPanel)
   const schoolName = localStorage.getItem("fikr_school_name") || null;
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const isCommTask = (a) => /email|follow|professor|housing|financial|internship|contact/i.test(a.name) || a.type === "other";
 
   const pending = assignments.filter(a => !a.completed);
+  const completed = assignments.filter(a => a.completed);
+
   const sorted = [...pending].sort((a, b) => {
     if (!a.due_date) return 1;
     if (!b.due_date) return -1;
     return new Date(a.due_date) - new Date(b.due_date);
   });
 
-  if (sorted.length === 0) {
+  const sortedCompleted = [...completed].sort((a, b) => {
+    if (!a.updated_date) return 1;
+    if (!b.updated_date) return -1;
+    return new Date(b.updated_date) - new Date(a.updated_date);
+  });
+
+  const renderTaskRow = (a, i, isCompletedItem = false) => {
+    const isComm = isCommTask(a);
+    const nodeType = isComm ? "comm" : "academic";
+    const isFirst = !pausedTask && i === 0 && !isCompletedItem;
+
+    return (
+      <div key={a.id} className="flex gap-3 items-start">
+        <div className="flex-shrink-0 mt-2">
+          <CheckboxDot completed={isCompletedItem} onToggle={() => onToggle(a)} />
+        </div>
+        <div className={`flex-1 pt-0.5 transition-opacity ${isCompletedItem ? "opacity-50" : ""}`}>
+          {isCompletedItem ? (
+            <div className="bg-muted/40 border border-border/40 rounded-2xl px-4 py-3 flex items-center gap-2">
+              <p className="text-sm font-medium text-muted-foreground line-through flex-1">{a.name}</p>
+              {a.course_name && <span className="text-xs text-muted-foreground/70">{a.course_name}</span>}
+            </div>
+          ) : isComm ? (
+            <CommCard a={a} onToggle={onToggle} onEdit={onEdit} school={schoolName} />
+          ) : (
+            <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} onUpdate={onUpdate} onEdit={onEdit} school={schoolName} allAssignments={allAssignments} />
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  if (sorted.length === 0 && completed.length === 0) {
     return (
       <div>
         <div className="text-center py-10 text-muted-foreground">
@@ -385,45 +434,56 @@ export default function TaskTimeline({ assignments = [], courses = [], pausedTas
   }
 
   return (
-    <div className="relative">
-      {/* Vertical line */}
-      <div className="absolute left-[18px] top-4 bottom-4 w-0.5 bg-border/60 rounded-full" />
-
-      <div className="space-y-4">
-        {pausedTask && (
-          <div className="flex gap-4 items-start">
-            <div className="flex-shrink-0 mt-1">
-              <div className="h-9 w-9 rounded-full border-2 border-border bg-muted flex items-center justify-center z-10">
-                <Pause className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </div>
-            <div className="flex-1 pt-0.5">
-              <PausedCard a={pausedTask} onResume={onStartFocus} />
+    <div className="space-y-3">
+      {pausedTask && (
+        <div className="flex gap-3 items-start">
+          <div className="flex-shrink-0 mt-1">
+            <div className="h-6 w-6 rounded-full border-2 border-border bg-muted flex items-center justify-center">
+              <Pause className="h-3 w-3 text-muted-foreground" />
             </div>
           </div>
-        )}
+          <div className="flex-1 pt-0.5">
+            <PausedCard a={pausedTask} onResume={onStartFocus} />
+          </div>
+        </div>
+      )}
 
-        {sorted.map((a, i) => {
-          const isComm = isCommTask(a);
-          const nodeType = isComm ? "comm" : "academic";
-          const isFirst = !pausedTask && i === 0;
+      {sorted.length === 0 && (
+        <div className="text-center py-6 text-muted-foreground">
+          <p className="text-2xl mb-2">✅</p>
+          <p className="font-medium text-sm">All pending tasks done!</p>
+        </div>
+      )}
 
-          return (
-            <div key={a.id} className="flex gap-4 items-start">
-              <div className="flex-shrink-0 mt-1">
-                <NodeDot type={nodeType} active={isFirst} />
-              </div>
-              <div className="flex-1 pt-0.5">
-                {isComm
-                  ? <CommCard a={a} onToggle={onToggle} onEdit={onEdit} school={schoolName} />
-                  : <AcademicCard a={a} onStart={onStartFocus} onToggle={onToggle} onUpdate={onUpdate} onEdit={onEdit} school={schoolName} allAssignments={allAssignments} />
-                }
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {sorted.map((a, i) => renderTaskRow(a, i, false))}
+
       {onQuickAdd && <QuickAddRow onAdd={onQuickAdd} />}
+
+      {/* Completed section */}
+      {completed.length > 0 && (
+        <div className="pt-2">
+          <button
+            onClick={() => setShowCompleted(s => !s)}
+            className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors mb-2"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            {completed.length} completed
+            <span className="text-[10px]">{showCompleted ? "▲" : "▼"}</span>
+          </button>
+          <AnimatePresence>
+            {showCompleted && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden space-y-2"
+              >
+                {sortedCompleted.map((a, i) => renderTaskRow(a, i, true))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }
