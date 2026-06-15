@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { differenceInWeeks } from "date-fns";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -40,18 +41,33 @@ export default function StudyPlanTab({ course }) {
   const generatePlan = async (fileUrl) => {
     setGenerating(true);
     const resolvedFileUrl = fileUrl || course.syllabus_url;
+
+    // Calculate actual term length from course dates
+    let termWeeks = 15; // default full semester
+    if (course.semester_start && course.semester_end) {
+      const weeks = differenceInWeeks(new Date(course.semester_end), new Date(course.semester_start));
+      if (weeks > 0) termWeeks = weeks;
+    }
+    const termDescription = termWeeks <= 6
+      ? `a ${termWeeks}-week accelerated/summer term`
+      : termWeeks <= 10
+      ? `a ${termWeeks}-week compressed semester`
+      : `a ${termWeeks}-week semester`;
+
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `You are Fikr Intelligence, an AI study planner. Carefully analyze the provided syllabus ${resolvedFileUrl ? "(attached as a file)" : "text"} for the course "${course.name}" (${course.code}).
 
 ${syllabusText ? `Syllabus text:\n${syllabusText}` : ""}
 
+IMPORTANT: This is ${termDescription}${course.semester_start && course.semester_end ? ` running from ${course.semester_start} to ${course.semester_end}` : ""}. The study plan MUST be exactly ${termWeeks} weeks long — not a standard 12 or 15-week plan. Compress or expand the pacing accordingly.
+
 From the syllabus, extract:
 1. All assignments, exams, quizzes, projects, and deadlines with their due dates and grade weights.
 2. Key topics and chapters covered each week.
 
-Then generate a realistic 12-week study plan with 3-4 sessions per week, aligned to the course schedule and deadlines found in the syllabus.
+Then generate a realistic ${termWeeks}-week study plan with 3-4 sessions per week, aligned to the course schedule and deadlines found in the syllabus.
 
-Important: base the session titles and topics directly on what is in the syllabus.`,
+Important: base the session titles and topics directly on what is in the syllabus. Respect the compressed pacing for shorter terms.`,
       ...(resolvedFileUrl ? { file_urls: [resolvedFileUrl] } : {}),
       response_json_schema: {
         type: "object",
