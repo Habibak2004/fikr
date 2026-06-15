@@ -33,6 +33,7 @@ import TaskTimeline from "@/components/planner/TaskTimeline";
 import LifeRadar from "@/components/planner/LifeRadar";
 import IdeaPad from "@/components/planner/IdeaPad";
 import TodayEngine from "@/components/planner/TodayEngine";
+import FinishRightNow from "@/components/planner/FinishRightNow";
 // import InsightsPanel from "@/components/planner/InsightsPanel"; // Temporarily disabled
 
 export default function Planner() {
@@ -176,6 +177,9 @@ export default function Planner() {
 
         {/* LEFT: Timeline + Quick features */}
         <div className="space-y-5 min-w-0">
+
+          {/* Finish Right Now */}
+          <FinishRightNow />
 
           {/* Quick Wins */}
           <div className="bg-white border border-border/60 rounded-2xl p-5">
