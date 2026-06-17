@@ -41,6 +41,25 @@ export default function GardenSetup({ onPlanReady }) {
   const endRef = useRef(null);
   const lastCount = useRef(0);
 
+  const { data: courses = [] } = useQuery({
+    queryKey: ["courses", userEmail],
+    queryFn: () => base44.entities.Course.filter({ created_by: userEmail }, "-created_date", 50),
+    enabled: !!userEmail,
+  });
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["assignments", selectedCourse?.id, userEmail],
+    queryFn: () => base44.entities.Assignment.filter({ course_id: selectedCourse.id, created_by: userEmail, completed: false }),
+    enabled: !!selectedCourse && !!userEmail,
+  });
+
+  // All non-completed planner tasks (for admin/personal task picker)
+  const { data: allAssignments = [] } = useQuery({
+    queryKey: ["all-assignments", userEmail],
+    queryFn: () => base44.entities.Assignment.filter({ created_by: userEmail, completed: false }, "-due_date", 100),
+    enabled: !!userEmail,
+  });
+
   const urlParams = new URLSearchParams(window.location.search);
   const urlTaskId = urlParams.get("taskId");
   const urlTaskType = urlParams.get("type");
@@ -60,25 +79,6 @@ export default function GardenSetup({ onPlanReady }) {
       }
     }
   }, [urlTaskId, allAssignments]);
-
-  const { data: courses = [] } = useQuery({
-    queryKey: ["courses", userEmail],
-    queryFn: () => base44.entities.Course.filter({ created_by: userEmail }, "-created_date", 50),
-    enabled: !!userEmail,
-  });
-
-  const { data: assignments = [] } = useQuery({
-    queryKey: ["assignments", selectedCourse?.id, userEmail],
-    queryFn: () => base44.entities.Assignment.filter({ course_id: selectedCourse.id, created_by: userEmail, completed: false }),
-    enabled: !!selectedCourse && !!userEmail,
-  });
-
-  // All non-completed planner tasks (for admin/personal task picker)
-  const { data: allAssignments = [] } = useQuery({
-    queryKey: ["all-assignments", userEmail],
-    queryFn: () => base44.entities.Assignment.filter({ created_by: userEmail, completed: false }, "-due_date", 100),
-    enabled: !!userEmail,
-  });
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
 
