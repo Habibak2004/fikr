@@ -41,17 +41,25 @@ export default function GardenSetup({ onPlanReady }) {
   const endRef = useRef(null);
   const lastCount = useRef(0);
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlTaskId = urlParams.get("taskId");
+  const urlTaskType = urlParams.get("type");
+
   useEffect(() => {
     base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {});
-    // Pre-populate from planner URL params
-    const params = new URLSearchParams(window.location.search);
-    const taskName = params.get("task");
-    const taskType = params.get("type");
-    if (taskName && taskType === "admin") {
-      setShowAdminCategories(true);
-      setSelectedAssignment({ name: taskName });
-    }
+    if (urlTaskType === "admin") setShowAdminCategories(true);
   }, []);
+
+  // Once allAssignments loads, pre-select the task from URL
+  useEffect(() => {
+    if (urlTaskId && allAssignments.length > 0) {
+      const found = allAssignments.find(a => a.id === urlTaskId);
+      if (found) {
+        setSelectedAssignment(found);
+        if (!found.course_id) setShowAdminCategories(true);
+      }
+    }
+  }, [urlTaskId, allAssignments]);
 
   const { data: courses = [] } = useQuery({
     queryKey: ["courses", userEmail],
@@ -63,6 +71,13 @@ export default function GardenSetup({ onPlanReady }) {
     queryKey: ["assignments", selectedCourse?.id, userEmail],
     queryFn: () => base44.entities.Assignment.filter({ course_id: selectedCourse.id, created_by: userEmail, completed: false }),
     enabled: !!selectedCourse && !!userEmail,
+  });
+
+  // All non-completed planner tasks (for admin/personal task picker)
+  const { data: allAssignments = [] } = useQuery({
+    queryKey: ["all-assignments", userEmail],
+    queryFn: () => base44.entities.Assignment.filter({ created_by: userEmail, completed: false }, "-due_date", 100),
+    enabled: !!userEmail,
   });
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
@@ -216,18 +231,47 @@ export default function GardenSetup({ onPlanReady }) {
               )}
 
               {showAdminCategories && (
-                <div className="flex flex-col gap-2">
-                  {ADMIN_CATEGORIES.map(cat => (
-                    <button key={cat.id} onClick={() => setSelectedAdmin(cat)}
-                      className="w-full text-left px-4 py-3 rounded-2xl text-sm transition-all"
-                      style={{
-                        background: selectedAdmin?.id === cat.id ? "#f0fdf4" : "rgba(255,255,255,0.06)",
-                        color: selectedAdmin?.id === cat.id ? "#374151" : "#cbd5e1",
-                        border: `1.5px solid ${selectedAdmin?.id === cat.id ? "#4a7c59" : "rgba(255,255,255,0.1)"}`,
-                      }}>
-                      <p className="font-semibold">{cat.label}</p>
-                    </button>
-                  ))}
+                <div className="space-y-3">
+                  {/* Planner tasks */}
+                  {allAssignments.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">From your planner</p>
+                      <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1" style={{ scrollbarWidth: "none" }}>
+                        {allAssignments.map(a => (
+                          <button key={a.id} onClick={() => { setSelectedAssignment(a); setSelectedAdmin(null); }}
+                            className="w-full text-left px-4 py-3 rounded-2xl text-sm transition-all"
+                            style={{
+                              background: selectedAssignment?.id === a.id ? "#f0fdf4" : "rgba(255,255,255,0.06)",
+                              color: selectedAssignment?.id === a.id ? "#374151" : "#cbd5e1",
+                              border: `1.5px solid ${selectedAssignment?.id === a.id ? "#4a7c59" : "rgba(255,255,255,0.1)"}`,
+                            }}>
+                            <p className="font-semibold truncate">{a.name}</p>
+                            {(a.course_name || a.type) && (
+                              <p className="text-[11px] mt-0.5 opacity-60">{a.course_name || a.type}</p>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Category fallback */}
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Or pick a category</p>
+                    <div className="flex flex-col gap-1.5">
+                      {ADMIN_CATEGORIES.map(cat => (
+                        <button key={cat.id} onClick={() => { setSelectedAdmin(cat); setSelectedAssignment(null); }}
+                          className="w-full text-left px-4 py-3 rounded-2xl text-sm transition-all"
+                          style={{
+                            background: selectedAdmin?.id === cat.id ? "#f0fdf4" : "rgba(255,255,255,0.06)",
+                            color: selectedAdmin?.id === cat.id ? "#374151" : "#cbd5e1",
+                            border: `1.5px solid ${selectedAdmin?.id === cat.id ? "#4a7c59" : "rgba(255,255,255,0.1)"}`,
+                          }}>
+                          <p className="font-semibold">{cat.label}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

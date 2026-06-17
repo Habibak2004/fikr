@@ -93,7 +93,7 @@ export default function Planner() {
   const handleStartFocus = (task) => {
     setPausedTask(task);
     const params = new URLSearchParams();
-    if (task?.name) params.set("task", task.name);
+    if (task?.id) params.set("taskId", task.id);
     if (!task?.course_id) params.set("type", "admin");
     window.open(`/garden?${params.toString()}`, "_blank");
   };
