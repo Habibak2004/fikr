@@ -323,6 +323,7 @@ function EditAssignmentModal({ task, onClose, courses, onSave, onDelete }) {
     type: task.type || "homework",
     due_date: task.due_date ? task.due_date.slice(0, 16) : "",
     priority: task.priority || "medium",
+    description: task.description || "",
     notes: task.notes || "",
     weight: task.weight || "",
     critical_path: task.critical_path || false,
@@ -370,6 +371,7 @@ function EditAssignmentModal({ task, onClose, courses, onSave, onDelete }) {
           </div>
           <div><Label>Due Date</Label><Input type="datetime-local" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} className="rounded-xl mt-1" /></div>
           <div><Label>Grade Weight % (optional)</Label><Input type="number" min="0" max="100" value={form.weight} onChange={e => setForm(p => ({ ...p, weight: e.target.value }))} className="rounded-xl mt-1" placeholder="e.g. 20" /></div>
+          <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="rounded-xl mt-1" rows={2} placeholder="Context for the focus room — what this task involves, requirements, etc." /></div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="rounded-xl mt-1" rows={2} /></div>
           <div className="flex items-center gap-2">
             <input
@@ -398,7 +400,7 @@ function EditAssignmentModal({ task, onClose, courses, onSave, onDelete }) {
 }
 
 function AddAssignmentModal({ open, onClose, courses, onSave }) {
-  const [form, setForm] = useState({ name: "", course_id: "", type: "homework", due_date: "", priority: "medium", notes: "", critical_path: false });
+  const [form, setForm] = useState({ name: "", course_id: "", type: "homework", due_date: "", priority: "medium", description: "", notes: "", critical_path: false });
 
   const handleSave = () => {
     if (!form.name) return;
@@ -437,6 +439,7 @@ function AddAssignmentModal({ open, onClose, courses, onSave }) {
             </div>
           </div>
           <div><Label>Due Date</Label><Input type="datetime-local" value={form.due_date} onChange={e => setForm(p => ({ ...p, due_date: e.target.value }))} className="rounded-xl mt-1" /></div>
+          <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="rounded-xl mt-1" rows={2} placeholder="Context for the focus room — what this task involves, requirements, etc." /></div>
           <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} className="rounded-xl mt-1" rows={2} /></div>
           <div className="flex items-center gap-2">
             <input
