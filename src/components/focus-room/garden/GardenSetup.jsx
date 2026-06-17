@@ -17,9 +17,19 @@ function TypingDots() {
   );
 }
 
+const ADMIN_CATEGORIES = [
+  { id: "admin_training", label: "🎓 Training / Certification", code: "TRAIN" },
+  { id: "admin_email", label: "📧 Emails & Admin", code: "ADMIN" },
+  { id: "admin_work", label: "💼 Work Tasks", code: "WORK" },
+  { id: "admin_personal", label: "🧠 Personal Project", code: "PROJ" },
+  { id: "admin_other", label: "📋 Other", code: "OTHER" },
+];
+
 export default function GardenSetup({ onPlanReady }) {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [showAdminCategories, setShowAdminCategories] = useState(false);
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -31,7 +41,17 @@ export default function GardenSetup({ onPlanReady }) {
   const endRef = useRef(null);
   const lastCount = useRef(0);
 
-  useEffect(() => { base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {}); }, []);
+  useEffect(() => {
+    base44.auth.me().then(u => setUserEmail(u?.email)).catch(() => {});
+    // Pre-populate from planner URL params
+    const params = new URLSearchParams(window.location.search);
+    const taskName = params.get("task");
+    const taskType = params.get("type");
+    if (taskName && taskType === "admin") {
+      setShowAdminCategories(true);
+      setSelectedAssignment({ name: taskName });
+    }
+  }, []);
 
   const { data: courses = [] } = useQuery({
     queryKey: ["courses", userEmail],
@@ -100,8 +120,8 @@ export default function GardenSetup({ onPlanReady }) {
           setPendingPlan({
             ...plan,
             courseId: selectedCourse?.id,
-            courseName: selectedCourse?.name,
-            courseCode: selectedCourse?.code,
+            courseName: selectedCourse?.name || selectedAdmin?.label,
+            courseCode: selectedCourse?.code || selectedAdmin?.code,
             assignmentName: selectedAssignment?.name,
           });
         }
@@ -110,10 +130,13 @@ export default function GardenSetup({ onPlanReady }) {
     unsubRef.current = unsub;
 
     const courseCtx = selectedCourse ? `Course: ${selectedCourse.name} (${selectedCourse.code}).` : "";
-    const assignCtx = selectedAssignment ? ` Assignment: "${selectedAssignment.name}".` : "";
+    const assignCtx = selectedAssignment ? ` Task/Assignment: "${selectedAssignment.name}".` : "";
+    const adminCtx = selectedAdmin ? ` Category: ${selectedAdmin.label}.` : "";
+    const isAdmin = showAdminCategories || !!selectedAdmin;
+    const sessionType = isAdmin ? "focused work session (non-academic admin/personal work)" : "focused study session";
     await base44.agents.addMessage(conv, {
       role: "user",
-      content: `I want to start a focused study session. ${courseCtx}${assignCtx} Ask me your clarifying questions ONE AT A TIME — ask the first question now, wait for my answer, then ask the next. Do not list multiple questions at once. Once you have enough info (2–3 answers), generate the task plan.`,
+      content: `I want to start a ${sessionType}. ${courseCtx}${adminCtx}${assignCtx} Ask me your clarifying questions ONE AT A TIME — ask the first question now, wait for my answer, then ask the next. Do not list multiple questions at once. Once you have enough info (2–3 answers), generate the task plan.`,
     });
   };
 
@@ -147,25 +170,66 @@ export default function GardenSetup({ onPlanReady }) {
 
         {!chatStarted ? (
           <>
-            {/* Course selection */}
+            {/* Course / Admin toggle */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Which course?</p>
-              <div className="flex flex-wrap gap-2">
-                {courses.map(c => (
-                  <button key={c.id} onClick={() => { setSelectedCourse(c); setSelectedAssignment(null); }}
-                    className="px-3.5 py-2 rounded-2xl text-sm font-semibold transition-all"
-                    style={{
-                      background: selectedCourse?.id === c.id ? "#4a7c59" : "white",
-                      color: selectedCourse?.id === c.id ? "white" : "#4a7c59",
-                      border: `1.5px solid ${selectedCourse?.id === c.id ? "#4a7c59" : "#d1fae5"}`,
-                    }}>
-                    {c.icon && <span className="mr-1">{c.icon}</span>}{c.code}
-                  </button>
-                ))}
-                {courses.length === 0 && (
-                  <p className="text-sm text-slate-500 italic">No courses yet — you can still start a session.</p>
-                )}
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">What are you working on?</p>
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => { setShowAdminCategories(false); setSelectedAdmin(null); }}
+                  className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
+                  style={{
+                    background: !showAdminCategories ? "#4a7c59" : "rgba(255,255,255,0.07)",
+                    color: !showAdminCategories ? "white" : "#94a3b8",
+                    border: `1.5px solid ${!showAdminCategories ? "#4a7c59" : "rgba(255,255,255,0.1)"}`,
+                  }}>
+                  📚 Class Work
+                </button>
+                <button
+                  onClick={() => { setShowAdminCategories(true); setSelectedCourse(null); setSelectedAssignment(null); }}
+                  className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
+                  style={{
+                    background: showAdminCategories ? "#4a7c59" : "rgba(255,255,255,0.07)",
+                    color: showAdminCategories ? "white" : "#94a3b8",
+                    border: `1.5px solid ${showAdminCategories ? "#4a7c59" : "rgba(255,255,255,0.1)"}`,
+                  }}>
+                  💼 Admin / Personal
+                </button>
               </div>
+
+              {!showAdminCategories && (
+                <div className="flex flex-wrap gap-2">
+                  {courses.map(c => (
+                    <button key={c.id} onClick={() => { setSelectedCourse(c); setSelectedAssignment(null); }}
+                      className="px-3.5 py-2 rounded-2xl text-sm font-semibold transition-all"
+                      style={{
+                        background: selectedCourse?.id === c.id ? "#4a7c59" : "white",
+                        color: selectedCourse?.id === c.id ? "white" : "#4a7c59",
+                        border: `1.5px solid ${selectedCourse?.id === c.id ? "#4a7c59" : "#d1fae5"}`,
+                      }}>
+                      {c.icon && <span className="mr-1">{c.icon}</span>}{c.code}
+                    </button>
+                  ))}
+                  {courses.length === 0 && (
+                    <p className="text-sm text-slate-500 italic">No courses yet — you can still start a session.</p>
+                  )}
+                </div>
+              )}
+
+              {showAdminCategories && (
+                <div className="flex flex-col gap-2">
+                  {ADMIN_CATEGORIES.map(cat => (
+                    <button key={cat.id} onClick={() => setSelectedAdmin(cat)}
+                      className="w-full text-left px-4 py-3 rounded-2xl text-sm transition-all"
+                      style={{
+                        background: selectedAdmin?.id === cat.id ? "#f0fdf4" : "rgba(255,255,255,0.06)",
+                        color: selectedAdmin?.id === cat.id ? "#374151" : "#cbd5e1",
+                        border: `1.5px solid ${selectedAdmin?.id === cat.id ? "#4a7c59" : "rgba(255,255,255,0.1)"}`,
+                      }}>
+                      <p className="font-semibold">{cat.label}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Assignment selection */}
@@ -200,7 +264,7 @@ export default function GardenSetup({ onPlanReady }) {
 
             <button
               onClick={startChat}
-              disabled={!selectedCourse && courses.length > 0}
+              disabled={!selectedCourse && !selectedAdmin && courses.length > 0 && !showAdminCategories}
               className="w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
               style={{ background: "linear-gradient(135deg, #5a9a6f, #4a7c59)" }}>
               🌱 Plan my session
